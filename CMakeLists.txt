@@ -37,8 +37,6 @@ include(KDECompilerSettings NO_POLICY_SCOPE)
 include(KDEClangFormat)
 include(KDEGitCommitHooks)
 
-include(GtkUpdateIconCache)
-
 option(FOR_FLATPAK "Build Lightly for Flatpak" OFF)
 option(BUILD_QT5 "Build with QT5" ON)
 option(BUILD_QT6 "Build with QT6" ON)
@@ -152,7 +150,6 @@ function(build_qt6)
     #add_subdirectory(colors)
     add_subdirectory(kstyle kstyle6)
     add_subdirectory(libdarklycommon libdarklycommon6)
-    add_subdirectory(${CMAKE_SOURCE_DIR}/desktoptheme ${CMAKE_BINARY_DIR}/desktoptheme_build)
     #add_subdirectory(misc)
 
     if(WITH_DECORATIONS)
@@ -202,15 +199,6 @@ endfunction()
 if(BUILD_QT6)
     message("-- **** Build QT6 - On ****")
     build_qt6()
-endif()
-
-function(build_colors)
-    include(KDEInstallDirs)
-    add_subdirectory(colors)
-endfunction()
-
-if (NOT FOR_FLATPAK)
-    build_colors()
 endif()
 
 # add clang-format target for all our real source files
