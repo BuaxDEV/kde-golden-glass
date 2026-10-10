@@ -12,7 +12,7 @@
 #include <QStandardPaths>
 #include <QSignalSpy>
 
-#include "darklystyleconfigdata.h"
+#include "goldenglassstyleconfigdata.h"
 
 class StyleConfigTest : public QObject
 {
@@ -48,7 +48,7 @@ void StyleConfigTest::cleanupTestCase()
 
 void StyleConfigTest::init()
 {
-    Darkly::StyleConfigData::self()->setDefaults();
+    GoldenGlass::StyleConfigData::self()->setDefaults();
 }
 
 void StyleConfigTest::cleanup()
@@ -74,7 +74,7 @@ void StyleConfigTest::testSliderRange()
 void StyleConfigTest::testSliderDefaultValue()
 {
     // The default opacity should be 100 (fully opaque)
-    int defaultValue = Darkly::StyleConfigData::dolphinViewOpacity();
+    int defaultValue = GoldenGlass::StyleConfigData::dolphinViewOpacity();
     QCOMPARE(defaultValue, 100);
 
     // A slider initialized with this value should show 100
@@ -135,8 +135,8 @@ void StyleConfigTest::testOpacityAlphaConversion()
     QCOMPARE(opacityToAlpha(75), 0.75);
 
     // Test that setting opacity and converting gives correct alpha
-    Darkly::StyleConfigData::setDolphinViewOpacity(42);
-    qreal alpha = Darkly::StyleConfigData::dolphinViewOpacity() / 100.0;
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(42);
+    qreal alpha = GoldenGlass::StyleConfigData::dolphinViewOpacity() / 100.0;
     QCOMPARE(alpha, 0.42);
 }
 
@@ -146,28 +146,28 @@ void StyleConfigTest::testTransparencyConditionCheck()
     // StyleConfigData::dolphinViewOpacity() < 100
 
     auto isTransparent = []() -> bool {
-        return Darkly::StyleConfigData::dolphinViewOpacity() < 100;
+        return GoldenGlass::StyleConfigData::dolphinViewOpacity() < 100;
     };
 
     // Default (100) should not be transparent
-    Darkly::StyleConfigData::setDolphinViewOpacity(100);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(100);
     QVERIFY(!isTransparent());
 
     // 99 and below should be transparent
-    Darkly::StyleConfigData::setDolphinViewOpacity(99);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(99);
     QVERIFY(isTransparent());
 
-    Darkly::StyleConfigData::setDolphinViewOpacity(50);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(50);
     QVERIFY(isTransparent());
 
-    Darkly::StyleConfigData::setDolphinViewOpacity(1);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(1);
     QVERIFY(isTransparent());
 
-    Darkly::StyleConfigData::setDolphinViewOpacity(0);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(0);
     QVERIFY(isTransparent());
 
     // Back to 100 should not be transparent
-    Darkly::StyleConfigData::setDolphinViewOpacity(100);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(100);
     QVERIFY(!isTransparent());
 }
 

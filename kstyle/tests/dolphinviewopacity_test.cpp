@@ -9,7 +9,7 @@
 #include <QTemporaryDir>
 #include <QStandardPaths>
 
-#include "darklystyleconfigdata.h"
+#include "goldenglassstyleconfigdata.h"
 
 class DolphinViewOpacityTest : public QObject
 {
@@ -47,7 +47,7 @@ void DolphinViewOpacityTest::cleanupTestCase()
 void DolphinViewOpacityTest::init()
 {
     // Reset to defaults before each test
-    Darkly::StyleConfigData::self()->setDefaults();
+    GoldenGlass::StyleConfigData::self()->setDefaults();
 }
 
 void DolphinViewOpacityTest::cleanup()
@@ -58,80 +58,80 @@ void DolphinViewOpacityTest::cleanup()
 void DolphinViewOpacityTest::testDefaultValue()
 {
     // The default value should be 100 (fully opaque)
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 100);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 100);
 }
 
 void DolphinViewOpacityTest::testSetAndGetValue()
 {
     // Test setting various valid values
-    Darkly::StyleConfigData::setDolphinViewOpacity(50);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 50);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(50);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 50);
 
-    Darkly::StyleConfigData::setDolphinViewOpacity(0);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 0);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(0);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 0);
 
-    Darkly::StyleConfigData::setDolphinViewOpacity(75);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 75);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(75);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 75);
 
-    Darkly::StyleConfigData::setDolphinViewOpacity(100);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 100);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(100);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 100);
 }
 
 void DolphinViewOpacityTest::testBoundaryValues()
 {
     // Test minimum value (0 = fully transparent)
-    Darkly::StyleConfigData::setDolphinViewOpacity(0);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 0);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(0);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 0);
 
     // Test maximum value (100 = fully opaque)
-    Darkly::StyleConfigData::setDolphinViewOpacity(100);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 100);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(100);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 100);
 
     // Test value at 1 (near minimum)
-    Darkly::StyleConfigData::setDolphinViewOpacity(1);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 1);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(1);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 1);
 
     // Test value at 99 (near maximum)
-    Darkly::StyleConfigData::setDolphinViewOpacity(99);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 99);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(99);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 99);
 }
 
 void DolphinViewOpacityTest::testPersistence()
 {
     // Set a non-default value
-    Darkly::StyleConfigData::setDolphinViewOpacity(42);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 42);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(42);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 42);
 
     // Save configuration
-    Darkly::StyleConfigData::self()->save();
+    GoldenGlass::StyleConfigData::self()->save();
 
     // Reset to defaults
-    Darkly::StyleConfigData::self()->setDefaults();
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 100);
+    GoldenGlass::StyleConfigData::self()->setDefaults();
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 100);
 
     // Reload configuration
-    Darkly::StyleConfigData::self()->load();
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 42);
+    GoldenGlass::StyleConfigData::self()->load();
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 42);
 }
 
 void DolphinViewOpacityTest::testIndependentFromSidebarOpacity()
 {
     // Set different values for view and sidebar opacity
-    Darkly::StyleConfigData::setDolphinViewOpacity(30);
-    Darkly::StyleConfigData::setDolphinSidebarOpacity(70);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(30);
+    GoldenGlass::StyleConfigData::setDolphinSidebarOpacity(70);
 
     // Verify they are independent
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 30);
-    QCOMPARE(Darkly::StyleConfigData::dolphinSidebarOpacity(), 70);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 30);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinSidebarOpacity(), 70);
 
     // Change one, verify the other is unaffected
-    Darkly::StyleConfigData::setDolphinViewOpacity(50);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 50);
-    QCOMPARE(Darkly::StyleConfigData::dolphinSidebarOpacity(), 70);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(50);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 50);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinSidebarOpacity(), 70);
 
-    Darkly::StyleConfigData::setDolphinSidebarOpacity(25);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 50);
-    QCOMPARE(Darkly::StyleConfigData::dolphinSidebarOpacity(), 25);
+    GoldenGlass::StyleConfigData::setDolphinSidebarOpacity(25);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 50);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinSidebarOpacity(), 25);
 }
 
 QTEST_MAIN(DolphinViewOpacityTest)

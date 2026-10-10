@@ -1,0 +1,6 @@
+File=goldenglasssettingsdata.kcfg
+ClassName=InternalSettings
+NameSpace=GoldenGlass
+Singleton=false
+Mutators=true
+GlobalEnums=true
