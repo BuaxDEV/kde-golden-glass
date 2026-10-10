@@ -113,6 +113,8 @@ window_title_weight = "DemiBold"
 # Semáforos (iguales en claro y oscuro)
 # ---------------------------------------------------------------------------
 [traffic_lights]
+diameter = 12        # px
+gap = 8              # px entre bordes de círculos (centros a diameter + gap)
 close = "#FF5F57"
 close_border = "#E0443E"
 minimize = "#FEBC2E"

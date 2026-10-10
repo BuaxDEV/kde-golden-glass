@@ -34,8 +34,16 @@ def _shadow_strength(alpha: float) -> int:
     return max(25, min(255, round(alpha * 255)))
 
 
+def _argb(value: str) -> str:
+    """#RRGGBB[AA] → literal 0xAARRGGBB (formato de QColor::fromRgba)."""
+    h = value.lstrip("#")
+    alpha = h[6:8] if len(h) == 8 else "FF"
+    return "0x" + (alpha + h[:6]).upper() + "u"
+
+
 def header(tokens: dict) -> str:
     rad = tokens["radius"]
+    tl = tokens["traffic_lights"]
     shadow = tokens["shadow"]["active"]
     glass = round(plasma_theme.glass_alpha(tokens) * 100)
     align = tokens["decoration"]["title_alignment"]
@@ -55,6 +63,20 @@ def header(tokens: dict) -> str:
         ("ShadowStrength", _shadow_strength(shadow["strength"]), f"{shadow['strength']} de opacidad"),
         ("Decoración", None, None),
         ("TitleAlignment", TITLE_ALIGNMENTS.index(align), align),
+        ("Semáforos (px y colores 0xAARRGGBB)", None, None),
+        ("TrafficLightDiameter", tl["diameter"], "diámetro"),
+        ("TrafficLightGap", tl["gap"], "separación entre bordes"),
+    ]
+    colors = [
+        ("TrafficLightClose", tl["close"]),
+        ("TrafficLightCloseBorder", tl["close_border"]),
+        ("TrafficLightMinimize", tl["minimize"]),
+        ("TrafficLightMinimizeBorder", tl["minimize_border"]),
+        ("TrafficLightZoom", tl["zoom"]),
+        ("TrafficLightZoomBorder", tl["zoom_border"]),
+        ("TrafficLightGlyph", tl["glyph"]),
+        ("TrafficLightInactiveLight", tokens["light"]["traffic_light_inactive"]),
+        ("TrafficLightInactiveDark", tokens["dark"]["traffic_light_inactive"]),
     ]
 
     out = [
@@ -70,6 +92,8 @@ def header(tokens: dict) -> str:
             out += ["", f"// {name}"]
         else:
             out.append(f"inline constexpr int {name} = {value}; // {comment}")
+    for name, value in colors:
+        out.append(f"inline constexpr unsigned int {name} = {_argb(value)}; // {value}")
     out += ["}", ""]
     return "\n".join(out)
 
