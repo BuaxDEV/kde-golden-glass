@@ -15,7 +15,6 @@ set(KDE_COMPILERSETTINGS_LEVEL "5.82")
 set(QT_MIN_VERSION "6.7.0")
 
 include(GenerateExportHeader)
-include(WriteBasicConfigVersionFile)
 include(FeatureSummary)
 
 find_package(ECM ${KF6_MIN_VERSION} REQUIRED NO_MODULE)
@@ -24,22 +23,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH}  ${CMAKE_SOURCE_DI
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(BUILD_RPMS OR BUILD_DEBS)
-    include(cmake/CPackLists.cmake)
-endif()
-
-include(CMakePackageConfigHelpers)
 include(ECMInstallIcons)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(KDEClangFormat)
 
-option(FOR_FLATPAK "Build Lightly for Flatpak" OFF)
 set(QT_NO_CREATE_VERSIONLESS_TARGETS ON)
 set(QT_NO_CREATE_VERSIONLESS_FUNCTIONS ON)
-
-if(WIN32 OR APPLE OR FOR_FLATPAK)
-    set(WITH_DECORATIONS OFF)
-endif()
 
 set(QT_MAJOR_VERSION 6)
 include(KDEInstallDirs6)
@@ -56,14 +45,12 @@ find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
         I18n
         IconThemes
         WindowSystem)
-    if(NOT WIN32 AND NOT APPLE)
-        find_package(KF6KCMUtils ${KF6_MIN_VERSION})
-        set_package_properties(KF6KCMUtils PROPERTIES
-            TYPE REQUIRED
-            DESCRIPTION "Helps create configuration modules"
-            PURPOSE "KCMUtils used for the configuration modules or the decoration and Qt Style"
-        )
-    endif()
+find_package(KF6KCMUtils ${KF6_MIN_VERSION})
+set_package_properties(KF6KCMUtils PROPERTIES
+    TYPE REQUIRED
+    DESCRIPTION "Helps create configuration modules"
+    PURPOSE "KCMUtils used for the configuration modules or the decoration and Qt Style"
+)
 
 find_package(Qt6 ${QT_MIN_VERSION} OPTIONAL_COMPONENTS Quick)
     if(${Qt6Quick_FOUND})
@@ -108,28 +95,12 @@ endif()
 
 ki18n_install(po)
 
-# create a Config.cmake and a ConfigVersion.cmake file and install them
+# Cabecera de versión para el módulo de configuración del estilo.
 include(ECMSetupVersion)
 ecm_setup_version(${PROJECT_VERSION} VARIABLE_PREFIX GOLDENGLASS
-                PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/GoldenGlassConfigVersion.cmake"
                 VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/kstyle6/config/goldenglassstyleversion.h"
 )
 
-set(CMAKECONFIG_INSTALL_DIR "${KDE_INSTALL_CMAKEPACKAGEDIR}/GoldenGlass")
-
-if (NOT FOR_FLATPAK)
-    configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/GoldenGlassConfig.cmake.in"
-                                    "${CMAKE_CURRENT_BINARY_DIR}/GoldenGlassConfig.cmake"
-                                    PATH_VARS KDE_INSTALL_FULL_DATADIR
-                                    INSTALL_DESTINATION  ${CMAKECONFIG_INSTALL_DIR}
-                                )
-
-    install(FILES  "${CMAKE_CURRENT_BINARY_DIR}/GoldenGlassConfig.cmake"
-                    "${CMAKE_CURRENT_BINARY_DIR}/GoldenGlassConfigVersion.cmake"
-                DESTINATION "${CMAKECONFIG_INSTALL_DIR}"
-                COMPONENT Devel
-            )
-endif()
 unset(QUERY_EXECUTABLE CACHE)
 
 # add clang-format target for all our real source files

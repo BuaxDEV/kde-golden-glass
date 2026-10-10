@@ -114,28 +114,14 @@ if(KF${QT_MAJOR_VERSION}FrameworkIntegration_FOUND)
     target_link_libraries(goldenglass${QT_MAJOR_VERSION} PRIVATE KF${QT_MAJOR_VERSION}::Style)
 endif()
 
-if (WIN32)
-    # As stated in https://docs.microsoft.com/en-us/cpp/c-runtime-library/math-constants M_PI only gets defined
-    # when if _USE_MATH_DEFINES is defined
-    target_compile_definitions(goldenglass${QT_MAJOR_VERSION} PRIVATE _USE_MATH_DEFINES _BSD_SOURCE)
-endif()
-
 
 ########### install files ###############
-if (FOR_FLATPAK)
-    set(LIB_TARGET ${QT_PLUGINS_DIR}/styles/)
-else()
-    set(LIB_TARGET ${KDE_INSTALL_QTPLUGINDIR}/styles/)
-endif()
-install(TARGETS goldenglass${QT_MAJOR_VERSION} DESTINATION ${LIB_TARGET})
-
-if (NOT FOR_FLATPAK)
-    install(FILES goldenglass.themerc  DESTINATION  ${KDE_INSTALL_DATADIR}/kstyle/themes)
-endif()
+install(TARGETS goldenglass${QT_MAJOR_VERSION} DESTINATION ${KDE_INSTALL_QTPLUGINDIR}/styles/)
+install(FILES goldenglass.themerc DESTINATION ${KDE_INSTALL_DATADIR}/kstyle/themes)
 
 ########### subdirectories ###############
 
-if (QT_MAJOR_VERSION EQUAL "6" AND TARGET "KF6::KCMUtils" AND NOT FOR_FLATPAK)
+if (TARGET "KF6::KCMUtils")
     add_subdirectory(config)
 endif()
 
