@@ -78,8 +78,12 @@ goldenglass/
 ```
 
 ### 4.1 Estilo de aplicaciones — `kstyle/` (C++)
-- **Fork de [Darkly](https://github.com/Bali10050/darkly)** (GPL-2.0-or-later →
-  publicado como GPL-3.0-or-later). Renombrado completo (clases, plugin, config).
+- **Fork de [Darkly](https://github.com/Bali10050/darkly)** v0.5.40 (GPL-2.0-or-later →
+  publicado como GPL-3.0-or-later). Renombrado completo; tabla de equivalencias
+  en `UPSTREAM.md`. Identificadores: estilo `GoldenGlass` (`goldenglass6.so`),
+  decoración `org.goldenglass.decoration`, config `goldenglassrc`, app
+  `goldenglass-settings`, señal D-Bus `org.goldenglass.Style`. No choca con un
+  Darkly instalado: ambos pueden convivir.
 - Darkly ya aporta transparencia y blur por ventana. Se añade: sidebars de borde
   a borde con fondo más oscuro, toolbar unificada con la barra de título, menús
   sin iconos, controles con radios de los tokens.
@@ -202,8 +206,8 @@ goldenglass/
 | Fase | Contenido | Estado |
 |---|---|---|
 | F0 | Repo, tokens, generador, color schemes, fontconfig, `install.sh` | ✅ |
-| F1 | Fork de Darkly renombrado: QStyle + decoración (semáforos, radios, sidebar, toolbar unificada) | en curso (importado) |
-| F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | en curso |
+| F1 | Fork de Darkly renombrado: QStyle + decoración (semáforos, radios, sidebar, toolbar unificada) | en curso (importado y renombrado) |
+| F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | pendiente |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | pendiente |
 | F5 | Iconos, cursores, wallpapers | pendiente |

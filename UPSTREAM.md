@@ -24,8 +24,27 @@ git clone https://github.com/Bali10050/darkly /tmp/darkly
 git -C /tmp/darkly diff e60fae72c94e19118058ad9e4cc64d894f7d732a <new-tag> -- kstyle kdecoration libdarklycommon
 ```
 
-and ported by hand (file names differ after the GoldenGlass rename).
-Update the base tag/commit in this file after each port.
+and ported by hand. Update the base tag/commit in this file after each port.
+
+### Rename map (commit `9869361`)
+
+| Darkly | GoldenGlass |
+|---|---|
+| `darkly*` files, `libdarklycommon/` | `goldenglass*`, `libgoldenglasscommon/` |
+| namespace / classes `Darkly` | `GoldenGlass` |
+| macros `DARKLY_*` | `GOLDENGLASS_*` |
+| style key `Darkly` (`darkly6.so`) | `GoldenGlass` (`goldenglass6.so`) |
+| config file `darklyrc` | `goldenglassrc` |
+| decoration plugin `org.kde.darkly` | `org.goldenglass.decoration` |
+| D-Bus `org.kde.Darkly.Style` | `org.goldenglass.Style` |
+| `kcm_darklydecoration`, `darklystyleconfig` | `kcm_goldenglassdecoration`, `goldenglassstyleconfig` |
+| `darkly-settings6` | `goldenglass-settings` |
+
+To apply an upstream diff, rewrite it first:
+`sed -e 's/org\.kde\.darkly/org.goldenglass.decoration/g; s/org\.kde\.Darkly\.Style/org.goldenglass.Style/g; s/DARKLY/GOLDENGLASS/g; s/Darkly/GoldenGlass/g; s/darkly/goldenglass/g'`.
+
+Also removed after import: Qt5 build and Qt5-only code, Flatpak/CPack/Windows
+support, and the CMake package config.
 
 ## Plasma lock screen
 
