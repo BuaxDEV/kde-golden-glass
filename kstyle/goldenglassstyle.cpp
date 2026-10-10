@@ -2142,79 +2142,30 @@ bool Style::eventFilterDockWidget(QDockWidget *dockWidget, QEvent *event)
                    && (dockWidget->features() & (QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable))) {
             _helper->renderFrame(&painter, rect, background, windowActive);
 
-        } else {
-            if (_isDolphin && dockWidget->inherits("DolphinDockWidget") && _translucentWidgets.contains(dockWidget->window())) {
-                painter.setRenderHints(QPainter::Antialiasing, false);
+        } else if (_isDolphin && dockWidget->inherits("DolphinDockWidget")) {
+            // GoldenGlass (macOS 27): sidebar flush with the window edge, darker
+            // than the content and separated by a hairline; no inner shadows.
+            painter.setRenderHints(QPainter::Antialiasing, false);
 
+            QColor backgroundColor = _helper->sidebarColor(palette);
+            if (_translucentWidgets.contains(dockWidget->window())) {
                 _helper->renderTransparentArea(&painter, rect);
-
-                // draw background
-                QColor backgroundColor = palette.color(QPalette::Window);
                 backgroundColor.setAlphaF(StyleConfigData::dolphinSidebarOpacity() / 100.0);
-                painter.setBrush(backgroundColor);
+            }
+            painter.fillRect(rect, backgroundColor);
 
-                bool darkTheme = _helper->isDarkTheme(palette);
-
-                painter.fillRect(rect, backgroundColor);
-
-                // top shadow
-                if (StyleConfigData::dolphinSidebarOpacity() < _helper->titleBarColor(true).alphaF() * 100.0 && StyleConfigData::widgetDrawShadow()) {
-                    painter.setBrush(Qt::NoBrush);
-                    painter.setPen(QColor(0, 0, 0, darkTheme ? 80 : 40));
-                    painter.drawLine(rect.topLeft(), rect.topRight());
-
-                    painter.setPen(QColor(0, 0, 0, darkTheme ? 28 : 16));
-                    painter.drawLine(rect.topLeft() + QPoint(0, 1), rect.topRight() + QPoint(0, 1));
-
-                    painter.setPen(QColor(0, 0, 0, darkTheme ? 6 : 3));
-                    painter.drawLine(rect.topLeft() + QPoint(0, 2), rect.topRight() + QPoint(0, 2));
-
-                    painter.setPen(QColor(0, 0, 0, darkTheme ? 2 : 1));
-                    painter.drawLine(rect.topLeft() + QPoint(0, 3), rect.topRight() + QPoint(0, 3));
-                }
-
-                // side shadow
-                if (StyleConfigData::dolphinSidebarOpacity() < (palette.color(QPalette::Window).alpha() / 255) * 100) {
-                    /*painter.setBrush( Qt::NoBrush );
-                    QLinearGradient gradient( rect.topLeft(), rect.bottomLeft() );
-                    gradient.setColorAt( 0, QColor(0,0,0,0) );
-                    gradient.setColorAt( 0.1, QColor(0,0,0,40) );
-                    gradient.setColorAt( 1, QColor(0,0,0,40) );
-                    //painter.setPen( QPen(gradient, 1) );
-                    painter.setPen( QColor(0,0,0,40) );
-                    painter.drawLine( rect.topRight(), rect.bottomRight() );
-
-                    gradient.setColorAt( 0.1, QColor(0,0,0,12) );
-                    gradient.setColorAt(1, QColor(0,0,0,12) );
-                    //painter.setPen( QPen(gradient, 1) );
-                    painter.setPen( QColor(0,0,0,12) );
-                    painter.drawLine( rect.topRight() - QPoint(1, 0), rect.bottomRight() - QPoint(1, 0) );
-
-                    gradient.setColorAt( 0.1, QColor(0,0,0,3) );
-                    gradient.setColorAt(1, QColor(0,0,0,3) );
-                    //painter.setPen( QPen(gradient, 1) );
-                    painter.setPen( QColor(0,0,0,3) );
-                    painter.drawLine( rect.topRight() - QPoint(2, 0), rect.bottomRight() - QPoint(2, 0) );*/
-
-                    QRect shadowRect(rect.topRight(), QSize(30, rect.height()));
-
-                    const QWidget *tabWidget = dockWidget->window()->findChild<const QWidget *>("tabWidget", Qt::FindDirectChildrenOnly);
-                    if (tabWidget) {
-                        if (tabWidget->x() < dockWidget->x())
-                            shadowRect = QRect(rect.topLeft() - QPoint(29, 0), QSize(30, rect.height()));
-                    }
-
-                    if (darkTheme) {
-                        _helper->renderBoxShadow(&painter, shadowRect.adjusted(0, 0, 0, 5), 0, 0, 3, QColor(0, 0, 0, 160), 2, true);
-                    } else {
-                        int shadowSize = 5;
-                        shadowRect.adjust(1, -shadowSize, 0, 0);
-                        _helper->renderBoxShadow(&painter, shadowRect, 0, 0, shadowSize, QColor(0, 0, 0, 120), 2, true);
-                    }
-                }
+            // the hairline goes on the side facing the content
+            bool contentOnLeft = false;
+            if (const QWidget *tabWidget = dockWidget->window()->findChild<const QWidget *>("tabWidget", Qt::FindDirectChildrenOnly)) {
+                contentOnLeft = tabWidget->x() < dockWidget->x();
+            }
+            painter.setPen(_helper->separatorColor(palette));
+            if (contentOnLeft) {
+                painter.drawLine(rect.topLeft(), rect.bottomLeft());
+            } else {
+                painter.drawLine(rect.topRight(), rect.bottomRight());
             }
         }
-
     }
     // update blur region
     else if (event->type() == QEvent::Move || event->type() == QEvent::Show || event->type() == QEvent::Hide) {
@@ -4140,16 +4091,12 @@ bool Style::drawFramePrimitive(const QStyleOption *option, QPainter *painter, co
         const auto outline(_helper->sidePanelOutlineColor(palette));
         const bool reverseLayout(option->direction == Qt::RightToLeft);
         const Side side(reverseLayout ? SideRight : SideLeft);
+        // GoldenGlass: every KDE side panel gets the sidebar color (Dolphin's
+        // dock already paints it behind its panels).
+        if (!_isDolphin) {
+            painter->fillRect(rect, _helper->sidebarColor(palette));
+        }
         if ((widget->window()->windowFlags() & Qt::WindowType_Mask) == Qt::Dialog) {
-            QColor background(palette.color(QPalette::Base));
-
-            if (StyleConfigData::dolphinSidebarOpacity() < 100 && _isDolphin) {
-                _helper->renderTransparentArea(painter, rect);
-
-                background.setAlphaF(StyleConfigData::dolphinSidebarOpacity() / 100.0);
-            }
-
-            painter->fillRect(rect, background);
 
             if (_helper->titleBarColor(true).alpha() != palette.color(QPalette::Window).alpha()) {
                 painter->setRenderHint(QPainter::Antialiasing, false);

@@ -63,7 +63,7 @@ def header(tokens: dict) -> str:
         ("ShadowStrength", _shadow_strength(shadow["strength"]), f"{shadow['strength']} de opacidad"),
         ("Decoración", None, None),
         ("TitleAlignment", TITLE_ALIGNMENTS.index(align), align),
-        ("Semáforos (px y colores 0xAARRGGBB)", None, None),
+        ("Semáforos y colores fijos (px, 0xAARRGGBB)", None, None),
         ("TrafficLightDiameter", tl["diameter"], "diámetro"),
         ("TrafficLightGap", tl["gap"], "separación entre bordes"),
     ]
@@ -77,6 +77,10 @@ def header(tokens: dict) -> str:
         ("TrafficLightGlyph", tl["glyph"]),
         ("TrafficLightInactiveLight", tokens["light"]["traffic_light_inactive"]),
         ("TrafficLightInactiveDark", tokens["dark"]["traffic_light_inactive"]),
+        ("SidebarLight", tokens["light"]["sidebar"]),
+        ("SidebarDark", tokens["dark"]["sidebar"]),
+        ("SeparatorLight", tokens["light"]["separator"]),
+        ("SeparatorDark", tokens["dark"]["separator"]),
     ]
 
     out = [

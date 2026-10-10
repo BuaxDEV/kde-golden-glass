@@ -21,6 +21,7 @@
 
 #include "goldenglass.h"
 #include "goldenglasspropertynames.h"
+#include "goldenglass_tokens.h"
 
 #include <KColorUtils>
 #include <KIconLoader>
@@ -167,6 +168,17 @@ QColor Helper::buttonFocusOutlineColor(const QPalette &palette) const
 QColor Helper::buttonHoverOutlineColor(const QPalette &palette) const
 {
     return KColorUtils::mix(hoverColor(palette), palette.color(QPalette::ButtonText), 0.15);
+}
+
+//____________________________________________________________________
+QColor Helper::sidebarColor(const QPalette &palette) const
+{
+    // Token colors chosen by window luminance, so they also fit color schemes
+    // other than GoldenGlass.
+    const QColor window = palette.color(QPalette::Window);
+    QColor color = QColor::fromRgba(qGray(window.rgb()) >= 128 ? Tokens::SidebarLight : Tokens::SidebarDark);
+    color.setAlpha(window.alpha());
+    return color;
 }
 
 //____________________________________________________________________
@@ -402,7 +414,8 @@ QColor Helper::checkBoxIndicatorColor(const QPalette &palette, bool mouseOver, b
 //______________________________________________________________________________
 QColor Helper::separatorColor(const QPalette &palette) const
 {
-    return isDarkTheme(palette) ? QColor(255, 255, 255, 16) : QColor(0, 0, 0, 16);
+    // GoldenGlass: separator token (hairlines in toolbars, menus, sidebars)
+    return QColor::fromRgba(isDarkTheme(palette) ? Tokens::SeparatorDark : Tokens::SeparatorLight);
 }
 
 //______________________________________________________________________________

@@ -127,6 +127,9 @@ public:
     //* side panel outline color, using animations
     QColor sidePanelOutlineColor(const QPalette &) const;
 
+    //* GoldenGlass: sidebar background (macOS 27: darker than the window), keeps the window alpha
+    QColor sidebarColor(const QPalette &) const;
+
     //* frame background color
     QColor frameBackgroundColor(const QPalette &palette) const
     {
