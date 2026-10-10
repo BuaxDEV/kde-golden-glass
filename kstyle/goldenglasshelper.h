@@ -413,6 +413,12 @@ public:
         return qMax(StyleConfigData::cornerRadius() - (0.5 * penWidth) + bias, 0.0);
     }
 
+    //* frame radius of menus and popups (GoldenGlass: MenuCornerRadius)
+    qreal menuFrameRadius(const int penWidth = PenWidth::NoPen, const qreal bias = 0) const
+    {
+        return qMax(StyleConfigData::menuCornerRadius() - (0.5 * penWidth) + bias, 0.0);
+    }
+
     //* frame radius with new pen width
     constexpr qreal frameRadiusForNewPenWidth(const qreal oldRadius, const int penWidth) const
     {

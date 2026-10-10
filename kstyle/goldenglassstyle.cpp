@@ -282,8 +282,8 @@ public:
     RoundedOuterOutlineOverlay(
         QWidget* parent,
         bool isDolphin,
-        int radius = StyleConfigData::cornerRadius(),
-                               int thickness = StyleConfigData::cornerRadius() * 2)
+        int radius = StyleConfigData::windowCornerRadius(),
+                               int thickness = StyleConfigData::windowCornerRadius() * 2)
     : QWidget(parent)
     , m_isDolphin(isDolphin)
     , m_radius(radius)
@@ -394,7 +394,7 @@ void Style::polish(QWidget *widget)
 
                 if (!parent->property("_goldenglassRoundedOverlay").isValid())
                 {
-                    auto overlay = new RoundedOuterOutlineOverlay(parent, _isDolphin, StyleConfigData::cornerRadius(), StyleConfigData::cornerRadius() * 2);
+                    auto overlay = new RoundedOuterOutlineOverlay(parent, _isDolphin, StyleConfigData::windowCornerRadius(), StyleConfigData::windowCornerRadius() * 2);
                     overlay->lower();
                     parent->installEventFilter(new ParentResizeFilter(overlay));
                     parent->setProperty("_goldenglassRoundedOverlay", QVariant::fromValue(static_cast<QObject*>(overlay)));

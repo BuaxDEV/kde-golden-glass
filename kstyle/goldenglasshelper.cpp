@@ -540,7 +540,7 @@ void Helper::renderMenuFrame(QPainter *painter, const QRect &rect, const QColor 
     if (roundCorners) {
         painter->setRenderHint(QPainter::Antialiasing);
         QRectF frameRect(rect);
-        qreal radius(frameRadius(PenWidth::NoPen));
+        qreal radius(menuFrameRadius(PenWidth::NoPen));
 
         painter->setPen(Qt::NoPen);
 

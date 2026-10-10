@@ -3,13 +3,14 @@
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
       http://www.kde.org/standards/kcfg/1.0/kcfg.xsd" >
+  <include>goldenglass_tokens.h</include>
   <kcfgfile name="goldenglassrc"/>
 
   <!-- common options -->
   <group name="Common">
 
     <entry name="ShadowStrength" type = "Int">
-       <default>50</default>
+       <default code="true">GoldenGlass::Tokens::ShadowStrength</default>
        <min>25</min>
        <max>255</max>
     </entry>
@@ -27,7 +28,7 @@
           <choice name="ShadowLarge"/>
           <choice name="ShadowVeryLarge"/>
       </choices>
-      <default>ShadowLarge</default>
+      <default code="true">GoldenGlass::Tokens::ShadowSize</default>
     </entry>
 
     <entry name="ShadowColor" type = "Color">
@@ -41,9 +42,17 @@
     
     <!-- corner radius -->
     <entry name="CornerRadius" type = "Int">
-      <default>6</default>
-      <min>1</min>
-      <max>8</max>
+      <default code="true">GoldenGlass::Tokens::ControlRadius</default>
+      <min>0</min>
+      <max>16</max>
+    </entry>
+
+    <!-- GoldenGlass: radios por función (px). Compartidos con la decoración. -->
+    <entry name="WindowCornerRadius" type="Int">
+      <label>Corner radius of windows, in pixels</label>
+      <default code="true">GoldenGlass::Tokens::WindowRadius</default>
+      <min>0</min>
+      <max>32</max>
     </entry>
 
   </group>
@@ -70,12 +79,6 @@
       <default>BorderNone</default>
     </entry>
 
-    <entry name="OtherCornerRadius" type = "Int">
-      <default>-1</default>
-      <min>-1</min>
-      <max>8</max>
-    </entry>
-
     <!-- title alignment -->
     <entry name="TitleAlignment" type="Enum">
       <choices>
@@ -84,7 +87,7 @@
           <choice name="AlignCenterFullWidth" />
           <choice name="AlignRight" />
       </choices>
-      <default>AlignLeft</default>
+      <default code="true">GoldenGlass::Tokens::TitleAlignment</default>
     </entry>
 
     <!-- button size -->

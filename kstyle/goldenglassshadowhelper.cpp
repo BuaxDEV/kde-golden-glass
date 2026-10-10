@@ -244,7 +244,8 @@ TileSet ShadowHelper::shadowTiles(QWidget *widget)
     const QSize boxSize =
         BoxShadowRenderer::calculateMinimumBoxSize(params.shadow1.radius).expandedTo(BoxShadowRenderer::calculateMinimumBoxSize(params.shadow2.radius));
 
-    const qreal frameRadius = _helper.frameRadius();
+    // GoldenGlass: sombras de menús, popups y tooltips con el radio de menú.
+    const qreal frameRadius = _helper.menuFrameRadius();
 
     BoxShadowRenderer shadowRenderer;
     shadowRenderer.setBorderRadius(frameRadius);

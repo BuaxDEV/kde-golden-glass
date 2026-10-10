@@ -157,17 +157,17 @@ QRegion BlurHelper::blurRegion(QWidget *widget) const
 
     else if ((qobject_cast<QMenu *>(widget) && !widget->testAttribute(Qt::WA_X11NetWmWindowTypeMenu)) // not a detached menu
              || widget->inherits("QComboBoxPrivateContainer")) {
-        return roundedRegion(rect, StyleConfigData::cornerRadius() + 1, true, true, true, true);
+        return roundedRegion(rect, StyleConfigData::menuCornerRadius() + 1, true, true, true, true);
     } else {
         // blur entire window
         if (widget->palette().color(QPalette::Window).alpha() < 255){
             QWidget *window = widget->window();
             if (window->isFullScreen() || window->isMaximized())
-            return roundedRegion(rect, StyleConfigData::cornerRadius(), false, false, false, false);
+            return roundedRegion(rect, StyleConfigData::windowCornerRadius(), false, false, false, false);
             else if (StyleConfigData::floatingTitlebar())
-            return roundedRegion(rect, StyleConfigData::cornerRadius(), true, true, true, true);
+            return roundedRegion(rect, StyleConfigData::windowCornerRadius(), true, true, true, true);
             else
-            return roundedRegion(rect, StyleConfigData::cornerRadius(), false, false, true, true);
+            return roundedRegion(rect, StyleConfigData::windowCornerRadius(), false, false, true, true);
         }
 
         // blur specific widgets
@@ -230,7 +230,7 @@ QRegion BlurHelper::blurRegion(QWidget *widget) const
 
                     // round corners if it is at the bottom
                     else if (mainToolbar.y() + mainToolbar.height() == widget->height())
-                        region += roundedRegion(mainToolbar, StyleConfigData::cornerRadius(), false, false, false, true);
+                        region += roundedRegion(mainToolbar, StyleConfigData::windowCornerRadius(), false, false, false, true);
 
                     // else
                     //     region += mainToolbar;
@@ -238,11 +238,11 @@ QRegion BlurHelper::blurRegion(QWidget *widget) const
                 } else {
                     // round bottom left
                     if (mainToolbar.x() == 0)
-                        region += roundedRegion(mainToolbar, StyleConfigData::cornerRadius(), false, false, true, false);
+                        region += roundedRegion(mainToolbar, StyleConfigData::windowCornerRadius(), false, false, true, false);
 
                     // round bottom right
                     else if (mainToolbar.x() + mainToolbar.width() == widget->width())
-                        region += roundedRegion(mainToolbar, StyleConfigData::cornerRadius(), false, false, false, true);
+                        region += roundedRegion(mainToolbar, StyleConfigData::windowCornerRadius(), false, false, false, true);
 
                     // no round corners
                     // else region += mainToolbar; //FIXME: is this valid?
@@ -260,10 +260,10 @@ QRegion BlurHelper::blurRegion(QWidget *widget) const
                         if (toolbar->orientation() == Qt::Vertical) {
                             if (toolbar->x() == 0)
                                 region +=
-                                    roundedRegion(QRect(toolbar->pos(), toolbar->rect().size()), StyleConfigData::cornerRadius(), false, false, true, false);
+                                    roundedRegion(QRect(toolbar->pos(), toolbar->rect().size()), StyleConfigData::windowCornerRadius(), false, false, true, false);
                             else
                                 region +=
-                                    roundedRegion(QRect(toolbar->pos(), toolbar->rect().size()), StyleConfigData::cornerRadius(), false, false, false, true);
+                                    roundedRegion(QRect(toolbar->pos(), toolbar->rect().size()), StyleConfigData::windowCornerRadius(), false, false, false, true);
                         }
                     }
                 }
@@ -274,9 +274,9 @@ QRegion BlurHelper::blurRegion(QWidget *widget) const
                 for (auto sb : sidebars) {
                     if (sb && sb->isVisible()) {
                         if (sb->x() == 0)
-                            region += roundedRegion(QRect(sb->pos(), sb->rect().size()), StyleConfigData::cornerRadius(), false, false, true, false);
+                            region += roundedRegion(QRect(sb->pos(), sb->rect().size()), StyleConfigData::windowCornerRadius(), false, false, true, false);
                         else if (sb->x() + sb->width() == widget->width())
-                            region += roundedRegion(QRect(sb->pos(), sb->rect().size()), StyleConfigData::cornerRadius(), false, false, false, true);
+                            region += roundedRegion(QRect(sb->pos(), sb->rect().size()), StyleConfigData::windowCornerRadius(), false, false, false, true);
                         else
                             region += QRect(sb->pos(), sb->rect().size());
                     }
@@ -306,7 +306,7 @@ QRegion BlurHelper::blurRegion(QWidget *widget) const
                         QList<QWidget *> KPageWidgets = w->findChildren<QWidget *>( QString(), Qt::FindDirectChildrenOnly );
                         for ( auto wid : KPageWidgets ){
                             if( wid->property( PropertyNames::sidePanelView ).toBool() ) {
-                                region += roundedRegion( QRect( wid->pos(), wid->rect().size() ), StyleConfigData::cornerRadius(),  false, false, true, false );
+                                region += roundedRegion( QRect( wid->pos(), wid->rect().size() ), StyleConfigData::windowCornerRadius(),  false, false, true, false );
                                 break;
                             }
                         }
@@ -344,7 +344,7 @@ QRegion BlurHelper::blurTabWidgetRegion(QWidget *widget) const
                 // the width of the tabbar is always -1 smaller than the tabwidget width so increment it
                 QSize tbSize(tw->tabBar()->rect().size());
                 tbSize.rwidth() += 1;
-                region += roundedRegion(QRect(tw->pos(), tbSize), StyleConfigData::cornerRadius(), false, false, false, false);
+                region += roundedRegion(QRect(tw->pos(), tbSize), StyleConfigData::windowCornerRadius(), false, false, false, false);
             }
         }
     }
@@ -369,17 +369,17 @@ QRegion BlurHelper::blurSettingsDialogRegion(QWidget *widget) const
                     QSize tbSize(tw->rect().size());
                     // the blur region is too small without adjusting the height of the tabbar height
                     tbSize.setHeight(tw->tabBar()->rect().height() + 4);
-                    region += roundedRegion(QRect(tw->pos(), tbSize), StyleConfigData::cornerRadius(), false, false, true, false);
+                    region += roundedRegion(QRect(tw->pos(), tbSize), StyleConfigData::windowCornerRadius(), false, false, true, false);
                 } else {
                     // settings main dialog
-                    region += roundedRegion(QRect(w->mapToGlobal(w->pos()), w->rect().size()), StyleConfigData::cornerRadius(), false, false, true, false);
+                    region += roundedRegion(QRect(w->mapToGlobal(w->pos()), w->rect().size()), StyleConfigData::windowCornerRadius(), false, false, true, false);
                 }
                 if (w->inherits("KPageWidget")) {
                     // sidebar
                     QList<QWidget *> KPageWidgets = w->findChildren<QWidget *>(QString(), Qt::FindDirectChildrenOnly);
                     for (auto wid : KPageWidgets) {
                         if (wid->property(PropertyNames::sidePanelView).toBool()) {
-                            region += roundedRegion(QRect(wid->pos(), wid->rect().size()), StyleConfigData::cornerRadius(), false, false, true, false);
+                            region += roundedRegion(QRect(wid->pos(), wid->rect().size()), StyleConfigData::windowCornerRadius(), false, false, true, false);
                             break;
                         }
                     }

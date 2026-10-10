@@ -1167,10 +1167,9 @@ QMarginsF Decoration::bordersFor(qreal scale) const
 
 void Decoration::setScaledCornerRadius()
 {
-    // On X11, the smallSpacing value is used for scaling.
-    // On Wayland, this value has constant factor of 2.
-    // Removing it will break radius scaling on X11.
-    m_scaledCornerRadius = KDecoration3::snapToPixelGrid(((m_internalSettings->otherCornerRadius() < 0) ? m_internalSettings->cornerRadius() : m_internalSettings->otherCornerRadius()) * settings()->smallSpacing(), window()->nextScale());
+    // GoldenGlass: el radio se configura en px (token radius.window) y es el
+    // mismo que usa el estilo para el blur de la ventana. Solo Wayland.
+    m_scaledCornerRadius = KDecoration3::snapToPixelGrid(m_internalSettings->windowCornerRadius(), window()->nextScale());
 }
 
 void Decoration::updateScale()
