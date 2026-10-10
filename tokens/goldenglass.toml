@@ -21,9 +21,11 @@ version = "0.1.0"
 window = 12          # calibrar: macOS 27 cierra el radio respecto a Tahoe
 control = 6          # botones, campos de texto, combos
 control_small = 4    # checkboxes, controles compactos
+field = 10           # campos de texto de Plasma (Spotlight, contraseña)
 menu = 10            # menús emergentes
 popup = 14           # diálogos de Plasma, notificaciones, Centro de control
-dock = 22            # calibrar
+dock = 14            # ≤ plasma.menubar_height / 2: Plasma limita la altura de
+                     # todo panel a la suma de sus esquinas (ver plasma_theme)
 tooltip = 6
 
 # ---------------------------------------------------------------------------
@@ -46,6 +48,34 @@ alpha = 0.65
 [glass.notch.opaque]
 position = 1.0
 alpha = 0.90
+
+[glass.border]
+alpha = 0.14         # filo del vidrio (color de texto con esta opacidad)
+
+# Saturación/contraste del fondo difuminado detrás del vidrio ("vibrancy").
+# Se escribe en el plasmarc del Plasma Style.
+[glass.vibrancy]
+contrast = 1.0
+intensity = 1.0
+saturation = 1.8     # calibrar
+
+# ---------------------------------------------------------------------------
+# Escritorio Plasma (px lógicos)
+# ---------------------------------------------------------------------------
+[plasma]
+menubar_height = 28
+menubar_padding = 6      # margen inferior del contenido de la barra
+dock_icon_size = 48
+dock_padding = 6         # margen entre el borde del dock y los iconos
+popup_margin = 10        # margen de contenido de diálogos y popups
+tooltip_margin = 6
+popup_shadow = 28        # tamaño de la sombra de popups y dock
+popup_shadow_alpha = 0.30
+tooltip_shadow = 12
+tooltip_shadow_alpha = 0.22
+task_dot_size = 4        # indicador de app abierta en el dock
+item_hover_alpha = 0.10  # resaltado de listas (sobre color de texto)
+item_selected_alpha = 0.28  # selección de listas (sobre color de acento)
 
 # ---------------------------------------------------------------------------
 # Sombras de ventana
