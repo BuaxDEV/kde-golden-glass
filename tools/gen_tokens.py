@@ -7,6 +7,8 @@ Salidas (en build/, no versionado):
   build/color-schemes/GoldenGlassLight.colors
   build/color-schemes/GoldenGlassDark.colors
   build/tokens.json
+  build/plasma/desktoptheme/GoldenGlass/   (Plasma Style)
+  build/plasma/look-and-feel/org.goldenglass.{light,dark}.desktop/
 
 Uso:
   python3 tools/gen_tokens.py [--tokens RUTA] [--out DIR]
@@ -21,6 +23,10 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import lookandfeel  # noqa: E402
+import plasma_theme  # noqa: E402
 
 VARIANTS = {
     "light": ("GoldenGlassLight", "GoldenGlass Light"),
@@ -193,6 +199,9 @@ def main(argv: list[str] | None = None) -> int:
     path = args.out / "tokens.json"
     path.write_text(json.dumps(tokens, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     written.append(path)
+
+    written += plasma_theme.build(tokens, args.out)
+    written += lookandfeel.build(tokens, args.out)
 
     for p in written:
         print(f"  {p.relative_to(ROOT) if p.is_relative_to(ROOT) else p}")

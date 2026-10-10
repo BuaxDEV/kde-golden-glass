@@ -26,3 +26,14 @@ git -C /tmp/darkly diff e60fae72c94e19118058ad9e4cc64d894f7d732a <new-tag> -- ks
 
 and ported by hand (file names differ after the GoldenGlass rename).
 Update the base tag/commit in this file after each port.
+
+## Plasma lock screen
+
+`plasma/shell/org.goldenglass.desktop/contents/lockscreen/` started as an
+unmodified copy of `/usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/`
+from **plasma-desktop 6.7.5** (GPL-2.0-or-later / LGPL-2.0-or-later, original
+headers kept). The copy is commit `e3a0932`; GoldenGlass changes are on top of
+it (`git diff e3a0932 -- plasma/shell`). `GgClock.qml` is new.
+
+When Plasma updates its lock screen, diff the new upstream files against the
+installed ones and port the changes by hand.

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+  SPDX-License-Identifier: CC-BY-SA-4.0
+
+  Símbolo GoldenGlass (monocromo): puente colgante estilizado.
+  Usa ColorScheme-Text para que Plasma lo recolore en claro/oscuro.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" version="1.1">
+  <defs>
+    <style type="text/css" id="current-color-scheme">
+      .ColorScheme-Text { color:#232629; }
+    </style>
+  </defs>
+  <g class="ColorScheme-Text" fill="currentColor" stroke="currentColor">
+    <!-- torres -->
+    <rect x="16" y="8" width="7" height="48" rx="1.5" stroke="none"/>
+    <rect x="41" y="8" width="7" height="48" rx="1.5" stroke="none"/>
+    <!-- tablero -->
+    <rect x="2" y="38" width="60" height="6" rx="3" stroke="none"/>
+    <!-- cable principal -->
+    <path d="M 4 37 C 10 28 15 18 19.5 11 M 19.5 11 Q 32 46 44.5 11 M 44.5 11 C 49 18 54 28 60 37"
+          fill="none" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

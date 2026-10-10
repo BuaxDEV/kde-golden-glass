@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+  SPDX-License-Identifier: CC-BY-SA-4.0
+
+  Logo GoldenGlass a color: el puente en naranja internacional sobre un
+  squircle de vidrio con cielo de atardecer y niebla.
+
+  Sin clipPath (QtSvg no lo soporta): cielo y agua son una sola forma con un
+  degradado de corte duro, y todo el dibujo queda dentro del squircle.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" version="1.1">
+  <defs>
+    <linearGradient id="skywater" x1="0" y1="8" x2="0" y2="248" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1B2F5E"/>
+      <stop offset="0.45" stop-color="#6A5FA0"/>
+      <stop offset="0.66" stop-color="#F28C4A"/>
+      <stop offset="0.72" stop-color="#F7D9A8"/>
+      <stop offset="0.72" stop-color="#2C4A86"/>
+      <stop offset="1" stop-color="#1A2D5A"/>
+    </linearGradient>
+    <linearGradient id="fog" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="bridge" x1="0" y1="40" x2="0" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F0603A"/>
+      <stop offset="1" stop-color="#B8321F"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- cielo + agua -->
+  <path d="M 128 8 C 220 8 248 36 248 128 C 248 220 220 248 128 248 C 36 248 8 220 8 128 C 8 36 36 8 128 8 Z"
+        fill="url(#skywater)"/>
+
+  <!-- puente: torres, tablero y cable principal -->
+  <g fill="url(#bridge)" stroke="url(#bridge)">
+    <rect x="70" y="52" width="24" height="176" rx="5" stroke="none"/>
+    <rect x="162" y="52" width="24" height="176" rx="5" stroke="none"/>
+    <rect x="18" y="164" width="220" height="16" rx="3" stroke="none"/>
+    <path d="M 22 160 C 48 128 64 92 82 60 M 82 60 Q 128 184 174 60 M 174 60 C 192 92 208 128 234 160"
+          fill="none" stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <!-- niebla sobre el agua -->
+  <rect x="14" y="150" width="228" height="34" fill="url(#fog)"/>
+
+  <!-- brillo de vidrio -->
+  <path d="M 8 128 C 8 36 36 8 128 8 C 220 8 248 36 248 128 C 200 104 56 104 8 128 Z" fill="url(#gloss)"/>
+
+  <!-- filo del vidrio -->
+  <path d="M 128 9.5 C 219 9.5 246.5 37 246.5 128 C 246.5 219 219 246.5 128 246.5 C 37 246.5 9.5 219 9.5 128 C 9.5 37 37 9.5 128 9.5 Z"
+        fill="none" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="2"/>
+</svg>
