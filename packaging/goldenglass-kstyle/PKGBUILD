@@ -2,8 +2,8 @@
 #
 # GoldenGlass: estilo de aplicaciones Qt y decoración de ventanas (C++).
 #
-# Compila el último commit de la rama activa del repositorio local (los cambios
-# sin commit no entran):
+# Compila la rama main del repositorio local (solo lo que tiene commit). Para
+# probar otra rama: GOLDENGLASS_BRANCH=feature/x makepkg -si
 #
 #   cd packaging/goldenglass-kstyle && makepkg -si
 #
@@ -34,7 +34,9 @@ depends=(
   qt6-declarative
 )
 makedepends=(cmake extra-cmake-modules git ninja python)
-source=("goldenglass::git+file://${startdir}/../..")
+# Rama explícita: sin ella makepkg reutiliza el HEAD guardado en su copia del
+# repositorio (de la primera ejecución) y puede compilar código antiguo.
+source=("goldenglass::git+file://${startdir}/../..#branch=${GOLDENGLASS_BRANCH:-main}")
 sha256sums=(SKIP)
 
 pkgver() {
