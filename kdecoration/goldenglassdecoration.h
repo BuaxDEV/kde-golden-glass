@@ -110,6 +110,9 @@ public:
         return m_windowPath;
     }
 
+    //* GoldenGlass: propagate hover of any traffic light to the whole group
+    void updateTrafficLightsHover();
+
 public Q_SLOTS:
     virtual bool init() override;
 

@@ -50,6 +50,12 @@ public:
     //* render
     virtual void paint(QPainter *painter, const QRectF &repaintRegion) override;
 
+    //* GoldenGlass: close, minimize and maximize are drawn as traffic lights
+    bool isTrafficLight() const;
+
+    //* traffic lights show their glyphs while any of them is hovered
+    void setGroupHovered(bool value);
+
     //* flag
     enum Flag {
         FlagNone,
@@ -154,6 +160,9 @@ private:
     //* draw button icon
     void drawIcon(QPainter *) const;
 
+    //* draw a macOS-style traffic light (glass body + glyph on group hover)
+    void drawTrafficLight(QPainter *) const;
+
     //*@name colors
     //@{
     QColor foregroundColor() const;
@@ -179,6 +188,9 @@ private:
 
     //* implicit size
     QSizeF m_preferredSize;
+
+    //* hover state of the traffic light group
+    bool m_groupHovered = false;
 };
 
 } // namespace
