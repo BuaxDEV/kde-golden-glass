@@ -1,5 +1,6 @@
 /*
     SPDX-FileCopyrightText: 2014 Aleix Pol Gonzalez <aleixpol@blue-systems.com>
+    SPDX-FileCopyrightText: 2026 GoldenGlass contributors
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
@@ -225,13 +226,14 @@ Item {
             }
         }
 
-        Clock {
+        // GoldenGlass: reloj grande arriba, como en macOS.
+        GgClock {
             id: clock
-            property Item shadow: clockShadow
-            visible: y > 0 && config.alwaysShowClock
+            shadow: clockShadow
+            visible: config.alwaysShowClock
             anchors.horizontalCenter: parent.horizontalCenter
-            y: (mainBlock.userList.y + mainStack.y)/2 - height/2
-            Layout.alignment: Qt.AlignBaseline
+            anchors.top: parent.top
+            anchors.topMargin: Kirigami.Units.gridUnit * 4
         }
 
         ListModel {
@@ -254,7 +256,11 @@ Item {
                 left: parent.left
                 right: parent.right
             }
-            height: lockScreenRoot.height + Kirigami.Units.gridUnit * 3
+            // GoldenGlass: avatar y contraseña en el tercio inferior. El centro
+            // vertical del StackView es la frontera entre el avatar y el campo,
+            // y VirtualKeyboardLoader fija y = 0: la altura lleva ese centro al
+            // 66 % de la pantalla (lo que sobra queda fuera, sin contenido).
+            height: lockScreenRoot.height * 1.32
             focus: true //StackView is an implicit focus scope, so we need to give this focus so the item inside will have it
 
             // this isn't implicit, otherwise items still get processed for the scenegraph
