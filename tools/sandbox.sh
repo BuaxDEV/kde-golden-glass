@@ -73,7 +73,8 @@ if [[ -z ${GG_SANDBOX_INNER:-} ]]; then
     cmake -S "$ROOT" -B "$ROOT/build/cmake" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DCMAKE_INSTALL_PREFIX=/usr >/dev/null
   fi
-  cmake --build "$ROOT/build/cmake" >/dev/null
+  cmake --build "$ROOT/build/cmake" >"$OUT/build.log" 2>&1 \
+    || { log "FALLO compilando build/cmake (ver build/sandbox/build.log)"; exit 1; }
   DESTDIR="$STAGE" cmake --install "$ROOT/build/cmake" >/dev/null
   export QT_PLUGIN_PATH="$STAGE/usr/lib/qt6/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
   export XDG_DATA_DIRS="$STAGE/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"

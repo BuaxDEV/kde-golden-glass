@@ -93,6 +93,11 @@ goldenglass/
   `<default code="true">GoldenGlass::Tokens::…</default>`. Los módulos de
   configuración heredados siguen sirviendo para ajustar; sin `goldenglassrc`
   rige `goldenglass.toml`.
+- **Barras laterales** (`_kde_side_panel_view` y el dock de Dolphin): color
+  `sidebar` de los tokens, de borde a borde, con una línea fina (`separator`)
+  hacia el contenido y sin sombras. Los iconos a color de las barras laterales
+  llegan en F5: los iconos simbólicos de lugares usarán `ColorScheme-Highlight`
+  (el delegado de Dolphin pinta sus iconos y el estilo no puede teñirlos).
 - **Radios por función, en px** (compartidos por estilo y decoración en
   `[Common]`): `CornerRadius` (controles), `MenuCornerRadius` (menús, popups y
   sus sombras), `WindowCornerRadius` (decoración y región de blur de la ventana,
@@ -185,6 +190,8 @@ goldenglass/
 ### 4.7 Iconos, cursores y wallpapers
 - **Iconos:** diseño propio de carpetas, lugares, sistema, acciones y ~50 apps
   más usadas (squircle con capas). Hereda (`Inherits=`) de **WhiteSur** (AUR).
+  Los simbólicos de lugares (16 px) usan `ColorScheme-Highlight` para salir en
+  el color de acento en las barras laterales, como en macOS 27.
 - **Cursores:** propios, estilo macOS, fuente SVG → xcursor + cursores SVG de
   Plasma 6 (nítidos a cualquier escala).
 - **Wallpapers:** originales generados por nosotros (no el de Apple), con
