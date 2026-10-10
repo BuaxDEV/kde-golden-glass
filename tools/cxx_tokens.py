@@ -63,6 +63,7 @@ def header(tokens: dict) -> str:
         ("ShadowStrength", _shadow_strength(shadow["strength"]), f"{shadow['strength']} de opacidad"),
         ("Decoración", None, None),
         ("TitleAlignment", TITLE_ALIGNMENTS.index(align), align),
+        ("GlassTitleBar", bool(tokens["decoration"]["glass_titlebar"]), "barra de título translúcida como la toolbar"),
         ("Semáforos y colores fijos (px, 0xAARRGGBB)", None, None),
         ("TrafficLightDiameter", tl["diameter"], "diámetro"),
         ("TrafficLightGap", tl["gap"], "separación entre bordes"),
@@ -95,7 +96,10 @@ def header(tokens: dict) -> str:
         if value is None:
             out += ["", f"// {name}"]
         else:
-            out.append(f"inline constexpr int {name} = {value}; // {comment}")
+            if isinstance(value, bool):
+                out.append(f"inline constexpr bool {name} = {str(value).lower()}; // {comment}")
+            else:
+                out.append(f"inline constexpr int {name} = {value}; // {comment}")
     for name, value in colors:
         out.append(f"inline constexpr unsigned int {name} = {_argb(value)}; // {value}")
     out += ["}", ""]

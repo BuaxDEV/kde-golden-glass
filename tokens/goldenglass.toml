@@ -94,6 +94,9 @@ strength = 0.25
 [decoration]
 # macOS centra el título en todo el ancho de la barra.
 title_alignment = "AlignCenterFullWidth"  # AlignLeft | AlignCenter | AlignCenterFullWidth | AlignRight
+# Barra de título de vidrio con la misma opacidad que la toolbar: ambas se ven
+# como una sola superficie (toolbar unificada).
+glass_titlebar = true
 
 # ---------------------------------------------------------------------------
 # Tipografía — familias son alias de fontconfig (ver fontconfig/)
