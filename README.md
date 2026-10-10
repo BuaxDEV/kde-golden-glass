@@ -6,7 +6,7 @@ dock, semáforos, variantes clara/oscura/automática.
 
 > Proyecto independiente. No contiene assets, fuentes ni marcas de Apple.
 
-**Estado:** F2 (escritorio Plasma) en curso. Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+**Estado:** F0, F1 y F2 completas; siguiente F3 (control de transparencia). Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Requisitos
 
@@ -19,6 +19,7 @@ dock, semáforos, variantes clara/oscura/automática.
 ```sh
 python3 tools/gen_tokens.py              # regenera build/ desde tokens/goldenglass.toml
 python3 tools/preview_plasma.py          # vista previa del Plasma Style (build/preview-*.png, requiere PyQt6)
+python3 tools/preview_style.py           # vista previa del estilo de apps compilado: menú y controles
 tools/sandbox.sh light                   # sesión Plasma aislada y sin ventana → capturas en build/sandbox/
 tools/install.sh --dev                   # instala en ~/.local con symlinks
 plasma-apply-lookandfeel -a org.goldenglass.light.desktop --resetLayout

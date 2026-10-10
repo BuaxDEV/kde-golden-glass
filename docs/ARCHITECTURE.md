@@ -98,6 +98,10 @@ goldenglass/
   hacia el contenido y sin sombras. Los iconos a color de las barras laterales
   llegan en F5: los iconos simbólicos de lugares usarán `ColorScheme-Highlight`
   (el delegado de Dolphin pinta sus iconos y el estilo no puede teñirlos).
+- **Menús** de solo texto (token `menu.show_icons`, opción `MenuItemIcons`) con
+  ✓ en el margen para las opciones activas y selección en color de acento.
+  Afecta a las apps QtWidgets; los menús QML de Kirigami siguen la preferencia
+  global de KDE `ShowIconsInMenuItems`.
 - **Radios por función, en px** (compartidos por estilo y decoración en
   `[Common]`): `CornerRadius` (controles), `MenuCornerRadius` (menús, popups y
   sus sombras), `WindowCornerRadius` (decoración y región de blur de la ventana,
@@ -235,7 +239,7 @@ goldenglass/
 | Fase | Contenido | Estado |
 |---|---|---|
 | F0 | Repo, tokens, generador, color schemes, fontconfig, `install.sh` | ✅ |
-| F1 | Fork de Darkly renombrado: QStyle + decoración (semáforos, radios, sidebar, toolbar unificada) | en curso (importado y renombrado) |
+| F1 | Fork de Darkly renombrado: QStyle + decoración (semáforos, radios, sidebar, toolbar unificada) | ✅ |
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | pendiente |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | pendiente |
