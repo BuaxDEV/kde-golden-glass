@@ -5997,26 +5997,13 @@ bool Style::drawMenuItemControl(const QStyleOption *option, QPainter *painter, c
         contentsRect.setLeft(rect.left() + 3 * Metrics::MenuItem_ItemSpacing);
     }
 
-    // render checkbox indicator
-    if (menuItemOption->checkType == QStyleOptionMenuItem::NonExclusive) {
-        checkBoxRect = visualRect(option, checkBoxRect);
-
-        // checkbox state
-
-        CheckBoxState state(menuItemOption->checked ? CheckOn : CheckOff);
-        // const auto color( _helper->checkBoxIndicatorColor( palette, false, enabled && active ) );
-        const auto background(state == CheckOn ? palette.color(QPalette::Highlight) : palette.color(QPalette::Button));
-        //_helper->renderCheckBoxBackground( painter, checkBoxRect, palette.color( QPalette::Window ), sunken );    //not needed
-        _helper->renderCheckBox(painter, checkBoxRect, palette, true, sunken, (selected || sunken), state, windowActive);
-
-    } else if (menuItemOption->checkType == QStyleOptionMenuItem::Exclusive) {
-        checkBoxRect = visualRect(option, checkBoxRect);
-
-        const bool active(menuItemOption->checked);
-        // const auto shadow( _helper->shadowColor( palette ) );
-        // const auto color( _helper->checkBoxIndicatorColor( palette, false, enabled && active ) );
-        //_helper->renderRadioButtonBackground( painter, checkBoxRect, palette.color( QPalette::Window ), sunken ); //not needed
-        _helper->renderRadioButton(painter, checkBoxRect, palette, (selected || sunken), sunken, active ? RadioOn : RadioOff, true);
+    // GoldenGlass (macOS): checkable items show a check mark when checked and
+    // nothing otherwise, for both checkable and exclusive items.
+    if (menuItemOption->checkType != QStyleOptionMenuItem::NotCheckable && menuItemOption->checked) {
+        const bool onHighlight = (selected || sunken) && useStrongFocus;
+        const QColor markColor = onHighlight ? palette.color(QPalette::HighlightedText)
+                                             : palette.color(enabled ? QPalette::Active : QPalette::Disabled, QPalette::WindowText);
+        _helper->renderMenuCheckMark(painter, visualRect(option, checkBoxRect), markColor);
     }
 
     // icon
@@ -8917,8 +8904,10 @@ bool Style::isQtQuickControl(const QStyleOption *option, const QWidget *widget) 
 //____________________________________________________________________
 bool Style::showIconsInMenuItems() const
 {
+    // GoldenGlass: menus are text only unless MenuItemIcons is enabled; the
+    // global KDE setting can still turn icons off.
     const KConfigGroup g(KSharedConfig::openConfig(), "KDE");
-    return g.readEntry("ShowIconsInMenuItems", true);
+    return StyleConfigData::menuItemIcons() && g.readEntry("ShowIconsInMenuItems", true);
 }
 
 //____________________________________________________________________

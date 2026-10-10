@@ -99,6 +99,14 @@ title_alignment = "AlignCenterFullWidth"  # AlignLeft | AlignCenter | AlignCente
 glass_titlebar = true
 
 # ---------------------------------------------------------------------------
+# Menús
+# ---------------------------------------------------------------------------
+[menu]
+# macOS 27 quitó los iconos junto a cada comando: menús de solo texto, con ✓
+# en el margen para las opciones activas.
+show_icons = false
+
+# ---------------------------------------------------------------------------
 # Tipografía — familias son alias de fontconfig (ver fontconfig/)
 # Tamaños en puntos de KDE (13 px de macOS ≈ 10 pt a 96 dpi)
 # ---------------------------------------------------------------------------

@@ -273,6 +273,15 @@
       <default>true</default>
     </entry>
 
+
+    <!-- GoldenGlass: icons next to menu commands (macOS 27 menus are text only) -->
+
+    <entry name="MenuItemIcons" type="Bool">
+
+      <default code="true">GoldenGlass::Tokens::MenuIcons</default>
+
+    </entry>
+
     <entry name="RoundedRubberBandFrame" type="Bool">
       <default>true</default>
     </entry>
