@@ -33,7 +33,7 @@ depends=(
   qt6-base
   qt6-declarative
 )
-makedepends=(cmake extra-cmake-modules git ninja)
+makedepends=(cmake extra-cmake-modules git ninja python)
 source=("goldenglass::git+file://${startdir}/../..")
 sha256sums=(SKIP)
 
