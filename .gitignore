@@ -1,0 +1,7 @@
+build/
+__pycache__/
+*.pyc
+/kstyle/build*/
+/packaging/*/pkg/
+/packaging/*/src/
+/packaging/*/*.pkg.tar.*
