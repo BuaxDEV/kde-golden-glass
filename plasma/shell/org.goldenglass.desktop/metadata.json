@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/Shell",
+    "KPlugin": {
+        "Authors": [{"Name": "GoldenGlass contributors"}],
+        "Category": "",
+        "Description": "GoldenGlass desktop shell: Plasma desktop with a macOS-style lock screen",
+        "Icon": "user-desktop",
+        "Id": "org.goldenglass.desktop",
+        "License": "GPL-3.0-or-later",
+        "Name": "GoldenGlass Desktop",
+        "Website": "https://github.com/brayanAP/buapdev-cachyos-kde-macos"
+    },
+    "X-KDE-ParentApp": "org.kde.plasmashell",
+    "X-Plasma-APIVersion": "2",
+    "X-Plasma-FallbackPackage": "org.kde.plasma.desktop"
+}
