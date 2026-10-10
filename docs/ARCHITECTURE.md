@@ -128,11 +128,14 @@ goldenglass/
     reloj) + **dock** = panel nativo flotante centrado con gestor de tareas solo
     iconos (sin magnificación).
   - Splash de inicio (logo + barra de progreso).
-  - Fuentes, esquema de color, Plasma Style y botones de ventana a la izquierda
-    (`ButtonsOnLeft=XIA`).
+  - Fuentes, esquema de color, Plasma Style, estilo de apps `GoldenGlass` y
+    decoración `org.goldenglass.decoration` (requieren el paquete
+    `goldenglass-kstyle`; sin él Plasma usa Breeze).
+  - Botones de ventana a la izquierda (`ButtonsOnLeft=XIA`) en
+    `contents/layouts/defaults`: KLookAndFeelManager solo lee de ahí los ajustes
+    de disposición de KWin, no de `contents/defaults`.
   - `ShellPackage=org.goldenglass.desktop` (ver pantalla de bloqueo).
-  - Estilo de apps, decoración, iconos, cursores y wallpaper se añaden cuando
-    existan (F1, F5).
+  - Iconos, cursores y wallpaper se añaden en F5.
 - **Pantalla de bloqueo** estilo macOS (reloj grande arriba, avatar y contraseña
   abajo). Desde Plasma 6 vive en el **paquete de shell**, no en el Global Theme:
   - `plasma/shell/org.goldenglass.desktop` solo trae `lockscreen/` y hereda el
@@ -184,6 +187,9 @@ goldenglass/
 
 ## 5. Distribución
 
+- Ya existe `packaging/goldenglass-kstyle/PKGBUILD` (estilo + decoración + KCMs,
+  compila desde el repo local). El resto (Plasma, iconos…) se instala de momento
+  con `tools/install.sh`.
 - **PKGBUILD dividido** (`packaging/`) para AUR/CachyOS:
   `goldenglass-kstyle` (estilo + decoración + KCM, compilado),
   `goldenglass-plasma`, `goldenglass-icons`, `goldenglass-cursors`,
