@@ -1,0 +1,14 @@
+[Desktop Entry]
+Exec=kcmshell6 goldenglassdecorationconfig
+Icon=preferences-system-windows
+Type=Service
+X-KDE-ServiceTypes=KCModule
+
+X-KDE-Library=org.kde.kdecoration3/goldenglassdecoration
+X-KDE-PluginKeyword=kcmodule
+X-KDE-ParentApp=kcontrol
+X-KDE-Weight=60
+
+Name=GoldenGlass Window Decoration
+Comment=Modify the appearance of window decorations
+X-KDE-Keywords=goldenglass,decoration

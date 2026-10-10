@@ -13,7 +13,7 @@
 #include <QTemporaryDir>
 #include <QStandardPaths>
 
-#include "darklystyleconfigdata.h"
+#include "goldenglassstyleconfigdata.h"
 
 // Mock widget that inherits from QAbstractScrollArea and pretends to be KItemListContainer
 class MockKItemListContainer : public QAbstractScrollArea
@@ -69,7 +69,7 @@ void BlurHelperTest::cleanupTestCase()
 
 void BlurHelperTest::init()
 {
-    Darkly::StyleConfigData::self()->setDefaults();
+    GoldenGlass::StyleConfigData::self()->setDefaults();
 }
 
 void BlurHelperTest::cleanup()
@@ -79,37 +79,37 @@ void BlurHelperTest::cleanup()
 void BlurHelperTest::testNoBlurWhenOpacity100()
 {
     // When opacity is 100, no blur should be needed for the view
-    Darkly::StyleConfigData::setDolphinViewOpacity(100);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 100);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(100);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 100);
 
     // The condition for blur registration should be false
-    bool shouldRegisterBlur = (Darkly::StyleConfigData::dolphinViewOpacity() < 100);
+    bool shouldRegisterBlur = (GoldenGlass::StyleConfigData::dolphinViewOpacity() < 100);
     QVERIFY(!shouldRegisterBlur);
 }
 
 void BlurHelperTest::testBlurEnabledWhenOpacityLessThan100()
 {
     // When opacity is less than 100, blur should be enabled
-    Darkly::StyleConfigData::setDolphinViewOpacity(50);
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 50);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(50);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 50);
 
-    bool shouldRegisterBlur = (Darkly::StyleConfigData::dolphinViewOpacity() < 100);
+    bool shouldRegisterBlur = (GoldenGlass::StyleConfigData::dolphinViewOpacity() < 100);
     QVERIFY(shouldRegisterBlur);
 
     // Test with 0 opacity
-    Darkly::StyleConfigData::setDolphinViewOpacity(0);
-    shouldRegisterBlur = (Darkly::StyleConfigData::dolphinViewOpacity() < 100);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(0);
+    shouldRegisterBlur = (GoldenGlass::StyleConfigData::dolphinViewOpacity() < 100);
     QVERIFY(shouldRegisterBlur);
 
     // Test with 99 opacity
-    Darkly::StyleConfigData::setDolphinViewOpacity(99);
-    shouldRegisterBlur = (Darkly::StyleConfigData::dolphinViewOpacity() < 100);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(99);
+    shouldRegisterBlur = (GoldenGlass::StyleConfigData::dolphinViewOpacity() < 100);
     QVERIFY(shouldRegisterBlur);
 }
 
 void BlurHelperTest::testBlurRegionIncludesKItemListContainer()
 {
-    Darkly::StyleConfigData::setDolphinViewOpacity(50);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(50);
 
     // Create a mock window with a KItemListContainer-like widget
     QMainWindow window;
@@ -131,7 +131,7 @@ void BlurHelperTest::testBlurRegionIncludesKItemListContainer()
     // We can't directly test BlurHelper without more infrastructure,
     // but we can verify the conditions are met
     bool isDolphin = true; // In real code, this is set based on app name
-    bool viewOpacityLessThan100 = Darkly::StyleConfigData::dolphinViewOpacity() < 100;
+    bool viewOpacityLessThan100 = GoldenGlass::StyleConfigData::dolphinViewOpacity() < 100;
     bool containerIsKItemList = container->inherits("KItemListContainer");
 
     // The core conditions for blur region inclusion
@@ -141,7 +141,7 @@ void BlurHelperTest::testBlurRegionIncludesKItemListContainer()
 
     // After window.show() and event processing, container should be visible
     // But in headless test environment, this may not work - so we test the logic only
-    QCOMPARE(Darkly::StyleConfigData::dolphinViewOpacity(), 50);
+    QCOMPARE(GoldenGlass::StyleConfigData::dolphinViewOpacity(), 50);
 }
 
 void BlurHelperTest::testBlurIndependentOfSidebarOpacity()
@@ -149,41 +149,41 @@ void BlurHelperTest::testBlurIndependentOfSidebarOpacity()
     // Test that view blur is independent of sidebar blur
 
     // Case 1: View transparent, sidebar opaque
-    Darkly::StyleConfigData::setDolphinViewOpacity(50);
-    Darkly::StyleConfigData::setDolphinSidebarOpacity(100);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(50);
+    GoldenGlass::StyleConfigData::setDolphinSidebarOpacity(100);
 
-    bool shouldBlurView = (Darkly::StyleConfigData::dolphinViewOpacity() < 100);
-    bool shouldBlurSidebar = (Darkly::StyleConfigData::dolphinSidebarOpacity() < 100);
+    bool shouldBlurView = (GoldenGlass::StyleConfigData::dolphinViewOpacity() < 100);
+    bool shouldBlurSidebar = (GoldenGlass::StyleConfigData::dolphinSidebarOpacity() < 100);
 
     QVERIFY(shouldBlurView);
     QVERIFY(!shouldBlurSidebar);
 
     // Case 2: View opaque, sidebar transparent
-    Darkly::StyleConfigData::setDolphinViewOpacity(100);
-    Darkly::StyleConfigData::setDolphinSidebarOpacity(50);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(100);
+    GoldenGlass::StyleConfigData::setDolphinSidebarOpacity(50);
 
-    shouldBlurView = (Darkly::StyleConfigData::dolphinViewOpacity() < 100);
-    shouldBlurSidebar = (Darkly::StyleConfigData::dolphinSidebarOpacity() < 100);
+    shouldBlurView = (GoldenGlass::StyleConfigData::dolphinViewOpacity() < 100);
+    shouldBlurSidebar = (GoldenGlass::StyleConfigData::dolphinSidebarOpacity() < 100);
 
     QVERIFY(!shouldBlurView);
     QVERIFY(shouldBlurSidebar);
 
     // Case 3: Both transparent
-    Darkly::StyleConfigData::setDolphinViewOpacity(30);
-    Darkly::StyleConfigData::setDolphinSidebarOpacity(70);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(30);
+    GoldenGlass::StyleConfigData::setDolphinSidebarOpacity(70);
 
-    shouldBlurView = (Darkly::StyleConfigData::dolphinViewOpacity() < 100);
-    shouldBlurSidebar = (Darkly::StyleConfigData::dolphinSidebarOpacity() < 100);
+    shouldBlurView = (GoldenGlass::StyleConfigData::dolphinViewOpacity() < 100);
+    shouldBlurSidebar = (GoldenGlass::StyleConfigData::dolphinSidebarOpacity() < 100);
 
     QVERIFY(shouldBlurView);
     QVERIFY(shouldBlurSidebar);
 
     // Case 4: Both opaque
-    Darkly::StyleConfigData::setDolphinViewOpacity(100);
-    Darkly::StyleConfigData::setDolphinSidebarOpacity(100);
+    GoldenGlass::StyleConfigData::setDolphinViewOpacity(100);
+    GoldenGlass::StyleConfigData::setDolphinSidebarOpacity(100);
 
-    shouldBlurView = (Darkly::StyleConfigData::dolphinViewOpacity() < 100);
-    shouldBlurSidebar = (Darkly::StyleConfigData::dolphinSidebarOpacity() < 100);
+    shouldBlurView = (GoldenGlass::StyleConfigData::dolphinViewOpacity() < 100);
+    shouldBlurSidebar = (GoldenGlass::StyleConfigData::dolphinSidebarOpacity() < 100);
 
     QVERIFY(!shouldBlurView);
     QVERIFY(!shouldBlurSidebar);

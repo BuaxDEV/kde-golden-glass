@@ -1,0 +1,6 @@
+[Misc]
+Name=GoldenGlass
+ConfigPage=kstyle_config/goldenglassstyleconfig
+Comment=Widget style for Qt Applications
+[KDE]
+WidgetStyle=GoldenGlass

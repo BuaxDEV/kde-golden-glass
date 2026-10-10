@@ -1,4 +1,4 @@
-# Tests for Darkly KStyle
+# Tests for GoldenGlass KStyle
 
 include(ECMAddTests)
 
@@ -12,7 +12,7 @@ endif()
 find_package(Qt${QT_MAJOR_VERSION} ${TEST_QT_VERSION} CONFIG REQUIRED COMPONENTS Test Widgets)
 
 # Generate the config data for tests
-kconfig_add_kcfg_files(test_config_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../darklystyleconfigdata.kcfgc)
+kconfig_add_kcfg_files(test_config_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../goldenglassstyleconfigdata.kcfgc)
 
 # Include directories
 include_directories(

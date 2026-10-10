@@ -1,0 +1,12 @@
+{
+    "KPlugin": {
+        "Description": "Window decoration using the GoldenGlass visual style for the Plasma Desktop",
+        "EnabledByDefault": true,
+        "Name": "GoldenGlass"
+    },
+    "X-KDE-ConfigModule": "kcm_goldenglassdecoration",
+    "org.kde.kdecoration3": {
+        "blur": false,
+        "recommendedBorderSize": "None"
+    }
+}

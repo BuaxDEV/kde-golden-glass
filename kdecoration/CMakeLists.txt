@@ -1,34 +1,34 @@
-add_definitions(-DTRANSLATION_DOMAIN="darkly_kwin_deco")
+add_definitions(-DTRANSLATION_DOMAIN="goldenglass_kwin_deco")
 
 ################# configuration #################
-configure_file(config-darkly.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-darkly.h )
+configure_file(config-goldenglass.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-goldenglass.h )
 
 ################# includes #################
-include_directories(${CMAKE_SOURCE_DIR}/libdarklycommon)
-include_directories(${CMAKE_BINARY_DIR}/libdarklycommon)
+include_directories(${CMAKE_SOURCE_DIR}/libgoldenglasscommon)
+include_directories(${CMAKE_BINARY_DIR}/libgoldenglasscommon)
 
 ################# newt target #################
 ### plugin classes
-set(darklydecoration_SRCS
-    darklybutton.cpp
-    darklydecoration.cpp
-    darklyexceptionlist.cpp
-    darklysettingsprovider.cpp
+set(goldenglassdecoration_SRCS
+    goldenglassbutton.cpp
+    goldenglassdecoration.cpp
+    goldenglassexceptionlist.cpp
+    goldenglasssettingsprovider.cpp
 )
 ### build library
-kconfig_add_kcfg_files(darklydecoration_SRCS darklysettings.kcfgc)
-add_library(darklydecoration MODULE
-    ${darklydecoration_SRCS}
-    ${darklydecoration_config_SRCS}
-    ${darklydecoration_config_PART_FORMS_HEADERS})
+kconfig_add_kcfg_files(goldenglassdecoration_SRCS goldenglasssettings.kcfgc)
+add_library(goldenglassdecoration MODULE
+    ${goldenglassdecoration_SRCS}
+    ${goldenglassdecoration_config_SRCS}
+    ${goldenglassdecoration_config_PART_FORMS_HEADERS})
 
-set_target_properties(darklydecoration PROPERTIES
-    OUTPUT_NAME org.kde.darkly
+set_target_properties(goldenglassdecoration PROPERTIES
+    OUTPUT_NAME org.goldenglass.decoration
 )
 
-target_link_libraries(darklydecoration
+target_link_libraries(goldenglassdecoration
      PRIVATE
-        darklycommon6
+        goldenglasscommon6
         KF6::CoreAddons
         KF6::ConfigWidgets
         KF6::GuiAddons
@@ -39,6 +39,6 @@ target_link_libraries(darklydecoration
         Qt6::DBus
         KDecoration3::KDecoration
 )
-install(TARGETS darklydecoration DESTINATION ${KDE_INSTALL_PLUGINDIR}/${KDECORATION_PLUGIN_DIR})
-install(FILES config/darklydecorationconfig.desktop DESTINATION  ${KDE_INSTALL_DATADIR}/kservices6)
+install(TARGETS goldenglassdecoration DESTINATION ${KDE_INSTALL_PLUGINDIR}/${KDECORATION_PLUGIN_DIR})
+install(FILES config/goldenglassdecorationconfig.desktop DESTINATION  ${KDE_INSTALL_DATADIR}/kservices6)
 add_subdirectory(config)
