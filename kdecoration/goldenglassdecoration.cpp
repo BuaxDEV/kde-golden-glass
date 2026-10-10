@@ -24,6 +24,7 @@
 
 #include "config-goldenglass.h"
 #include "goldenglass.h"
+#include "goldenglass_tokens.h"
 #include "goldenglasssettingsprovider.h"
 
 #include "goldenglassbutton.h"
@@ -190,7 +191,7 @@ QColor Decoration::titleBarColor() const
     if (m_internalSettings->blurTransparentTitleBar()) {
         const int opacity = KSharedConfig::openConfig(QStringLiteral("goldenglassrc"))
                                 ->group(QStringLiteral("Style"))
-                                .readEntry("ToolBarOpacity", 100);
+                                .readEntry("ToolBarOpacity", Tokens::GlassOpacity);
         color.setAlpha(qRound(qBound(0, opacity, 100) * 255.0 / 100));
     }
 
