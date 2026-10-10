@@ -25,6 +25,16 @@ plasma-apply-lookandfeel -a org.goldenglass.light.desktop --resetLayout
 tools/install.sh --uninstall
 ```
 
+Estilo de apps y decoración de ventanas (C++), con pacman:
+
+```sh
+cd packaging/goldenglass-kstyle && makepkg -si   # compila el último commit de la rama activa
+sudo pacman -R goldenglass-kstyle                # desinstalar
+```
+
+Requiere `extra-cmake-modules`. Volver a ejecutar `makepkg -si` tras actualizar
+Qt o KDE.
+
 `--resetLayout` (o marcar "Disposición del escritorio y ventanas" al aplicar el
 Global Theme) es necesario para la barra de menús, el dock, los botones de
 ventana a la izquierda y la pantalla de bloqueo. Tu layout anterior no se borra:

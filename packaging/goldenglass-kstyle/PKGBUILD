@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# GoldenGlass: estilo de aplicaciones Qt y decoración de ventanas (C++).
+#
+# Compila el último commit de la rama activa del repositorio local (los cambios
+# sin commit no entran):
+#
+#   cd packaging/goldenglass-kstyle && makepkg -si
+#
+# Desinstalar: sudo pacman -R goldenglass-kstyle
+# Tras actualizar Qt o KDE: volver a ejecutar makepkg -si.
+
+pkgname=goldenglass-kstyle
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="GoldenGlass widget style and window decoration for KDE Plasma (macOS 27 inspired)"
+arch=(x86_64)
+url="https://github.com/brayanAP/buapdev-cachyos-kde-macos"
+license=(GPL-3.0-or-later)
+depends=(
+  frameworkintegration
+  kcmutils
+  kcolorscheme
+  kconfig
+  kconfigwidgets
+  kcoreaddons
+  kdecoration
+  kguiaddons
+  ki18n
+  kiconthemes
+  kirigami
+  kwindowsystem
+  qt6-base
+  qt6-declarative
+)
+makedepends=(cmake extra-cmake-modules git ninja)
+source=("goldenglass::git+file://${startdir}/../..")
+sha256sums=(SKIP)
+
+pkgver() {
+  cd goldenglass
+  printf '%s.r%s.g%s' "$(<VERSION)" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cmake -S goldenglass -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DBUILD_TESTING=ON
+  cmake --build build
+}
+
+check() {
+  QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 goldenglass/AUTHORS "$pkgdir/usr/share/doc/$pkgname/AUTHORS"
+  install -Dm644 goldenglass/UPSTREAM.md "$pkgdir/usr/share/doc/$pkgname/UPSTREAM.md"
+}

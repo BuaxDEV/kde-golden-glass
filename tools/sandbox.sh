@@ -7,8 +7,9 @@
 #
 #   tools/sandbox.sh [light|dark]
 #
-# Deja capturas en build/sandbox/: desktop, spotlight, lockscreen, lockscreen-ui
-# y splash. El registro completo de la sesión queda en build/sandbox/session.log.
+# Deja capturas en build/sandbox/: desktop, app, spotlight, lockscreen,
+# lockscreen-ui y splash. El estilo y la decoración se compilan desde build/cmake.
+# El registro completo de la sesión queda en build/sandbox/session.log.
 #
 # Aislamiento:
 #  - El entorno XDG del sandbox se exporta ANTES de crear el bus privado: el
@@ -63,6 +64,19 @@ if [[ -z ${GG_SANDBOX_INNER:-} ]]; then
   export XDG_RUNTIME_DIR
   unset WAYLAND_DISPLAY DISPLAY DBUS_SESSION_BUS_ADDRESS
 
+  # Estilo y decoración (C++) desde el árbol de compilación, instalados en una
+  # carpeta del sandbox con DESTDIR: no se toca /usr. KWin y las apps Qt cargan
+  # plugins de QT_PLUGIN_PATH.
+  STAGE="$HOME_DIR/stage"
+  if [[ ! -f $ROOT/build/cmake/CMakeCache.txt ]]; then
+    cmake -S "$ROOT" -B "$ROOT/build/cmake" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DCMAKE_INSTALL_PREFIX=/usr >/dev/null
+  fi
+  cmake --build "$ROOT/build/cmake" >/dev/null
+  DESTDIR="$STAGE" cmake --install "$ROOT/build/cmake" >/dev/null
+  export QT_PLUGIN_PATH="$STAGE/usr/lib/qt6/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
+  export XDG_DATA_DIRS="$STAGE/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+
   # El bus de sesión busca servicios primero en $XDG_DATA_HOME/dbus-1/services.
   mkdir -p -- "$XDG_DATA_HOME/dbus-1/services"
   for svc in org.kde.kdeconnect org.bluez.obex; do
@@ -98,6 +112,11 @@ cp -r -- "$ROOT/plasma/shell/org.goldenglass.desktop" "$LOCK_UI"
 sed -i 's/"Id": "org.goldenglass.desktop"/"Id": "org.goldenglass.desktop-ui"/' "$LOCK_UI/metadata.json"
 sed -i 's/property bool uiVisible: false/property bool uiVisible: true/' "$LOCK_UI/contents/lockscreen/LockScreenUi.qml"
 
+# Antes de KWin, como al iniciar sesión: KWin lee la decoración al arrancar.
+# --resetLayout aplica también los ajustes de disposición (shell, botones).
+log "aplicando org.goldenglass.$VARIANT.desktop"
+QT_QPA_PLATFORM=offscreen plasma-apply-lookandfeel -a "org.goldenglass.$VARIANT.desktop" --resetLayout || true
+
 SOCK="goldenglass-sandbox-$$"
 log "arrancando KWin virtual ${WIDTH}x${HEIGHT}"
 kwin_wayland --virtual --width "$WIDTH" --height "$HEIGHT" --socket "$SOCK" --no-lockscreen &
@@ -108,14 +127,20 @@ export WAYLAND_DISPLAY="$SOCK" QT_QPA_PLATFORM=wayland
 # pantalla (sin esto abortan, o usarían la de la sesión real).
 dbus-update-activation-environment WAYLAND_DISPLAY QT_QPA_PLATFORM
 
-log "aplicando org.goldenglass.$VARIANT.desktop"
-# --resetLayout aplica también los ajustes de disposición (shell, botones).
-plasma-apply-lookandfeel -a "org.goldenglass.$VARIANT.desktop" --resetLayout || true
-
 log "arrancando plasmashell"
 plasmashell --no-respawn &
 sleep 12
 shot desktop
+
+log "abriendo una aplicación (estilo + decoración)"
+systemsettings &
+app=$!
+sleep 6
+shot app
+# Qué cargó KWin de verdad (plugin de decoración, efectos…).
+timeout 5 qdbus6 org.kde.KWin /KWin supportInformation >"$OUT/kwin-support-$VARIANT.txt" 2>&1 \
+  || log "FALLO dbus: supportInformation"
+kill "$app" 2>/dev/null || true
 
 log "abriendo Spotlight (KRunner)"
 krunner &
