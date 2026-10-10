@@ -101,8 +101,12 @@ goldenglass/
 
 ### 4.2 Decoración de ventanas — `kdecoration/` (C++, KDecoration3)
 - En el mismo árbol CMake que `kstyle/` (como Breeze/Darkly), config compartida.
-- Semáforos a la izquierda con sombreado de vidrio, símbolos al pasar el ratón,
-  estado inactivo gris.
+- **Semáforos** (`goldenglasstrafficlight.cpp`): cerrar, minimizar y maximizar
+  como círculos de vidrio de 12 px separados 8 px (tokens `traffic_lights`).
+  Al pasar el ratón por cualquiera aparecen los símbolos en los tres; en ventanas
+  inactivas son grises y se colorean al pasar el ratón. El zoom apunta hacia
+  dentro con la ventana maximizada. `build/cmake/bin/trafficlight_preview
+  salida.png` dibuja todos los estados para revisarlos sin KWin.
 - Radio de esquina y sombras desde los tokens. Barra de título fundida con la
   toolbar (mismo color/opacidad que el header del estilo).
 
