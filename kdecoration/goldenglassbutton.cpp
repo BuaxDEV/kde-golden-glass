@@ -24,6 +24,9 @@
 #include <KDecoration3/DecoratedWindow>
 #include <KIconLoader>
 
+#include "goldenglass_tokens.h"
+#include "goldenglasstrafficlight.h"
+
 #include <QPainter>
 #include <QPainterPath>
 #include <QVariantAnimation>
@@ -70,6 +73,9 @@ Button *Button::create(DecorationButtonType type, KDecoration3::Decoration *deco
     if (auto d = qobject_cast<Decoration *>(decoration)) {
         Button *b = new Button(type, d, parent);
         const auto c = d->window();
+        if (b->isTrafficLight()) {
+            QObject::connect(b, &KDecoration3::DecorationButton::hoveredChanged, d, &Decoration::updateTrafficLightsHover);
+        }
         switch (type) {
         case DecorationButtonType::Close:
             b->setVisible(c->isCloseable());
@@ -145,10 +151,70 @@ void Button::paint(QPainter *painter, const QRectF &repaintRegion)
         break;
     default:
         painter->save();
-        drawIcon(painter);
+        if (isTrafficLight()) {
+            drawTrafficLight(painter);
+        } else {
+            drawIcon(painter);
+        }
         painter->restore();
         break;
     }
+}
+
+//__________________________________________________________________
+bool Button::isTrafficLight() const
+{
+    switch (type()) {
+    case DecorationButtonType::Close:
+    case DecorationButtonType::Minimize:
+    case DecorationButtonType::Maximize:
+        return true;
+    default:
+        return false;
+    }
+}
+
+//__________________________________________________________________
+void Button::setGroupHovered(bool value)
+{
+    if (m_groupHovered == value) {
+        return;
+    }
+    m_groupHovered = value;
+
+    auto d = qobject_cast<Decoration *>(decoration());
+    if (d && d->internalSettings()->animationsEnabled()) {
+        m_animation->setDirection(value ? QAbstractAnimation::Forward : QAbstractAnimation::Backward);
+        if (m_animation->state() != QAbstractAnimation::Running) {
+            m_animation->start();
+        }
+    } else {
+        setOpacity(value ? 1.0 : 0.0);
+    }
+    update();
+}
+
+//__________________________________________________________________
+void Button::drawTrafficLight(QPainter *painter) const
+{
+    auto d = qobject_cast<Decoration *>(decoration());
+    if (!d) {
+        return;
+    }
+
+    TrafficLight::State state;
+    // Colored while the window is active or the group is hovered (as in
+    // macOS, hovering an inactive window's buttons lights them up).
+    state.lit = d->window()->isActive() || m_groupHovered;
+    state.pressed = isPressed();
+    state.maximized = isChecked();
+    state.darkTitleBar = qGray(d->titleBarColor().rgb()) < 128;
+    state.glyphOpacity = m_animation->state() == QAbstractAnimation::Running ? m_opacity : (m_groupHovered ? 1.0 : 0.0);
+
+    const auto kind = type() == DecorationButtonType::Close ? TrafficLight::Kind::Close
+        : type() == DecorationButtonType::Minimize          ? TrafficLight::Kind::Minimize
+                                                            : TrafficLight::Kind::Zoom;
+    TrafficLight::render(painter, geometry().marginsRemoved(m_padding).center(), kind, state);
 }
 
 //__________________________________________________________________
@@ -420,6 +486,12 @@ void Button::reconfigure()
     case KDecoration3::DecorationButtonType::Spacer:
         setPreferredSize(QSizeF(d->buttonSize() * 0.5, d->buttonSize()));
         break;
+    case KDecoration3::DecorationButtonType::Close:
+    case KDecoration3::DecorationButtonType::Minimize:
+    case KDecoration3::DecorationButtonType::Maximize:
+        // the cell includes the gap: centers are diameter + gap apart
+        setPreferredSize(QSizeF(Tokens::TrafficLightDiameter + Tokens::TrafficLightGap, d->buttonSize()));
+        break;
     default:
         setPreferredSize(QSizeF(d->buttonSize(), d->buttonSize()));
         break;
@@ -431,6 +503,9 @@ void Button::reconfigure()
 //__________________________________________________________________
 void Button::updateAnimationState(bool hovered)
 {
+    if (isTrafficLight()) {
+        return; // driven by setGroupHovered()
+    }
     auto d = qobject_cast<Decoration *>(decoration());
     if (!(d && d->internalSettings()->animationsEnabled()))
         return;

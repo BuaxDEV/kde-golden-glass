@@ -684,6 +684,23 @@ void Decoration::updateButtonsGeometryDelayed()
 }
 
 //________________________________________________________________
+void Decoration::updateTrafficLightsHover()
+{
+    const auto buttons = m_leftButtons->buttons() + m_rightButtons->buttons();
+    bool hovered = false;
+    for (auto *button : buttons) {
+        auto *b = static_cast<Button *>(button);
+        hovered = hovered || (b->isTrafficLight() && b->isVisible() && b->isHovered());
+    }
+    for (auto *button : buttons) {
+        auto *b = static_cast<Button *>(button);
+        if (b->isTrafficLight()) {
+            b->setGroupHovered(hovered);
+        }
+    }
+}
+
+//________________________________________________________________
 void Decoration::updateButtonsGeometry()
 {
 if (m_internalSettings->floatingTitlebar()){
@@ -710,7 +727,7 @@ if (m_internalSettings->floatingTitlebar()){
     // left buttons
     if (!m_leftButtons->buttons().isEmpty()) {
         // spacing
-        m_leftButtons->setSpacing(s->smallSpacing() * Metrics::TitleBar_ButtonSpacing);
+        m_leftButtons->setSpacing(0) /* GoldenGlass: traffic light cells include the gap */;
 
         // padding
         int vPadding = (isTopEdge() ? 0 : s->smallSpacing() * Metrics::TitleBar_TopMargin) + (isMaximized() ? 0 : 1);
@@ -737,7 +754,7 @@ if (m_internalSettings->floatingTitlebar()){
     // right buttons
     if (!m_rightButtons->buttons().isEmpty()) {
         // spacing
-        m_rightButtons->setSpacing(s->smallSpacing() * Metrics::TitleBar_ButtonSpacing);
+        m_rightButtons->setSpacing(0) /* GoldenGlass: traffic light cells include the gap */;
 
         // padding
         int vPadding = (isTopEdge() ? 0 : s->smallSpacing() * Metrics::TitleBar_TopMargin) + (isMaximized() ? 0 : 1);
@@ -784,7 +801,7 @@ if (m_internalSettings->floatingTitlebar()){
     // left buttons
     if (!m_leftButtons->buttons().isEmpty()) {
         // spacing
-        m_leftButtons->setSpacing(s->smallSpacing() * Metrics::TitleBar_ButtonSpacing);
+        m_leftButtons->setSpacing(0) /* GoldenGlass: traffic light cells include the gap */;
 
         // padding
         const int vPadding = isTopEdge() ? 0 : s->smallSpacing() * Metrics::TitleBar_TopMargin;
@@ -810,7 +827,7 @@ if (m_internalSettings->floatingTitlebar()){
     // right buttons
     if (!m_rightButtons->buttons().isEmpty()) {
         // spacing
-        m_rightButtons->setSpacing(s->smallSpacing() * Metrics::TitleBar_ButtonSpacing);
+        m_rightButtons->setSpacing(0) /* GoldenGlass: traffic light cells include the gap */;
 
         // padding
         const int vPadding = isTopEdge() ? 0 : s->smallSpacing() * Metrics::TitleBar_TopMargin;

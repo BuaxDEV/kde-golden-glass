@@ -11,6 +11,7 @@ include_directories(${CMAKE_BINARY_DIR}/libgoldenglasscommon)
 ### plugin classes
 set(goldenglassdecoration_SRCS
     goldenglassbutton.cpp
+    goldenglasstrafficlight.cpp
     goldenglassdecoration.cpp
     goldenglassexceptionlist.cpp
     goldenglasssettingsprovider.cpp
@@ -42,3 +43,9 @@ target_link_libraries(goldenglassdecoration
 install(TARGETS goldenglassdecoration DESTINATION ${KDE_INSTALL_PLUGINDIR}/${KDECORATION_PLUGIN_DIR})
 install(FILES config/goldenglassdecorationconfig.desktop DESTINATION  ${KDE_INSTALL_DATADIR}/kservices6)
 add_subdirectory(config)
+
+# Vista previa de los semáforos (desarrollo; no se instala).
+if(BUILD_TESTING)
+    add_executable(trafficlight_preview tests/trafficlight_preview.cpp goldenglasstrafficlight.cpp)
+    target_link_libraries(trafficlight_preview Qt6::Gui)
+endif()
