@@ -7,6 +7,7 @@
 #
 #   tools/sandbox.sh [light|dark]
 #   GG_SANDBOX_APP=dolphin tools/sandbox.sh   # app para la captura «app» (por defecto systemsettings)
+#   GG_SANDBOX_HOOK=script.sh tools/sandbox.sh  # script propio dentro de la sesión (OUT, VARIANT, ROOT)
 #
 # Deja capturas en build/sandbox/: desktop, app, spotlight, lockscreen,
 # lockscreen-ui y splash. El estilo y la decoración se compilan desde build/cmake.
@@ -133,6 +134,13 @@ log "arrancando plasmashell"
 plasmashell --no-respawn &
 sleep 12
 shot desktop
+
+# Gancho para experimentos: un script que se ejecuta dentro de la sesión con
+# OUT, VARIANT y ROOT disponibles (por ejemplo, para medir recargas del tema).
+if [[ -n ${GG_SANDBOX_HOOK:-} ]]; then
+  log "gancho: $GG_SANDBOX_HOOK"
+  OUT="$OUT" VARIANT="$VARIANT" ROOT="$ROOT" bash "$GG_SANDBOX_HOOK" || log "FALLO gancho"
+fi
 
 log "abriendo una aplicación (estilo + decoración): ${GG_SANDBOX_APP:-systemsettings}"
 ${GG_SANDBOX_APP:-systemsettings} &

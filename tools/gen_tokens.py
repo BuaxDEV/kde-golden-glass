@@ -186,6 +186,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=ROOT / "build")
     ap.add_argument("--cxx-header", type=Path, metavar="RUTA",
                     help="solo escribe la cabecera C++ de tokens en RUTA")
+    ap.add_argument("--glass-level", type=float, metavar="0..1",
+                    help="nivel del slider de vidrio para el Plasma Style (por defecto, glass.default_level)")
     args = ap.parse_args(argv)
 
     with args.tokens.open("rb") as f:
@@ -208,7 +210,7 @@ def main(argv: list[str] | None = None) -> int:
     path.write_text(json.dumps(tokens, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     written.append(path)
 
-    written += plasma_theme.build(tokens, args.out)
+    written += plasma_theme.build(tokens, args.out, args.glass_level)
     written += lookandfeel.build(tokens, args.out)
 
     for p in written:
