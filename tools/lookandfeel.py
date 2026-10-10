@@ -19,6 +19,10 @@ COMMON = ROOT / "plasma" / "look-and-feel" / "common"
 LOGO = ROOT / "assets" / "logo" / "goldenglass.svg"
 SHELL_PACKAGE = "org.goldenglass.desktop"
 PLASMA_THEME = "GoldenGlass"
+# Plugins C++ del paquete goldenglass-kstyle. Si no está instalado, Plasma usa
+# Breeze para ambos.
+WIDGET_STYLE = "GoldenGlass"
+DECORATION = "org.goldenglass.decoration"
 
 VARIANTS = {
     "light": ("org.goldenglass.light.desktop", "GoldenGlass Light", "GoldenGlassLight"),
@@ -98,12 +102,15 @@ def defaults(tokens: dict, variant: str) -> str:
         f"activeFont={title_font}",
         *(f"{k}={v}" for k, v in fonts.items()),
         "",
+        "[kdeglobals][KDE]",
+        f"widgetStyle={WIDGET_STYLE}",
+        "",
         "[plasmarc][Theme]",
         f"name={PLASMA_THEME}",
         "",
         "[kwinrc][org.kde.kdecoration2]",
-        "ButtonsOnLeft=XIA",
-        "ButtonsOnRight=",
+        f"library={DECORATION}",
+        "theme=GoldenGlass",
         "",
         "[ksplashrc][KSplash]",
         f"Theme={pkg_id}",
@@ -113,6 +120,20 @@ def defaults(tokens: dict, variant: str) -> str:
         "",
     ]
     return "\n".join(lines)
+
+
+def layout_defaults() -> str:
+    """contents/layouts/defaults: ajustes de "disposición" que KLookAndFeelManager
+    solo lee de este archivo (no de contents/defaults)."""
+    return "\n".join([
+        "# Generado por tools/gen_tokens.py — NO EDITAR",
+        "",
+        "# Semáforos a la izquierda: cerrar, minimizar, maximizar.",
+        "[kwinrc][org.kde.kdecoration2]",
+        "ButtonsOnLeft=XIA",
+        "ButtonsOnRight=",
+        "",
+    ])
 
 
 def metadata(tokens: dict, variant: str) -> str:
@@ -167,7 +188,8 @@ def build(tokens: dict, out: Path) -> list[Path]:
         written.append(logo)
 
         for rel, content in (("metadata.json", metadata(tokens, variant)),
-                             ("contents/defaults", defaults(tokens, variant))):
+                             ("contents/defaults", defaults(tokens, variant)),
+                             ("contents/layouts/defaults", layout_defaults())):
             path = root / rel
             path.write_text(content, encoding="utf-8")
             written.append(path)
