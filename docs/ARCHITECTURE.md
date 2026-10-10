@@ -112,8 +112,12 @@ goldenglass/
   inactivas son grises y se colorean al pasar el ratón. El zoom apunta hacia
   dentro con la ventana maximizada. `build/cmake/bin/trafficlight_preview
   salida.png` dibuja todos los estados para revisarlos sin KWin.
-- Radio de esquina y sombras desde los tokens. Barra de título fundida con la
-  toolbar (mismo color/opacidad que el header del estilo).
+- Radio de esquina y sombras desde los tokens.
+- **Toolbar unificada:** con `decoration.glass_titlebar` la barra de título usa
+  el mismo color (Header) y la misma opacidad de vidrio que la toolbar, y KWin
+  difumina detrás de ambas: se ven como una sola barra. Límite: los semáforos no
+  pueden compartir fila con los botones de la toolbar, porque la toolbar la
+  dibuja cada aplicación.
 
 ### 4.3 Efecto de vidrio
 - **Blur nativo de KWin + superficies semitransparentes.** Sin efecto KWin propio
