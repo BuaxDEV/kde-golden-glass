@@ -1,0 +1,151 @@
+# GoldenGlass — tokens de diseño (única fuente de verdad)
+#
+# Todo lo visual sale de aquí. Tras editar, regenerar con:
+#   python3 tools/gen_tokens.py
+#
+# Formato de color: "#RRGGBB" o "#RRGGBBAA". Los colores con alfa se aplanan
+# sobre el fondo de su rol al generar formatos que no admiten transparencia
+# (p. ej. .colors de KDE).
+#
+# Valores marcados "calibrar" son iniciales: Apple no publica las cifras exactas
+# de macOS 27 y se ajustan contra capturas.
+
+[meta]
+name = "GoldenGlass"
+version = "0.1.0"
+
+# ---------------------------------------------------------------------------
+# Geometría (px lógicos)
+# ---------------------------------------------------------------------------
+[radius]
+window = 12          # calibrar: macOS 27 cierra el radio respecto a Tahoe
+control = 6          # botones, campos de texto, combos
+control_small = 4    # checkboxes, controles compactos
+menu = 10            # menús emergentes
+popup = 14           # diálogos de Plasma, notificaciones, Centro de control
+dock = 22            # calibrar
+tooltip = 6
+
+# ---------------------------------------------------------------------------
+# Vidrio — niveles del slider (0.0 = más claro, 1.0 = más opaco)
+# El slider es continuo; estos son los valores en las 3 muescas.
+# "alpha" es la opacidad del fondo de las superficies de vidrio.
+# ---------------------------------------------------------------------------
+[glass]
+default_level = 0.5
+blur_strength = 10   # KWin Blur: 1..15, calibrar
+
+[glass.notch.clear]
+position = 0.0
+alpha = 0.40
+
+[glass.notch.medium]
+position = 0.5
+alpha = 0.65
+
+[glass.notch.opaque]
+position = 1.0
+alpha = 0.90
+
+# ---------------------------------------------------------------------------
+# Sombras de ventana
+# ---------------------------------------------------------------------------
+[shadow.active]
+size = 64
+strength = 0.45
+
+[shadow.inactive]
+size = 40
+strength = 0.25
+
+# ---------------------------------------------------------------------------
+# Tipografía — familias son alias de fontconfig (ver fontconfig/)
+# Tamaños en puntos de KDE (13 px de macOS ≈ 10 pt a 96 dpi)
+# ---------------------------------------------------------------------------
+[font]
+sans = "GoldenGlass Sans"
+mono = "GoldenGlass Mono"
+size_general = 10
+size_small = 8
+size_toolbar = 10
+size_menu = 10
+size_window_title = 10
+window_title_weight = "DemiBold"
+
+# ---------------------------------------------------------------------------
+# Semáforos (iguales en claro y oscuro)
+# ---------------------------------------------------------------------------
+[traffic_lights]
+close = "#FF5F57"
+close_border = "#E0443E"
+minimize = "#FEBC2E"
+minimize_border = "#DEA123"
+zoom = "#28C840"
+zoom_border = "#1AAB29"
+glyph = "#00000099"
+
+# ---------------------------------------------------------------------------
+# Paleta clara
+# ---------------------------------------------------------------------------
+[light]
+accent = "#007AFF"
+accent_fg = "#FFFFFF"
+link = "#0068DA"
+visited = "#AF52DE"
+positive = "#34C759"
+neutral = "#FF9500"
+negative = "#FF3B30"
+
+# Texto (macOS usa negro con alfa; se aplana sobre cada fondo)
+label = "#000000D9"            # 85 %
+label_secondary = "#00000080"  # 50 %
+label_tertiary = "#00000040"   # 25 % (deshabilitado)
+
+# Superficies
+window = "#ECECEC"
+window_alt = "#E3E3E3"
+view = "#FFFFFF"
+view_alt = "#F4F5F5"
+button = "#FFFFFF"
+button_alt = "#E5E5E5"
+header = "#F6F6F6"             # barra de título + toolbar unificadas
+header_inactive = "#ECECEC"
+sidebar = "#E1E1E1"            # macOS 27: sidebar más oscura que la ventana
+tooltip = "#F6F6F6"
+complementary = "#1E1E1E"      # OSD, pantalla de bloqueo
+selection_inactive = "#DCDCDC"
+separator = "#0000001A"
+
+traffic_light_inactive = "#D1D1D1"
+
+# ---------------------------------------------------------------------------
+# Paleta oscura
+# ---------------------------------------------------------------------------
+[dark]
+accent = "#0A84FF"
+accent_fg = "#FFFFFF"
+link = "#419CFF"
+visited = "#BF5AF2"
+positive = "#30D158"
+neutral = "#FF9F0A"
+negative = "#FF453A"
+
+label = "#FFFFFFD9"
+label_secondary = "#FFFFFF8C"  # 55 %
+label_tertiary = "#FFFFFF40"
+
+window = "#323232"
+window_alt = "#2B2B2B"
+view = "#1E1E1E"
+view_alt = "#262626"
+button = "#5C5C5C"
+button_alt = "#4A4A4A"
+header = "#383838"
+header_inactive = "#2D2D2D"
+sidebar = "#262626"
+tooltip = "#2A2A2A"
+complementary = "#141414"
+selection_inactive = "#464646"
+separator = "#FFFFFF1A"
+
+traffic_light_inactive = "#4D4D4D"
