@@ -45,7 +45,8 @@ sombras, tipografía, semáforos) viven en **`tokens/goldenglass.toml`**.
 | `build/color-schemes/*.colors` | Plasma / KColorScheme (todas las apps KDE) | ✅ F0 |
 | `build/tokens.json` | KCM y plasmoids QML | ✅ F0 |
 | `goldenglass_tokens.h` | QStyle y KDecoration (valores por defecto) | F1 |
-| SVG de `plasma/desktoptheme` (desde plantillas) | Plasma Style | F2 |
+| `build/plasma/desktoptheme/GoldenGlass/` (SVG dibujados por código) | Plasma Style | ✅ F2 |
+| `build/plasma/look-and-feel/org.goldenglass.{light,dark}.desktop/` | Global Themes (desde `plasma/look-and-feel/common/`) | ✅ F2 |
 | `gtk/*.css` | GTK3 / GTK4 | F6 |
 
 **Regla:** los archivos generados no se editan a mano ni se versionan. Se cambia
@@ -56,13 +57,15 @@ el token y se regenera (`install.sh` y el PKGBUILD lo hacen solos).
 ```
 goldenglass/
 ├── tokens/              # goldenglass.toml
-├── tools/               # gen_tokens.py, plantillas, install.sh
+├── tools/               # gen_tokens.py (+ plasma_theme.py, lookandfeel.py), install.sh,
+│                        # preview_plasma.py (vista previa), sandbox.sh (sesión aislada)
+├── assets/logo/         # logo GoldenGlass (símbolo monocromo y versión a color)
 ├── kstyle/              # QStyle C++ (fork de Darkly) → goldenglass6.so
 ├── kdecoration/         # Plugin KDecoration3
 ├── kcm/                 # Módulo de Ajustes "GoldenGlass"
 ├── plasma/
-│   ├── desktoptheme/    # Plasma Style
-│   ├── look-and-feel/   # Global Themes claro y oscuro
+│   ├── look-and-feel/   # plantilla común de los Global Themes (layout, splash)
+│   ├── shell/           # shell org.goldenglass.desktop (pantalla de bloqueo)
 │   └── plasmoids/       # Centro de control, Launchpad, menú de sistema
 ├── gtk/                 # (generado en parte)
 ├── icons/               # GoldenGlass + GoldenGlass-Dark
@@ -107,16 +110,40 @@ goldenglass/
     forzar la recarga de Plasma. **Se valida con un spike antes de F3.**
 
 ### 4.5 Escritorio Plasma — `plasma/`
-- **Plasma Style** (`desktoptheme/GoldenGlass`): barra de menús, dock, diálogos,
-  tooltips, OSD, notificaciones, KRunner.
+- **Plasma Style** `GoldenGlass`: lo genera `tools/plasma_theme.py` dibujando
+  cada pieza de FrameSvg por código (esquinas, bordes, máscara de blur, sombra).
+  Usa clases `ColorScheme-*`, así que **un solo Plasma Style sirve para claro y
+  oscuro**; solo la opacidad queda fija en el SVG. Genera diálogos, panel (barra
+  de menús y dock), tooltips, fondo de widgets, tareas del dock (punto bajo las
+  apps abiertas), resaltado de listas, campos de texto y cabeceras de popups. Lo
+  que no genera se hereda de Breeze. `plasmarc` pide saturación extra detrás del
+  blur ("vibrancy").
 - **Global Themes** (`look-and-feel/`): `org.goldenglass.light.desktop` y
   `org.goldenglass.dark.desktop`. Incluyen:
   - Script de layout: panel superior (menú de sistema, menú global, bandeja,
     reloj) + **dock** = panel nativo flotante centrado con gestor de tareas solo
     iconos (sin magnificación).
-  - Splash de inicio.
-  - **Pantalla de bloqueo** estilo macOS (reloj grande, avatar, campo de vidrio).
-- **Spotlight:** KRunner en modo flotante centrado, estilizado por el Plasma Style.
+  - Splash de inicio (logo + barra de progreso).
+  - Fuentes, esquema de color, Plasma Style y botones de ventana a la izquierda
+    (`ButtonsOnLeft=XIA`).
+  - `ShellPackage=org.goldenglass.desktop` (ver pantalla de bloqueo).
+  - Estilo de apps, decoración, iconos, cursores y wallpaper se añaden cuando
+    existan (F1, F5).
+- **Pantalla de bloqueo** estilo macOS (reloj grande arriba, avatar y contraseña
+  abajo). Desde Plasma 6 vive en el **paquete de shell**, no en el Global Theme:
+  - `plasma/shell/org.goldenglass.desktop` solo trae `lockscreen/` y hereda el
+    resto de `org.kde.plasma.desktop` (`X-Plasma-FallbackPackage`).
+  - `lockscreen/` es la de plasma-desktop 6.7.5 con cambios mínimos (ver
+    `UPSTREAM.md`).
+  - Efecto: plasmashell guarda el layout en
+    `plasma-org.goldenglass.desktop-appletsrc`. El layout previo del usuario no se
+    toca y vuelve si regresa a Breeze. Por eso el Global Theme trae el layout con
+    los dos nombres (`org.kde.plasma.desktop-layout.js` y
+    `org.goldenglass.desktop-layout.js`).
+  - El shell y los botones solo se aplican con "Disposición del escritorio y
+    ventanas" (`plasma-apply-lookandfeel --resetLayout`).
+- **Spotlight:** KRunner flotante y centrado (`krunnerrc FreeFloating=true`,
+  escrito por el script de layout), estilizado por el Plasma Style.
 - **Plasmoids propios** (`plasmoids/`):
   - `org.goldenglass.controlcenter` — Wi-Fi, Bluetooth, sonido, brillo, modo
     oscuro, slider de vidrio.
@@ -174,9 +201,9 @@ goldenglass/
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| F0 | Repo, tokens, generador, color schemes, fontconfig, `install.sh` | en curso |
-| F1 | Fork de Darkly renombrado: QStyle + decoración (semáforos, radios, sidebar, toolbar unificada) | pendiente |
-| F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | pendiente |
+| F0 | Repo, tokens, generador, color schemes, fontconfig, `install.sh` | ✅ |
+| F1 | Fork de Darkly renombrado: QStyle + decoración (semáforos, radios, sidebar, toolbar unificada) | en curso (importado) |
+| F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | en curso |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | pendiente |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | pendiente |
 | F5 | Iconos, cursores, wallpapers | pendiente |
@@ -196,3 +223,4 @@ con refracción, X11 y Plasma < 6.7.
 | Roturas por actualizaciones de Qt/KDE (rolling) | PKGBUILD con rebuild; CI contra la versión actual de Arch |
 | Alias de fuente no resuelto por Qt | Plan B descrito en 4.6 |
 | libadwaita ignora temas | Solo colores; documentado |
+| Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` (barra y dock comparten SVG) | `radius.dock ≤ menubar_height / 2` (14 px); el generador lo valida |

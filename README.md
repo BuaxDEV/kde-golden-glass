@@ -6,7 +6,7 @@ dock, semáforos, variantes clara/oscura/automática.
 
 > Proyecto independiente. No contiene assets, fuentes ni marcas de Apple.
 
-**Estado:** F0 (fundamentos). Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+**Estado:** F2 (escritorio Plasma) en curso. Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Requisitos
 
@@ -17,11 +17,21 @@ dock, semáforos, variantes clara/oscura/automática.
 ## Desarrollo
 
 ```sh
-python3 tools/gen_tokens.py      # regenera build/ desde tokens/goldenglass.toml
-tools/install.sh --dev           # instala en ~/.local con symlinks
-plasma-apply-colorscheme GoldenGlassLight
+python3 tools/gen_tokens.py              # regenera build/ desde tokens/goldenglass.toml
+python3 tools/preview_plasma.py          # vista previa del Plasma Style (build/preview-*.png, requiere PyQt6)
+tools/sandbox.sh light                   # sesión Plasma aislada y sin ventana → capturas en build/sandbox/
+tools/install.sh --dev                   # instala en ~/.local con symlinks
+plasma-apply-lookandfeel -a org.goldenglass.light.desktop --resetLayout
 tools/install.sh --uninstall
 ```
+
+`--resetLayout` (o marcar "Disposición del escritorio y ventanas" al aplicar el
+Global Theme) es necesario para la barra de menús, el dock, los botones de
+ventana a la izquierda y la pantalla de bloqueo. Tu layout anterior no se borra:
+vuelve al regresar a Breeze (ver `docs/ARCHITECTURE.md` §4.5).
+
+`tools/sandbox.sh` no toca tu sesión: usa KWin virtual, un DBus privado y
+directorios XDG propios en `build/sandbox/home`.
 
 Todo valor visual se cambia en `tokens/goldenglass.toml`, nunca en los archivos
 generados.
