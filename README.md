@@ -28,7 +28,7 @@ tools/install.sh --uninstall
 Estilo de apps y decoración de ventanas (C++), con pacman:
 
 ```sh
-cd packaging/goldenglass-kstyle && makepkg -si   # compila el último commit de la rama activa
+cd packaging/goldenglass-kstyle && makepkg -si   # compila main (otra rama: GOLDENGLASS_BRANCH=… makepkg -si)
 sudo pacman -R goldenglass-kstyle                # desinstalar
 ```
 

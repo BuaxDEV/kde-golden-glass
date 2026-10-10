@@ -6,6 +6,7 @@
 # configuración ni la sesión del usuario.
 #
 #   tools/sandbox.sh [light|dark]
+#   GG_SANDBOX_APP=dolphin tools/sandbox.sh   # app para la captura «app» (por defecto systemsettings)
 #
 # Deja capturas en build/sandbox/: desktop, app, spotlight, lockscreen,
 # lockscreen-ui y splash. El estilo y la decoración se compilan desde build/cmake.
@@ -132,8 +133,8 @@ plasmashell --no-respawn &
 sleep 12
 shot desktop
 
-log "abriendo una aplicación (estilo + decoración)"
-systemsettings &
+log "abriendo una aplicación (estilo + decoración): ${GG_SANDBOX_APP:-systemsettings}"
+${GG_SANDBOX_APP:-systemsettings} &
 app=$!
 sleep 6
 shot app

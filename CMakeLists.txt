@@ -31,6 +31,22 @@ set(QT_NO_CREATE_VERSIONLESS_TARGETS ON)
 set(QT_NO_CREATE_VERSIONLESS_FUNCTIONS ON)
 
 set(QT_MAJOR_VERSION 6)
+
+# Tokens de diseño → cabecera C++ con los valores por defecto de los .kcfg.
+# Se regenera (reconfigurando) cuando cambian los tokens o el generador.
+find_package(Python3 3.11 REQUIRED COMPONENTS Interpreter)
+set(GOLDENGLASS_TOKENS_HEADER "${CMAKE_BINARY_DIR}/generated/goldenglass_tokens.h")
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/tools/gen_tokens.py" --cxx-header "${GOLDENGLASS_TOKENS_HEADER}"
+    RESULT_VARIABLE GOLDENGLASS_TOKENS_RESULT
+)
+if(NOT GOLDENGLASS_TOKENS_RESULT EQUAL 0)
+    message(FATAL_ERROR "No se pudo generar ${GOLDENGLASS_TOKENS_HEADER} desde tokens/goldenglass.toml")
+endif()
+file(GLOB GOLDENGLASS_TOKEN_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/tools/*.py")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/tokens/goldenglass.toml" ${GOLDENGLASS_TOKEN_SOURCES})
+include_directories("${CMAKE_BINARY_DIR}/generated")
 include(KDEInstallDirs6)
 include(KDECMakeSettings)
 

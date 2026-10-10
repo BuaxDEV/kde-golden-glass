@@ -52,7 +52,7 @@ ConfigWidget::ConfigWidget(QObject *parent, const KPluginMetaData &data, const Q
     connect(m_ui.drawBackgroundGradient, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
     connect(m_ui.drawTitleBarSeparator, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
     connect(m_ui.roundedCorners, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
-    connect(m_ui.otherCornerRadius, SIGNAL(valueChanged(int)), SLOT(updateChanged()));
+    connect(m_ui.windowCornerRadius, SIGNAL(valueChanged(int)), SLOT(updateChanged()));
     connect(m_ui.floatingTitlebar, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
     connect(m_ui.blurTransparentTitleBar, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
     connect(m_ui.matchInactiveTitleBar, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
@@ -92,7 +92,7 @@ void ConfigWidget::load()
     m_ui.roundedCorners->setChecked(false);
     m_ui.roundedCorners->setEnabled(false);
 #endif
-    m_ui.otherCornerRadius->setValue(m_internalSettings->otherCornerRadius());
+    m_ui.windowCornerRadius->setValue(m_internalSettings->windowCornerRadius());
     m_ui.floatingTitlebar->setChecked(m_internalSettings->floatingTitlebar());
     m_ui.blurTransparentTitleBar->setChecked(m_internalSettings->blurTransparentTitleBar());
     m_ui.matchInactiveTitleBar->setChecked(m_internalSettings->matchInactiveTitleBar());
@@ -130,7 +130,7 @@ void ConfigWidget::save()
     m_internalSettings->setAnimationsDuration(m_ui.animationsDuration->value());
     m_internalSettings->setDrawTitleBarSeparator(m_ui.drawTitleBarSeparator->isChecked());
     m_internalSettings->setRoundedCorners(m_ui.roundedCorners->isChecked());
-    m_internalSettings->setOtherCornerRadius(m_ui.otherCornerRadius->value());
+    m_internalSettings->setWindowCornerRadius(m_ui.windowCornerRadius->value());
     m_internalSettings->setFloatingTitlebar(m_ui.floatingTitlebar->isChecked());
     m_internalSettings->setBlurTransparentTitleBar(m_ui.blurTransparentTitleBar->isChecked());
     m_internalSettings->setMatchInactiveTitleBar(m_ui.matchInactiveTitleBar->isChecked());
@@ -180,7 +180,7 @@ void ConfigWidget::defaults()
     m_ui.animationsDuration->setValue(m_internalSettings->animationsDuration());
     m_ui.drawTitleBarSeparator->setChecked(m_internalSettings->drawTitleBarSeparator());
     m_ui.roundedCorners->setChecked(m_internalSettings->roundedCorners());
-    m_ui.otherCornerRadius->setValue(m_internalSettings->otherCornerRadius());
+    m_ui.windowCornerRadius->setValue(m_internalSettings->windowCornerRadius());
     m_ui.floatingTitlebar->setChecked(m_internalSettings->floatingTitlebar());
     m_ui.blurTransparentTitleBar->setChecked(m_internalSettings->blurTransparentTitleBar());
     m_ui.matchInactiveTitleBar->setChecked(m_internalSettings->matchInactiveTitleBar());
@@ -214,7 +214,7 @@ void ConfigWidget::updateChanged()
         modified = true;
     else if (m_ui.roundedCorners->isChecked() != m_internalSettings->roundedCorners())
         modified = true;
-    else if (m_ui.otherCornerRadius->value() != m_internalSettings->otherCornerRadius())
+    else if (m_ui.windowCornerRadius->value() != m_internalSettings->windowCornerRadius())
         modified = true;
     else if (m_ui.floatingTitlebar->isChecked() != m_internalSettings->floatingTitlebar())
         modified = true;

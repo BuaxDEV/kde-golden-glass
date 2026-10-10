@@ -44,7 +44,7 @@ sombras, tipografía, semáforos) viven en **`tokens/goldenglass.toml`**.
 |---|---|---|
 | `build/color-schemes/*.colors` | Plasma / KColorScheme (todas las apps KDE) | ✅ F0 |
 | `build/tokens.json` | KCM y plasmoids QML | ✅ F0 |
-| `goldenglass_tokens.h` | QStyle y KDecoration (valores por defecto) | F1 |
+| `build/cmake/generated/goldenglass_tokens.h` (lo genera CMake al configurar) | Valores por defecto de los `.kcfg` del estilo y la decoración | ✅ F1 |
 | `build/plasma/desktoptheme/GoldenGlass/` (SVG dibujados por código) | Plasma Style | ✅ F2 |
 | `build/plasma/look-and-feel/org.goldenglass.{light,dark}.desktop/` | Global Themes (desde `plasma/look-and-feel/common/`) | ✅ F2 |
 | `gtk/*.css` | GTK3 / GTK4 | F6 |
@@ -89,6 +89,14 @@ goldenglass/
   sin iconos, controles con radios de los tokens.
 - Lee `~/.config/goldenglassrc` y reacciona en vivo (KConfigWatcher) a los
   cambios del slider.
+- **Valores de fábrica desde los tokens:** los `.kcfg` usan
+  `<default code="true">GoldenGlass::Tokens::…</default>`. Los módulos de
+  configuración heredados siguen sirviendo para ajustar; sin `goldenglassrc`
+  rige `goldenglass.toml`.
+- **Radios por función, en px** (compartidos por estilo y decoración en
+  `[Common]`): `CornerRadius` (controles), `MenuCornerRadius` (menús, popups y
+  sus sombras), `WindowCornerRadius` (decoración y región de blur de la ventana,
+  para que coincidan).
 - Las apps Kirigami/QML lo heredan vía `qqc2-desktop-style`.
 
 ### 4.2 Decoración de ventanas — `kdecoration/` (C++, KDecoration3)

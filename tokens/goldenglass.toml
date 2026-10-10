@@ -89,6 +89,13 @@ size = 40
 strength = 0.25
 
 # ---------------------------------------------------------------------------
+# Decoración de ventanas
+# ---------------------------------------------------------------------------
+[decoration]
+# macOS centra el título en todo el ancho de la barra.
+title_alignment = "AlignCenterFullWidth"  # AlignLeft | AlignCenter | AlignCenterFullWidth | AlignRight
+
+# ---------------------------------------------------------------------------
 # Tipografía — familias son alias de fontconfig (ver fontconfig/)
 # Tamaños en puntos de KDE (13 px de macOS ≈ 10 pt a 96 dpi)
 # ---------------------------------------------------------------------------

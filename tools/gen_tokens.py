@@ -12,6 +12,7 @@ Salidas (en build/, no versionado):
 
 Uso:
   python3 tools/gen_tokens.py [--tokens RUTA] [--out DIR]
+  python3 tools/gen_tokens.py --cxx-header RUTA   # solo la cabecera C++ (CMake)
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import cxx_tokens  # noqa: E402
 import lookandfeel  # noqa: E402
 import plasma_theme  # noqa: E402
 
@@ -182,11 +184,17 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--tokens", type=Path, default=ROOT / "tokens" / "goldenglass.toml")
     ap.add_argument("--out", type=Path, default=ROOT / "build")
+    ap.add_argument("--cxx-header", type=Path, metavar="RUTA",
+                    help="solo escribe la cabecera C++ de tokens en RUTA")
     args = ap.parse_args(argv)
 
     with args.tokens.open("rb") as f:
         tokens = tomllib.load(f)
     validate(tokens)
+
+    if args.cxx_header:
+        cxx_tokens.write(tokens, args.cxx_header)
+        return 0
 
     schemes = args.out / "color-schemes"
     schemes.mkdir(parents=True, exist_ok=True)
