@@ -182,6 +182,25 @@ QColor Helper::sidebarColor(const QPalette &palette) const
 }
 
 //____________________________________________________________________
+void Helper::renderMenuCheckMark(QPainter *painter, const QRectF &rect, const QColor &color) const
+{
+    // thin rounded check mark, about 10 px wide, centered in rect
+    const qreal size = qMin<qreal>(10.0, qMin(rect.width(), rect.height()));
+    const QPointF c = rect.center();
+    QPainterPath check;
+    check.moveTo(c + QPointF(-0.45 * size, 0.02 * size));
+    check.lineTo(c + QPointF(-0.12 * size, 0.36 * size));
+    check.lineTo(c + QPointF(0.45 * size, -0.38 * size));
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing);
+    painter->setPen(QPen(color, 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawPath(check);
+    painter->restore();
+}
+
+//____________________________________________________________________
 QColor Helper::sidePanelOutlineColor(const QPalette &palette) const
 {
     QColor outline(qGray(palette.color(QPalette::Window).rgb()) > 150 ? QColor(0, 0, 0, 20) : QColor(0, 0, 0, 50));

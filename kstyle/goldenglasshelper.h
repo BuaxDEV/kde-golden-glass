@@ -130,6 +130,9 @@ public:
     //* GoldenGlass: sidebar background (macOS 27: darker than the window), keeps the window alpha
     QColor sidebarColor(const QPalette &) const;
 
+    //* GoldenGlass: macOS-style check mark for checked menu items (no box)
+    void renderMenuCheckMark(QPainter *, const QRectF &, const QColor &) const;
+
     //* frame background color
     QColor frameBackgroundColor(const QPalette &palette) const
     {
