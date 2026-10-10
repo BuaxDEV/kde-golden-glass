@@ -2,14 +2,7 @@
 
 include(ECMAddTests)
 
-# Use the correct Qt version based on major version
-if(QT_MAJOR_VERSION EQUAL 5)
-    set(TEST_QT_VERSION ${QT5_MIN_VERSION})
-else()
-    set(TEST_QT_VERSION ${QT_MIN_VERSION})
-endif()
-
-find_package(Qt${QT_MAJOR_VERSION} ${TEST_QT_VERSION} CONFIG REQUIRED COMPONENTS Test Widgets)
+find_package(Qt6 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Test Widgets)
 
 # Generate the config data for tests
 kconfig_add_kcfg_files(test_config_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/../goldenglassstyleconfigdata.kcfgc)

@@ -209,11 +209,7 @@ Style::Style()
                  QStringLiteral("reparseConfiguration"),
                  this,
                  SLOT(configurationChanged()));
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     this->addEventFilter(qApp);
-#else
-    connect(qApp, &QApplication::paletteChanged, this, &Style::configurationChanged);
-#endif
     // call the slot directly; this initial call will set up things that also
     // need to be reset when the system palette changes
     loadConfiguration();
@@ -1703,11 +1699,9 @@ bool Style::eventFilter(QObject *object, QEvent *event)
     } else if (auto commandLinkButton = qobject_cast<QCommandLinkButton *>(object)) {
         return eventFilterCommandLinkButton(commandLinkButton, event);
     }
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     else if (object == qApp && event->type() == QEvent::ApplicationPaletteChange) {
         configurationChanged();
     }
-#endif
     // cast to QWidget
     if (object->isWidgetType()) {
         QWidget *widget = static_cast<QWidget *>(object);
@@ -1987,9 +1981,7 @@ bool Style::eventFilterScrollArea(QWidget *widget, QEvent *event)
             // copy event, send and return
             QMouseEvent copy(mouseEvent->type(),
                              position,
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
                              QCursor::pos(),
-#endif
                              mouseEvent->button(),
                              mouseEvent->buttons(),
                              mouseEvent->modifiers());
@@ -2009,11 +2001,7 @@ bool Style::eventFilterScrollArea(QWidget *widget, QEvent *event)
 
         if (auto scrollArea = qobject_cast<QAbstractScrollArea *>(widget)) {
             auto hoverEvent = static_cast<QHoverEvent *>(event);
-            #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             const auto pos = hoverEvent->position().toPoint();
-            #else
-            const auto pos = hoverEvent->pos();
-            #endif
             bool needPreExpandScrollBar = true;
             const auto widgetUnderCursor = scrollArea->childAt(pos);
             // don't pre-expand scrollbar if widget under cursor is not scrollarea
@@ -6858,11 +6846,7 @@ bool Style::drawRubberBandControl(const QStyleOption *option, QPainter *painter,
     const auto &palette(option->palette);
     auto color = palette.color(QPalette::Highlight);
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QPen pen = KColorUtils::lighten(palette.color(QPalette::Accent));
-#else
-    QPen pen = KColorUtils::lighten(palette.color(QPalette::Highlight));
-#endif
 
     if (!StyleConfigData::roundedRubberBandFrame()) {
         QPen pen = KColorUtils::mix(color, palette.color(QPalette::Active, QPalette::WindowText));

@@ -1862,9 +1862,7 @@ bool Helper::compositingActive() const
 {
 #if GOLDENGLASS_HAVE_X11
     if (isX11()) {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-        return KWindowSystem::compositingActive();
-#elif __has_include(<KX11Extras>)
+#if __has_include(<KX11Extras>)
         return KX11Extras::compositingActive();
 #endif
     }
@@ -1902,12 +1900,7 @@ QPixmap Helper::coloredIcon(const QIcon &icon, const QPalette &palette, const QS
     if (changePalette) {
         KIconLoader::global()->setCustomPalette(palette);
     }
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     const QPixmap pixmap = icon.pixmap(size, devicePixelRatio, mode, state);
-#else
-    Q_UNUSED(devicePixelRatio);
-    const QPixmap pixmap = icon.pixmap(size, mode, state);
-#endif
     if (changePalette) {
         if (activePalette == QPalette()) {
             KIconLoader::global()->resetPalette();

@@ -16,9 +16,7 @@ kcoreaddons_add_plugin(goldenglassstyleconfig SOURCES
 
 target_link_libraries(goldenglassstyleconfig Qt6::Core Qt6::Gui Qt6::Widgets Qt6::DBus)
 target_link_libraries(goldenglassstyleconfig KF6::CoreAddons KF6::ConfigCore KF6::ConfigWidgets KF6::I18n)
-if(QT_MAJOR_VERSION STREQUAL "6")
-    target_link_libraries(goldenglassstyleconfig KF6::KCMUtils)
-endif()
+target_link_libraries(goldenglassstyleconfig KF6::KCMUtils)
 kcmutils_generate_desktop_file(goldenglassstyleconfig)
 
 set(goldenglass_settings_SOURCES main.cpp)

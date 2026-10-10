@@ -570,7 +570,7 @@ if (m_internalSettings->floatingTitlebar()){
         setBorderOutline(KDecoration3::BorderOutline()); // no outline
 #endif
     } else {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0) && KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
+#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
         const auto color = KColorUtils::mix(
             window()->color(window()->isActive() ? ColorGroup::Active : ColorGroup::Inactive,
                             ColorRole::Frame),
@@ -638,7 +638,7 @@ if (m_internalSettings->floatingTitlebar()){
         setBorderOutline(KDecoration3::BorderOutline());
 #endif
     } else {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0) && KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
+#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
         const auto color = KColorUtils::mix(window()->color(window()->isActive() ? ColorGroup::Active : ColorGroup::Inactive, ColorRole::Frame),
                                             window()->palette().text().color(),
                                             KColorScheme::frameContrast());

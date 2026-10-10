@@ -414,11 +414,7 @@ bool WindowManager::mousePressEvent(QObject *object, QEvent *event)
         _quickTarget = item;
         _dragPoint = mouseEvent->pos();
         _globalDragPoint =
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             mouseEvent->globalPosition().toPoint();
-#else
-            mouseEvent->globalPos();
-#endif
 
         if (_dragTimer.isActive()) {
             _dragTimer.stop();
@@ -454,11 +450,7 @@ bool WindowManager::mousePressEvent(QObject *object, QEvent *event)
     _target = widget;
     _dragPoint = position;
     _globalDragPoint =
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         mouseEvent->globalPosition().toPoint();
-#else
-        mouseEvent->globalPos();
-#endif
     _dragAboutToStart = true;
 
     // send a move event to the current child with same position
@@ -471,9 +463,7 @@ bool WindowManager::mousePressEvent(QObject *object, QEvent *event)
     }
     QMouseEvent localMouseEvent(QEvent::MouseMove,
                                 localPoint,
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
                                 QCursor::pos(),
-#endif
                                 Qt::NoButton,
                                 Qt::LeftButton,
                                 Qt::NoModifier);
@@ -500,11 +490,7 @@ bool WindowManager::mouseMoveEvent(QObject *object, QEvent *event)
     }
 
     auto eventPos =
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         mouseEvent->globalPosition().toPoint();
-#else
-        mouseEvent->globalPos();
-#endif
 
     if (!_dragInProgress) {
         if (_dragAboutToStart) {

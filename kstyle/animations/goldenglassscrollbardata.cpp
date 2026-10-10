@@ -243,22 +243,14 @@ void ScrollBarData::hoverMoveEvent(QObject *object, QEvent *event)
     QHoverEvent *hoverEvent = static_cast<QHoverEvent *>(event);
 
     QStyle::SubControl hoverControl =
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         scrollBar->style()->hitTestComplexControl(QStyle::CC_ScrollBar, &opt, hoverEvent->position().toPoint(), scrollBar);
-#else
-        scrollBar->style()->hitTestComplexControl(QStyle::CC_ScrollBar, &opt, hoverEvent->pos(), scrollBar);
-#endif
     // update hover state
     updateAddLineArrow(hoverControl);
     updateSubLineArrow(hoverControl);
 
     // store position
     _position =
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         hoverEvent->position().toPoint();
-#else
-        hoverEvent->pos();
-#endif
 }
 
 //______________________________________________
