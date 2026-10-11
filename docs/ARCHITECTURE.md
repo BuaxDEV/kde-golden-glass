@@ -237,7 +237,9 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     a KRunner. Medidas en `[apps]` de los tokens (`contents/ui/tokens.js`, que
     `tools/plasmoids.py` genera en cada plasmoid). Las acciones de Kicker
     (`actionList`) se leen solo al abrir el menú contextual: leerlas al cargar
-    tumba plasmashell. Se declara `org.kde.plasma.launchermenu`: Meta lo abre.
+    tumba plasmashell. Los menús (contextual y ordenar) son ventanas emergentes
+    propias (`popupType: Popup.Window`): dentro del panel quedaban recortados
+    y sin blur. Se declara `org.kde.plasma.launchermenu`: Meta lo abre.
   - `org.goldenglass.systemmenu` ✅ — menú del logo como el menú Apple: Acerca de
     este equipo (kinfocenter), Preferencias del Sistema, Tienda (solo si está
     Discover), Forzar salida (KWin `killWindow`), Reposo, Reiniciar…, Apagar…,

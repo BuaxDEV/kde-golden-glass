@@ -56,7 +56,8 @@ PlasmaCore.Dialog {
 
     location: PlasmaCore.Types.Floating
     flags: Qt.WindowStaysOnTopHint
-    hideOnWindowDeactivate: true
+    // un menú abierto es otra ventana: que no cierre el panel al tomar el foco
+    hideOnWindowDeactivate: !contextMenu.opened && !sortMenu.opened
 
     // --- datos ----------------------------------------------------------------
 
@@ -247,13 +248,18 @@ PlasmaCore.Dialog {
             onNewData: source => disconnectSource(source)
         }
 
+        // Menús como ventanas emergentes propias (Qt ≥ 6.8): dentro de la
+        // ventana del panel quedarían recortados por sus bordes y sin el blur
+        // de KWin detrás (el vidrio del menú sería ilegible).
         PlasmaComponents3.Menu {
             id: contextMenu
+            popupType: QQC2.Popup.Window
+            margins: Kirigami.Units.smallSpacing // si Qt lo dibuja dentro del panel, que no se salga
             property var entry: null
 
             function show(entry, item) {
                 contextMenu.entry = entry;
-                popup(item);
+                popup(); // donde está el cursor, como en macOS
             }
 
             PlasmaComponents3.MenuItem {
@@ -347,6 +353,8 @@ PlasmaCore.Dialog {
 
                     PlasmaComponents3.Menu {
                         id: sortMenu
+                        popupType: QQC2.Popup.Window
+                        margins: Kirigami.Units.smallSpacing // si Qt lo dibuja dentro del panel, que no se salga
                         PlasmaComponents3.MenuItem {
                             text: i18n("By Category")
                             checkable: true
