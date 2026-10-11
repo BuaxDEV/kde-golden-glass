@@ -263,8 +263,15 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     → `preferences-system`, `kdeconnect-tray` → `kdeconnect`…). Dependen de
     los temas instalados en la máquina que genera; si uno desaparece, el
     enlace roto no molesta.
-  - **Pendiente:** encerrar en squircle las apps de terceros, a partir de su
-    icono instalado (`install.sh`), como hace macOS.
+  - **Apps de terceros ✅** (`tools/wrap_icons.py`, lo ejecuta `install.sh`):
+    en el equipo del usuario, cada app visible sin icono propio se encierra
+    en el squircle claro/oscuro a partir de su icono original (hicolor o
+    pixmaps, no la versión de otro tema), como hace macOS 26/27. Si el
+    original ya es un cuadrado lleno se recorta al squircle; si no, va al
+    68 %. Sale a `~/.local/share/icons/GoldenGlass{,-Dark}/wrapped/`, carpeta
+    que los temas declaran siempre (vale también con el tema en `/usr`).
+    Volver a ejecutarlo al instalar apps; las apps con `Icon=` como ruta
+    absoluta no se pueden sustituir desde un tema.
   - La papelera de Plasma pide `user-trash-symbolic` dentro de un panel: en el
     dock sale el símbolo, no la papelera a color.
 - **Cursores** ✅ (`tools/cursors.py`, tema `GoldenGlass-cursors`): dibujados
@@ -321,7 +328,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
-| F5 | Iconos, cursores, wallpapers | en curso (wallpapers ✅, cursores ✅, iconos base, tipos de archivo y apps ✅) |
+| F5 | Iconos, cursores, wallpapers | ✅ |
 | F6 | GTK, PKGBUILD, CI en GitHub | pendiente |
 
 ## 8. Fuera de alcance

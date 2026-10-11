@@ -390,18 +390,18 @@ def _theme_index(theme: str) -> dict[str, Path]:
     return {k: v for k, (_, v) in best.items()}
 
 
-def _guards(theme_root: Path, inherits: str, protect: set[str], ours: set[str]) -> int:
-    """Enlaces en <tema>/inherited/ para los nombres heredados que se recortarían
+def _guards(theme_root: Path, inherits: str, protect: set[str], ours: set[str], folder: str = "inherited") -> int:
+    """Enlaces en <tema>/<folder>/ para los nombres heredados que se recortarían
     hasta uno de `protect`. Devuelve cuántos."""
     targets: dict[str, Path] = {}
     for theme in inherits.split(","):
         for name, path in _theme_index(theme).items():
             if name not in ours and name not in targets and _resolves_to(name, ours) in protect:
                 targets[name] = path
-    folder = theme_root / "inherited"
-    folder.mkdir(parents=True, exist_ok=True)
+    out = theme_root / folder
+    out.mkdir(parents=True, exist_ok=True)
     for name, path in sorted(targets.items()):
-        _link(str(path), folder / f"{name}{path.suffix}")
+        _link(str(path), out / f"{name}{path.suffix}")
     return len(targets)
 
 
@@ -456,10 +456,12 @@ def build(tokens: dict, out: Path) -> list[Path]:
 
     subdirs = {rel.rsplit("/", 1)[0] for rel, _, _ in entries}
     for theme, (name, inherits) in THEMES.items():
-        extra = {"inherited"} if (base / theme / "inherited").exists() else set()
+        # «wrapped»: apps de terceros encerradas en squircle por wrap_icons.py
+        # en el equipo del usuario (puede estar vacía o solo en ~/.local).
+        extra = ({"inherited"} if (base / theme / "inherited").exists() else set()) | {"wrapped"}
         _write(base / theme / "index.theme", _index(name, inherits, _directories(subdirs) + [
             (d, {"Size": "64", "MinSize": "8", "MaxSize": "512", "Type": "Scalable", "Context": "Applications"})
-            for d in extra]))
+            for d in sorted(extra)]))
     # El tema oscuro comparte los demás iconos (siguen al esquema de colores):
     # solo cambian las apps y la herencia.
     own = {rel.split("/")[0] for rel, _, _ in dark_entries}
