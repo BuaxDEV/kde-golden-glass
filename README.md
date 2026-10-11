@@ -26,6 +26,9 @@ plasma-apply-lookandfeel -a org.goldenglass.light.desktop --resetLayout
 tools/install.sh --uninstall
 ```
 
+Una vez por clon, `tools/setup-git.sh` (filtro de git para que el `pkgver` que
+reescribe makepkg no cuente como cambio).
+
 Instalación en el sistema con pacman (paquetes divididos, compila desde el repo local):
 
 ```sh

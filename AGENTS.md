@@ -33,3 +33,6 @@ Reglas para cualquier agente (humano o IA) que trabaje en este repositorio.
 - Todo valor visual se define en `tokens/goldenglass.toml`. Los archivos de
   `build/` son generados (`python3 tools/gen_tokens.py`): no se editan a mano ni
   se versionan.
+- `packaging/goldenglass/PKGBUILD`: makepkg reescribe `pkgver=`; con
+  `tools/setup-git.sh` git lo normaliza a `VERSION` (si `git status` lo marca,
+  `git add` no incluye ningún cambio). No se commitea un `pkgver` de makepkg.
