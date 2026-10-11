@@ -67,6 +67,13 @@ menubar_height = 28
 menubar_padding = 6      # margen inferior del contenido de la barra
 dock_icon_size = 48
 dock_padding = 6         # margen entre el borde del dock y los iconos
+# Dock como en macOS con «Ocultar y mostrar automáticamente»: escondido hasta
+# llevar el cursor al borde inferior. none | autohide | dodgewindows
+dock_hiding = "autohide"
+# Animación de deslizamiento de KWin (dock al aparecer/ocultarse y popups de
+# Plasma): entra decelerando y sale acelerando. KWin usa 200 ms por defecto.
+slide_in_ms = 280
+slide_out_ms = 220
 popup_margin = 10        # margen de contenido de diálogos y popups
 tooltip_margin = 6
 popup_shadow = 28        # tamaño de la sombra de popups y dock
