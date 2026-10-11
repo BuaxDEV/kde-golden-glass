@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [{ "Name": "GoldenGlass contributors" }],
+        "Category": "File System",
+        "Description": "Trash for the dock, like macOS: full-color icon, drop files to trash them, empty with confirmation",
+        "Description[es]": "Papelera para el dock, como en macOS: icono a color, suelta archivos para tirarlos y vacíala con confirmación",
+        "Icon": "user-trash",
+        "Id": "org.goldenglass.trash",
+        "License": "GPL-3.0-or-later",
+        "Name": "GoldenGlass Trash",
+        "Name[es]": "Papelera GoldenGlass",
+        "Website": "https://github.com/brayanAP/kde-golden-glass"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
