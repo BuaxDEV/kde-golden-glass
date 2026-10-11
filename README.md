@@ -6,7 +6,7 @@ dock, semáforos, variantes clara/oscura/automática.
 
 > Proyecto independiente. No contiene assets, fuentes ni marcas de Apple.
 
-**Estado:** F0–F5 completas; F6 en curso (GTK listo; faltan empaquetado y CI). Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+**Estado:** F0–F5 completas; F6 en curso (GTK y paquetes listos; falta CI). Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Requisitos
 
@@ -26,15 +26,17 @@ plasma-apply-lookandfeel -a org.goldenglass.light.desktop --resetLayout
 tools/install.sh --uninstall
 ```
 
-Estilo de apps y decoración de ventanas (C++), con pacman:
+Instalación en el sistema con pacman (paquetes divididos, compila desde el repo local):
 
 ```sh
-cd packaging/goldenglass-kstyle && makepkg -si   # compila main (otra rama: GOLDENGLASS_BRANCH=… makepkg -si)
-sudo pacman -R goldenglass-kstyle                # desinstalar
+cd packaging/goldenglass && makepkg -si   # todo (metapaquete goldenglass); otra rama: GOLDENGLASS_BRANCH=… makepkg -si
+plasma-apply-lookandfeel -a org.goldenglass.light.desktop --resetLayout
+sudo pacman -Rns goldenglass              # desinstalar
 ```
 
-Requiere `extra-cmake-modules`. Volver a ejecutar `makepkg -si` tras actualizar
-Qt o KDE.
+Paquetes: `goldenglass-kstyle` (estilo, decoración, ajustes; C++), `goldenglass-plasma`,
+`goldenglass-icons`, `goldenglass-cursors`, `goldenglass-wallpapers`, `goldenglass-gtk`.
+Volver a ejecutar `makepkg -si` tras actualizar Qt o KDE.
 
 Nivel de vidrio en vivo: Preferencias del Sistema › Colores y temas › Vidrio, o desde la terminal (requiere `goldenglass-kstyle` instalado):
 

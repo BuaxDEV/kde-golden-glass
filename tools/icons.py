@@ -340,7 +340,10 @@ def _family(tokens: dict) -> str:
 
 MEDIA_TYPES = {"text", "application", "image", "audio", "inode", "video", "message", "model", "multipart",
                "x-content", "x-epoc"}
-ICON_BASES = (Path.home() / ".local/share/icons", Path("/usr/local/share/icons"), Path("/usr/share/icons"))
+# Al generar para un paquete del sistema (GOLDENGLASS_SYSTEM=1) solo cuentan los
+# temas de /usr: los enlaces no pueden apuntar al /home de quien compila.
+ICON_BASES = ((Path("/usr/share/icons"),) if os.environ.get("GOLDENGLASS_SYSTEM") else
+              (Path.home() / ".local/share/icons", Path("/usr/local/share/icons"), Path("/usr/share/icons")))
 
 
 def _resolves_to(name: str, ours: set[str]) -> str | None:

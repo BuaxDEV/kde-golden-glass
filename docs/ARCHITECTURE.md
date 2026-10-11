@@ -310,14 +310,22 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 
 ## 5. Distribución
 
-- Ya existe `packaging/goldenglass-kstyle/PKGBUILD` (estilo + decoración + KCMs,
-  compila desde el repo local). El resto (Plasma, iconos…) se instala de momento
-  con `tools/install.sh`.
-- **PKGBUILD dividido** (`packaging/`) para AUR/CachyOS:
-  `goldenglass-kstyle` (estilo + decoración + KCM, compilado),
-  `goldenglass-plasma`, `goldenglass-icons`, `goldenglass-cursors`,
-  `goldenglass-wallpapers`, `goldenglass-gtk` y el metapaquete `goldenglass`.
-  Las partes C++ deben recompilarse con cada actualización de Qt/KDE.
+- **PKGBUILD dividido ✅** (`packaging/goldenglass/`, compila la rama `main` del
+  repo local; sin publicar en AUR mientras el repo sea privado):
+
+  | Paquete | Contenido |
+  |---|---|
+  | `goldenglass-kstyle` (x86_64) | estilo, decoración, KCM, `goldenglass-glass` (C++: recompilar tras actualizar Qt/KDE) |
+  | `goldenglass-plasma` | Plasma Style, Global Themes, shell y pantalla de bloqueo, plasmoids, esquemas de color, fontconfig (activado en `/etc/fonts/conf.d`) |
+  | `goldenglass-icons` | temas de iconos claro/oscuro y `goldenglass-wrap-icons` (autostart con `--if-changed`: cada usuario encierra sus apps de terceros al iniciar sesión si cambiaron) |
+  | `goldenglass-cursors` | tema de cursores |
+  | `goldenglass-wallpapers` | fondo día/noche |
+  | `goldenglass-gtk` | temas GTK, CSS de libadwaita y `goldenglass-gtk-sync` (autostart) |
+  | `goldenglass` | metapaquete |
+
+  Se genera con `GOLDENGLASS_SYSTEM=1`: los enlaces de protección de los
+  iconos y el import de adw-gtk3 solo apuntan a `/usr`, nunca al `/home` de
+  quien compila.
 - **`tools/install.sh`** para desarrollo: instala en `~/.local` sin empaquetar.
   `--dev` crea symlinks para iterar sin reinstalar.
 - KDE Store: opcional y posterior, solo para partes no compiladas.
@@ -340,7 +348,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
 | F5 | Iconos, cursores, wallpapers | ✅ |
-| F6 | GTK, PKGBUILD, CI en GitHub | en curso (GTK ✅) |
+| F6 | GTK, PKGBUILD, CI en GitHub | en curso (GTK ✅, PKGBUILD ✅) |
 
 ## 8. Fuera de alcance
 

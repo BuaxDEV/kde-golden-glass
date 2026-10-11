@@ -23,6 +23,7 @@ semáforos de las ventanas con decoración propia (CSD).
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 THEME_ID = "GoldenGlass"
@@ -31,7 +32,9 @@ HEADER = "/* Generado por tools/gen_tokens.py desde tokens/goldenglass.toml — 
 
 
 def _adw_dir() -> Path:
-    """adw-gtk3 instalado (en el paquete, /usr/share/themes)."""
+    """adw-gtk3 instalado (con GOLDENGLASS_SYSTEM=1, siempre el de /usr)."""
+    if os.environ.get("GOLDENGLASS_SYSTEM"):
+        return Path("/usr/share/themes/adw-gtk3")
     for base in ADW_CANDIDATES:
         if (base / "adw-gtk3" / "gtk-3.0" / "gtk.css").exists():
             return base / "adw-gtk3"

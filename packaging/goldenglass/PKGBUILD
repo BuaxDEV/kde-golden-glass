@@ -1,0 +1,193 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# GoldenGlass: tema completo de KDE Plasma inspirado en macOS 27, en paquetes
+# divididos (todo sale de los tokens; nada generado está en el repositorio).
+#
+#   cd packaging/goldenglass && makepkg -si            # todo (metapaquete)
+#   makepkg -s && sudo pacman -U goldenglass-icons-*.pkg.tar.zst   # una parte
+#
+# Compila la rama main del repositorio local (solo lo que tiene commit). Para
+# probar otra rama: GOLDENGLASS_BRANCH=feature/x makepkg -si
+#
+# Tras actualizar Qt o KDE: volver a ejecutar makepkg -si (goldenglass-kstyle
+# es C++ y se enlaza contra Qt/KDE).
+# Desinstalar: sudo pacman -Rns goldenglass
+
+pkgbase=goldenglass
+pkgname=(
+  goldenglass
+  goldenglass-kstyle
+  goldenglass-plasma
+  goldenglass-icons
+  goldenglass-cursors
+  goldenglass-wallpapers
+  goldenglass-gtk
+)
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="GoldenGlass, a macOS 27 inspired theme for KDE Plasma"
+arch=(x86_64)
+url="https://github.com/brayanAP/kde-golden-glass"
+license=(GPL-3.0-or-later CC-BY-SA-4.0)
+makedepends=(
+  cmake extra-cmake-modules git ninja
+  # Qt/KDE para goldenglass-kstyle
+  frameworkintegration kcmutils kcolorscheme kconfig kconfigwidgets kcoreaddons kdecoration
+  kguiaddons ki18n kiconthemes kirigami kwindowsystem qt6-base qt6-declarative
+  # generadores (tools/gen_tokens.py)
+  python python-numpy python-pillow python-pyqt6 qt6-svg fontconfig gettext inter-font
+  # temas heredados: los enlaces de protección de los iconos y el import de
+  # adw-gtk3 apuntan a ellos
+  breeze-icons adw-gtk-theme
+)
+# Rama explícita: sin ella makepkg reutiliza el HEAD guardado en su copia del
+# repositorio (de la primera ejecución) y puede compilar código antiguo.
+source=("goldenglass::git+file://${startdir}/../..#branch=${GOLDENGLASS_BRANCH:-main}")
+sha256sums=(SKIP)
+
+_share=/usr/share/goldenglass
+
+pkgver() {
+  cd goldenglass
+  printf '%s.r%s.g%s' "$(<VERSION)" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cmake -S goldenglass -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DBUILD_TESTING=ON
+  cmake --build build
+
+  # Todo lo demás, para el sistema: solo se miran temas de /usr.
+  GOLDENGLASS_SYSTEM=1 QT_QPA_PLATFORM=offscreen \
+    python goldenglass/tools/gen_tokens.py --out "$srcdir/gen"
+}
+
+check() {
+  QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure
+}
+
+# Lanzador /usr/bin/<nombre> para una herramienta de tools/ instalada en $_share.
+_launcher() {
+  install -Dm755 /dev/stdin "$pkgdir/usr/bin/$1" <<EOF
+#!/bin/sh
+exec python3 $_share/tools/$2 "\$@"
+EOF
+}
+
+# Entrada de autostart de la sesión de Plasma.
+_autostart() {
+  install -Dm644 /dev/stdin "$pkgdir/etc/xdg/autostart/$1.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=$2
+Exec=$1 $3
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=1
+NoDisplay=true
+EOF
+}
+
+_docs() {
+  install -Dm644 goldenglass/README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 goldenglass/LICENSES/*.txt -t "$pkgdir/usr/share/licenses/$pkgname/"
+}
+
+package_goldenglass() {
+  pkgdesc="GoldenGlass, a macOS 27 inspired theme for KDE Plasma (meta package)"
+  arch=(any)
+  depends=(goldenglass-kstyle goldenglass-plasma goldenglass-icons goldenglass-cursors
+           goldenglass-wallpapers goldenglass-gtk)
+}
+
+package_goldenglass-kstyle() {
+  pkgdesc="GoldenGlass widget style, window decoration and settings module"
+  license=(GPL-3.0-or-later)
+  depends=(frameworkintegration kcmutils kcolorscheme kconfig kconfigwidgets kcoreaddons kdecoration
+           kguiaddons ki18n kiconthemes kirigami kwindowsystem qt6-base qt6-declarative python)
+
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 goldenglass/AUTHORS "$pkgdir/usr/share/doc/$pkgname/AUTHORS"
+  install -Dm644 goldenglass/UPSTREAM.md "$pkgdir/usr/share/doc/$pkgname/UPSTREAM.md"
+  _docs
+}
+
+package_goldenglass-plasma() {
+  pkgdesc="GoldenGlass Plasma style, global themes, lock screen, plasmoids and color schemes"
+  arch=(any)
+  depends=(plasma-workspace plasma-desktop kscreenlocker plasma5support plasma-nm plasma-pa bluez-qt
+           powerdevil kcmutils fontconfig inter-font)
+  optdepends=('goldenglass-kstyle: widget style and window decoration used by the global themes'
+              'goldenglass-icons: icon theme used by the global themes'
+              'goldenglass-cursors: cursor theme used by the global themes'
+              'goldenglass-wallpapers: wallpaper used by the global themes')
+
+  local data="$pkgdir/usr/share"
+  install -Dm644 gen/color-schemes/*.colors -t "$data/color-schemes/"
+  install -Dm644 goldenglass/fontconfig/60-goldenglass.conf -t "$data/fontconfig/conf.avail/"
+  install -dm755 "$pkgdir/etc/fonts/conf.d"
+  ln -s /usr/share/fontconfig/conf.avail/60-goldenglass.conf "$pkgdir/etc/fonts/conf.d/60-goldenglass.conf"
+  install -dm755 "$data/plasma/desktoptheme" "$data/plasma/look-and-feel" "$data/plasma/shells" \
+    "$data/plasma/plasmoids"
+  cp -r gen/plasma/desktoptheme/GoldenGlass "$data/plasma/desktoptheme/"
+  cp -r gen/plasma/look-and-feel/org.goldenglass.{light,dark}.desktop "$data/plasma/look-and-feel/"
+  cp -r goldenglass/plasma/shell/org.goldenglass.desktop "$data/plasma/shells/"
+  cp -r gen/plasma/plasmoids/org.goldenglass.* "$data/plasma/plasmoids/"
+  install -Dm644 goldenglass/assets/logo/goldenglass{,-symbolic}.svg -t "$data/icons/hicolor/scalable/apps/"
+  _docs
+}
+
+package_goldenglass-icons() {
+  pkgdesc="GoldenGlass icon themes (light and dark) with app icons and third-party icon wrapping"
+  arch=(any)
+  license=(CC-BY-SA-4.0 GPL-3.0-or-later)
+  depends=(breeze-icons hicolor-icon-theme python python-pyqt6 qt6-svg)
+  optdepends=('whitesur-icon-theme: macOS-like icons for everything GoldenGlass does not draw')
+
+  install -dm755 "$pkgdir/usr/share/icons"
+  cp -a gen/icons/GoldenGlass gen/icons/GoldenGlass-Dark "$pkgdir/usr/share/icons/"
+  # goldenglass-wrap-icons: encierra en squircle las apps de terceros, por
+  # usuario (~/.local); al iniciar sesión, solo si cambiaron las apps.
+  install -Dm644 goldenglass/tools/{icons,icons_apps,icons_mime,wrap_icons}.py -t "$pkgdir$_share/tools/"
+  _launcher goldenglass-wrap-icons wrap_icons.py
+  _autostart goldenglass-wrap-icons "GoldenGlass icon wrapping" --if-changed
+  _docs
+}
+
+package_goldenglass-cursors() {
+  pkgdesc="GoldenGlass cursor theme (scalable and Xcursor)"
+  arch=(any)
+  license=(CC-BY-SA-4.0)
+  depends=(breeze-cursors)  # Inherits=breeze_cursors
+
+  install -dm755 "$pkgdir/usr/share/icons"
+  cp -a gen/cursors/GoldenGlass-cursors "$pkgdir/usr/share/icons/"
+  rm -f "$pkgdir/usr/share/icons/GoldenGlass-cursors/.stamp"
+  _docs
+}
+
+package_goldenglass-wallpapers() {
+  pkgdesc="GoldenGlass wallpaper (day and night)"
+  license=(CC-BY-SA-4.0)
+  arch=(any)
+
+  install -dm755 "$pkgdir/usr/share/wallpapers"
+  cp -a gen/wallpapers/GoldenGlass "$pkgdir/usr/share/wallpapers/"
+  rm -f "$pkgdir/usr/share/wallpapers/GoldenGlass/.stamp"
+  _docs
+}
+
+package_goldenglass-gtk() {
+  pkgdesc="GoldenGlass GTK themes on top of adw-gtk3, libadwaita colors and automatic light/dark sync"
+  arch=(any)
+  depends=(adw-gtk-theme kde-gtk-config kconfig python python-pyqt6)
+
+  install -dm755 "$pkgdir/usr/share/themes"
+  cp -a gen/gtk/GoldenGlass gen/gtk/GoldenGlass-Dark "$pkgdir/usr/share/themes/"
+  install -Dm644 gen/gtk/libadwaita.css -t "$pkgdir$_share/gtk/"
+  install -Dm644 goldenglass/tools/gtk_sync.py -t "$pkgdir$_share/tools/"
+  _launcher goldenglass-gtk-sync gtk_sync.py
+  _autostart goldenglass-gtk-sync "GoldenGlass GTK sync"
+  _docs
+}
