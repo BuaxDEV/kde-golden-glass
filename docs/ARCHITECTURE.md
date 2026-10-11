@@ -185,6 +185,13 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     (`plasma.slide_in_ms`/`slide_out_ms`, que también usan los popups de
     Plasma) porque KLookAndFeelManager ignora esa clave en `contents/defaults`.
     Límite: Plasma espera 500 ms fijos tras salir el cursor antes de ocultarlo.
+  - Atajos de macOS (script de KWin `org.goldenglass.shortcuts`, en
+    `plasma/kwin/scripts/`, que el layout activa en `kwinrc`): Ctrl+↑ Mission
+    Control (vista general de KWin con los escritorios) y Ctrl+↓ App Exposé
+    (ventanas de la app actual). Lanzan las acciones de KWin por kglobalaccel y
+    se pueden cambiar en Preferencias › Atajos. Cambiar de escritorio sigue en
+    Meta+Ctrl+←/→: Ctrl+←/→ es saltar palabra en Linux. KWin carga el script
+    al reconfigurarse o en el siguiente inicio de sesión.
   - Splash de inicio (logo + barra de progreso).
   - Fuentes, esquema de color, Plasma Style, estilo de apps `GoldenGlass` y
     decoración `org.goldenglass.decoration` (requieren el paquete

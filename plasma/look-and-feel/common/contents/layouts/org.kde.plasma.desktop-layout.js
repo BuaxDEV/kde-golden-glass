@@ -94,3 +94,7 @@ lookAndFeel.writeEntry("DefaultDarkLookAndFeel", "org.goldenglass.dark.desktop")
 // --- Spotlight: KRunner flotante y centrado ---------------------------------
 const krunner = ConfigFile("krunnerrc", "General");
 krunner.writeEntry("FreeFloating", true);
+
+// --- Atajos de macOS (script de KWin org.goldenglass.shortcuts) -------------
+// Ctrl+↑ Mission Control, Ctrl+↓ App Exposé.
+ConfigFile("kwinrc", "Plugins").writeEntry("org.goldenglass.shortcutsEnabled", true);

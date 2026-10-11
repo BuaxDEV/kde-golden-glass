@@ -134,6 +134,8 @@ package_goldenglass-plasma() {
   cp -r gen/plasma/look-and-feel/org.goldenglass.{light,dark}.desktop "$data/plasma/look-and-feel/"
   cp -r goldenglass/plasma/shell/org.goldenglass.desktop "$data/plasma/shells/"
   cp -r gen/plasma/plasmoids/org.goldenglass.* "$data/plasma/plasmoids/"
+  install -dm755 "$data/kwin/scripts"
+  cp -r goldenglass/plasma/kwin/scripts/org.goldenglass.shortcuts "$data/kwin/scripts/"
   install -Dm644 goldenglass/assets/logo/goldenglass{,-symbolic}.svg -t "$data/icons/hicolor/scalable/apps/"
   _docs
 }
