@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [{ "Name": "GoldenGlass contributors" }],
+        "Category": "Application Launchers",
+        "Description": "System menu with the GoldenGlass logo: about, settings, force quit, sleep, restart, shut down, lock and log out",
+        "Description[es]": "Menú de sistema con el logo de GoldenGlass: acerca de, ajustes, forzar salida, reposo, reiniciar, apagar, bloquear y cerrar sesión",
+        "Icon": "goldenglass-symbolic",
+        "Id": "org.goldenglass.systemmenu",
+        "License": "GPL-3.0-or-later",
+        "Name": "GoldenGlass System Menu",
+        "Name[es]": "Menú de sistema GoldenGlass",
+        "Website": "https://github.com/brayanAP/buapdev-cachyos-kde-macos"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

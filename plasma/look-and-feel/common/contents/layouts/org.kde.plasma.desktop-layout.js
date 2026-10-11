@@ -22,11 +22,11 @@ for (let screen = 0; screen < screenCount; ++screen) {
     // fondo con los bordes activos, y un panel flotante los activa todos.
     menubar.height = MENUBAR_HEIGHT;
 
-    // Menú de sistema (provisional: Kickoff con el logo; en F4 se sustituye
-    // por el plasmoid org.goldenglass.systemmenu).
-    const systemMenu = menubar.addWidget("org.kde.plasma.kickoff");
-    systemMenu.currentConfigGroup = ["General"];
-    systemMenu.writeConfig("icon", "goldenglass-symbolic");
+    // Menú del logo (como el menú Apple), con Alt+F1 como Kickoff.
+    const systemMenu = menubar.addWidget("org.goldenglass.systemmenu");
+    if (screen === 0) {
+        systemMenu.globalShortcut = "Alt+F1";
+    }
 
     // Menú global de la aplicación activa.
     menubar.addWidget("org.kde.plasma.appmenu");
