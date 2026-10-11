@@ -11,6 +11,7 @@ Salidas (en build/, no versionado):
   build/plasma/look-and-feel/org.goldenglass.{light,dark}.desktop/
   build/plasma/plasmoids/<id>/            (plasmoids con sus traducciones)
   build/wallpapers/GoldenGlass/           (fondo día/noche; se cachea)
+  build/cursors/GoldenGlass-cursors/      (tema de cursores; se cachea)
 
 Uso:
   python3 tools/gen_tokens.py [--tokens RUTA] [--out DIR]
@@ -28,6 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import cursors  # noqa: E402
 import cxx_tokens  # noqa: E402
 import lookandfeel  # noqa: E402
 import plasma_theme  # noqa: E402
@@ -218,6 +220,7 @@ def main(argv: list[str] | None = None) -> int:
     written += lookandfeel.build(tokens, args.out)
     written += plasmoids.build(args.out)
     written += wallpaper.build(args.out)
+    written += cursors.build(args.out)
 
     for p in written:
         print(f"  {p.relative_to(ROOT) if p.is_relative_to(ROOT) else p}")
