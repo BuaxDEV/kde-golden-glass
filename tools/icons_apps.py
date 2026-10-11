@@ -258,6 +258,14 @@ def _custom_paper(dark: bool):
     return (GRAPHITE if dark else ("#FFFFFF", "#E4E6EB")), WHITE
 
 
+def apps_grid(dark: bool) -> str:
+    """Icono de Apps (el lanzador del dock): cuadrícula de 3×3 apps de colores."""
+    colors = ("#FF5F57", "#FEBC2E", "#28C840", "#5AC8FA", "#007AFF", "#AF52DE", "#FF9500", "#34C759", "#FF2D55")
+    side, gap, start = 8.4, 2.8, 17.2
+    return "".join(f'<rect x="{start + (i % 3) * (side + gap):.1f}" y="{start + (i // 3) * (side + gap):.1f}" '
+                   f'width="{side}" height="{side}" rx="2.4" fill="{c}"/>' for i, c in enumerate(colors))
+
+
 APPS: tuple[App, ...] = (
     App(("org.kde.dolphin", "dolphin", "system-file-manager"), ("#5AC8FA", "#0A6CFF"), _const(FOLDER)),
     App(("utilities-terminal", "org.kde.konsole", "konsole", "terminal"), WHITE, terminal(), custom=terminal_custom),
@@ -282,6 +290,7 @@ APPS: tuple[App, ...] = (
     App(("kmenuedit", "org.kde.kmenuedit"), ("#8C9BB4", "#4B5A70"), _const(MENUEDIT)),
     App(("klipper", "org.kde.klipper"), ("#63E6BE", "#12B886"), _const(KLIPPER)),
     App(("preferences-desktop-theme", "goldenglass-settings"), ("#F7C76B", "#D98E2B"), _const(THEME)),
+    App(("goldenglass-apps",), WHITE, apps_grid, custom=_custom_paper),
     App(("preferences-desktop-color", "org.kde.kcolorschemeeditor"), WHITE, color_wheel, custom=_custom_paper),
     App(("org.cachyos.hello", "cachyos-hello"), ("#2EE6C0", "#00897B"), _const(HELLO)),
     App(("org.cachyos.KernelManager",), ("#4CD964", "#1E8E3E"), _const(KERNEL)),
