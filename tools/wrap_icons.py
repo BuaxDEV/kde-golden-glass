@@ -18,6 +18,7 @@ Uso:
   goldenglass-wrap-icons            (o python3 tools/wrap_icons.py)
   goldenglass-wrap-icons --list     solo enseña qué haría
   goldenglass-wrap-icons --clean    borra los iconos encerrados
+  goldenglass-wrap-icons --if-changed   solo si cambiaron las apps (autostart)
 
 Las apps con Icon= como ruta absoluta no se pueden sustituir desde un tema y
 se dejan como están. Al instalar apps nuevas, volver a ejecutarlo.
@@ -28,6 +29,7 @@ from __future__ import annotations
 import argparse
 import base64
 import configparser
+import hashlib
 import os
 import shutil
 import sys
@@ -209,6 +211,8 @@ def main() -> int:
                     default=Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "icons")
     ap.add_argument("--list", action="store_true", help="enseña qué se encerraría, sin escribir")
     ap.add_argument("--clean", action="store_true", help="borra los iconos encerrados")
+    ap.add_argument("--if-changed", action="store_true",
+                    help="no hace nada si las apps y sus iconos no cambiaron desde la última vez")
     args = ap.parse_args()
 
     if args.clean:
@@ -227,6 +231,16 @@ def main() -> int:
         src = _original(name)
         if src:
             todo.append((name, label, src))
+
+    # Huella de lo que se encerraría (nombres, archivos y fechas) y del propio
+    # generador: con --if-changed, si coincide con la última, no se repite.
+    digest = hashlib.sha256(Path(__file__).read_bytes())
+    for name, _, src in todo:
+        digest.update(f"{name}\0{src}\0{src.stat().st_mtime_ns}\0".encode())
+    stamp = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "goldenglass" / "wrap-icons.stamp"
+    complete = all((args.icons_dir / t / "wrapped").is_dir() for t in THEMES)
+    if args.if_changed and complete and stamp.exists() and stamp.read_text() == digest.hexdigest():
+        return 0
     if args.list:
         for name, label, src in todo:
             print(f"{name:40} {label:30} {src}")
@@ -242,6 +256,8 @@ def main() -> int:
         # Mismo recorte de nombres que con las apps dibujadas (ver icons.py)
         inherits = icons.THEMES[theme][1]
         icons._guards(args.icons_dir / theme, inherits, set(rendered), own | set(rendered), folder="wrapped")
+    stamp.parent.mkdir(parents=True, exist_ok=True)
+    stamp.write_text(digest.hexdigest())
     print(f"GoldenGlass: {len(rendered)} iconos encerrados en {args.icons_dir}/GoldenGlass{{,-Dark}}/wrapped")
     return 0
 

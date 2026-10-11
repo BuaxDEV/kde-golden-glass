@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Instalación de desarrollo de GoldenGlass en ~/.local (sin empaquetar).
-# Para instalar en el sistema usar el PKGBUILD de packaging/.
+# Para instalar en el sistema usar packaging/goldenglass/PKGBUILD (paquetes divididos).
 #
 #   tools/install.sh            genera e instala (copia)
 #   tools/install.sh --dev      genera e instala con symlinks (iterar sin reinstalar)
