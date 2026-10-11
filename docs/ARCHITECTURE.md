@@ -371,6 +371,13 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
   quien compila.
 - **`tools/install.sh`** para desarrollo: instala en `~/.local` sin empaquetar.
   `--dev` crea symlinks para iterar sin reinstalar.
+- **CI ✅** (`.github/workflows/ci.yml` → `tools/ci.sh`): en cada PR y push a
+  `main`, en un contenedor `archlinux:latest`, instala las dependencias de
+  compilación del PKGBUILD (con caché de pacman), comprueba Python, bash y las
+  traducciones, ejecuta los generadores, compila el C++ y pasa ctest, y hace
+  `makepkg` del commit; los paquetes quedan como artefacto. El mismo script se
+  ejecuta en local con `podman run --rm -v "$PWD":/src:Z -w /src
+  docker.io/library/archlinux:latest tools/ci.sh`.
 - KDE Store: opcional y posterior, solo para partes no compiladas.
 
 ## 6. Repositorio y licencias
@@ -391,7 +398,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
 | F5 | Iconos, cursores, wallpapers | ✅ |
-| F6 | GTK, PKGBUILD, CI en GitHub | en curso (GTK ✅, PKGBUILD ✅) |
+| F6 | GTK, PKGBUILD, CI en GitHub | ✅ |
 
 ## 8. Fuera de alcance
 

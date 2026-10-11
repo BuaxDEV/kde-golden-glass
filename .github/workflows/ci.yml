@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# En cada PR y en cada push a main: genera todo desde los tokens, compila el
+# C++, pasa las pruebas y construye los paquetes, en un contenedor Arch Linux
+# (la lógica está en tools/ci.sh, que también se puede ejecutar en local).
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    timeout-minutes: 40
+    steps:
+      # actions/checkout necesita git para clonar con historia (makepkg cuenta
+      # los commits para pkgver)
+      - name: Install git
+        run: pacman -Sy --noconfirm --needed git
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache pacman packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/pacman/pkg
+          key: pacman-${{ hashFiles('packaging/goldenglass/PKGBUILD') }}-${{ github.run_id }}
+          restore-keys: pacman-${{ hashFiles('packaging/goldenglass/PKGBUILD') }}-
+
+      - name: Build, test and package
+        run: tools/ci.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: goldenglass-packages
+          path: ci-artifacts/*.pkg.tar.zst
+          if-no-files-found: error

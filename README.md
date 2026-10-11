@@ -6,7 +6,7 @@ dock, semáforos, variantes clara/oscura/automática.
 
 > Proyecto independiente. No contiene assets, fuentes ni marcas de Apple.
 
-**Estado:** F0–F5 completas; F6 en curso (GTK y paquetes listos; falta CI). Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+**Estado:** F0–F6 completas (tema, iconos, cursores, GTK, paquetes y CI). Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Requisitos
 
