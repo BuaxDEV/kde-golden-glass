@@ -140,6 +140,7 @@ suggested = 6        # apps en «Sugeridas»
 # de Big Sur–Tahoe, con brillo arriba y abajo. Glifo tintado por botón.
 diameter = 14        # px
 gap = 8              # px entre bordes de círculos (centros a diameter + gap)
+inactive_colored = true  # también en color en ventanas sin foco (macOS los pone grises)
 close = "#FF5F57"
 close_border = "#E0443E"
 close_glyph = "#4D0000"

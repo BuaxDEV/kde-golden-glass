@@ -105,6 +105,10 @@ def _shape(tokens: dict, gtk4: bool, inactive: str = "@traffic_light_inactive") 
     backdrop = ", ".join(f"{s.strip()}:backdrop" for s in controls.split(","))
     hover_img = ", ".join(f"{s.strip()}:hover image" for s in controls.split(","))
     all_img = ", ".join(f"{s.strip()} image" for s in controls.split(","))
+    # Ventanas sin foco: en color (token inactive_colored) o en gris como macOS
+    backdrop_rule = "" if tl["inactive_colored"] else (
+        f"{backdrop} {{ background-color: {inactive}; background-image: none; "
+        "box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.12); }\n")
     return f"""
 /* Forma de macOS */
 button, combobox button, dropdown > button, spinbutton {{ border-radius: {r['control']}px; }}
@@ -125,7 +129,7 @@ window.maximized .titlebar, window.maximized headerbar, window.tiled headerbar {
   background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 48%),
                     radial-gradient(ellipse at 50% 100%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 60%);
 }}
-{"".join(lights)}{backdrop} {{ background-color: {inactive}; background-image: none; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.12); }}
+{"".join(lights)}{backdrop_rule}
 {all_img} {{ opacity: 0; -gtk-icon-transform: scale(0.6); }}
 {hover_img} {{ opacity: 1; }}
 """

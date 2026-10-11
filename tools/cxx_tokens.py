@@ -73,6 +73,7 @@ def header(tokens: dict) -> str:
         ("Semáforos y colores fijos (px, 0xAARRGGBB)", None, None),
         ("TrafficLightDiameter", tl["diameter"], "diámetro"),
         ("TrafficLightGap", tl["gap"], "separación entre bordes"),
+        ("TrafficLightInactiveColored", bool(tl["inactive_colored"]), "en color también sin foco"),
     ]
     colors = [
         ("TrafficLightClose", tl["close"]),

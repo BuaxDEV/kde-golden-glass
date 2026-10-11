@@ -115,8 +115,9 @@ goldenglass/
   que las separa de la ventana, relleno con volumen, borde fino, **brillo arriba
   y brillo abajo** y glifo tintado por botón (×, −, triángulos de pantalla
   completa; tokens `traffic_lights`). Al pulsar se encogen un poco. Al pasar el
-  ratón por cualquiera aparecen los símbolos en los tres; en ventanas inactivas
-  son vidrio gris con los brillos atenuados y se colorean al pasar el ratón. El
+  ratón por cualquiera aparecen los símbolos en los tres. Siempre en color, también
+  en ventanas sin foco (`traffic_lights.inactive_colored`; con `false`, como
+  macOS: vidrio gris con los brillos atenuados que se colorea al pasar el ratón). El
   zoom apunta hacia dentro con la ventana maximizada. **Posición** con la regla
   de Apple: el primer círculo está tan lejos del borde izquierdo como del
   superior (`Decoration::leftButtonsPadding`). Los semáforos CSD de GTK usan
