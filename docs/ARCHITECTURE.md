@@ -196,8 +196,13 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 - **Spotlight:** KRunner flotante y centrado (`krunnerrc FreeFloating=true`,
   escrito por el script de layout), estilizado por el Plasma Style.
 - **Plasmoids propios** (`plasmoids/`):
-  - `org.goldenglass.controlcenter` — Wi-Fi, Bluetooth, sonido, brillo, modo
-    oscuro, slider de vidrio.
+  - `org.goldenglass.controlcenter` ✅ — en la barra, junto al reloj. Tarjetas de
+    Wi‑Fi y Bluetooth (el texto abre sus ajustes), Modo oscuro (`DarkModeControl`
+    de Plasma; el layout fija `DefaultLight/DarkLookAndFeel` a los temas
+    GoldenGlass), No molestar, brillo por pantalla (si hay control, p. ej.
+    DDC/CI), sonido con silencio, vidrio (`goldenglass-glass`) y lo que se
+    reproduce (MPRIS). Usa los módulos QML de Plasma (privados: se revisan en
+    cada actualización de Plasma).
   - `org.goldenglass.launchpad` — cuadrícula de apps a pantalla completa con blur.
   - `org.goldenglass.systemmenu` ✅ — menú del logo como el menú Apple: Acerca de
     este equipo (kinfocenter), Preferencias del Sistema, Tienda (solo si está
@@ -267,7 +272,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F1 | Fork de Darkly renombrado: QStyle + decoración (semáforos, radios, sidebar, toolbar unificada) | ✅ |
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
-| F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | en curso (menú de sistema) |
+| F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | en curso (menú de sistema y Centro de control) |
 | F5 | Iconos, cursores, wallpapers | pendiente |
 | F6 | GTK, PKGBUILD, CI en GitHub | pendiente |
 
@@ -285,4 +290,5 @@ con refracción, X11 y Plasma < 6.7.
 | Roturas por actualizaciones de Qt/KDE (rolling) | PKGBUILD con rebuild; CI contra la versión actual de Arch |
 | Alias de fuente no resuelto por Qt | Plan B descrito en 4.6 |
 | libadwaita ignora temas | Solo colores; documentado |
+| Los plasmoids usan módulos QML privados de Plasma (sin API estable) | Mínimo Plasma 6.7; probar en el sandbox tras cada actualización de Plasma |
 | Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` (barra y dock comparten SVG) | `radius.dock ≤ menubar_height / 2` (14 px); el generador lo valida |
