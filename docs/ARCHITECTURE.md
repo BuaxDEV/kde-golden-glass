@@ -128,7 +128,23 @@ goldenglass/
   ni dependencias de terceros. Sin refracción.
 - La opacidad de cada superficie sale del nivel de vidrio activo.
 
-### 4.4 Módulo de Ajustes — `kcm/` (C++ + QML)
+### 4.4 Nivel de vidrio — `goldenglass-glass` y módulo de Ajustes (`kcm/`)
+
+**`goldenglass-glass --level N`** (`tools/glass.py`, instalado con sus archivos
+en `share/goldenglass`) aplica un nivel en vivo a las tres capas:
+
+| Capa | Cómo |
+|---|---|
+| Estilo de apps | `goldenglassrc [Style]` (menús, toolbars, barra lateral) + señal D-Bus `org.goldenglass.Style` → repinta las ventanas abiertas |
+| Decoración | misma opacidad (`ToolBarOpacity`) + `KWin.reconfigure` → relee `goldenglassrc` |
+| Plasma Style | nivel por defecto → tema del paquete `GoldenGlass`; otro nivel → genera `GoldenGlassTuned` en `~/.local/share` y cambia a él (con rebote por `GoldenGlass` si ya estaba activo). El tema del paquete nunca se sobrescribe |
+
+El cambio de tema se hace dentro de plasmashell (`evaluateScript`,
+`theme = …`), de forma síncrona; si plasmashell no corre, se escribe `plasmarc`.
+Verificado en el sandbox midiendo la barra de menús, el título y la toolbar de
+Dolphin en 0 → 1 → 0,5 → 0 → 0 → 1.
+
+#### Módulo de Ajustes
 - Aparece en Preferencias del Sistema › Apariencia › GoldenGlass.
 - **Slider de vidrio** continuo con 3 muescas; vista previa en vivo.
 - Selector de acento: "Sistema" (por defecto, respeta el acento de Plasma).

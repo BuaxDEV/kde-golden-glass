@@ -2301,6 +2301,19 @@ void Style::configurationChanged()
 
     // reload configuration
     loadConfiguration();
+
+    // GoldenGlass: the glass opacity can change at runtime (goldenglass-glass):
+    // repaint open windows and refresh their blur regions.
+    const auto widgets = QApplication::allWidgets();
+    for (QWidget *widget : widgets) {
+        widget->update();
+    }
+    const auto windows = QApplication::topLevelWidgets();
+    for (QWidget *window : windows) {
+        if (window->isVisible()) {
+            _blurHelper->forceUpdate(window);
+        }
+    }
 }
 
 //____________________________________________________________________
