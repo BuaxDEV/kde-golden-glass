@@ -11,7 +11,7 @@ dock, semáforos, variantes clara/oscura/automática.
 ## Requisitos
 
 - Plasma ≥ 6.7 en Wayland, Qt 6
-- Python ≥ 3.11 (generador de tokens)
+- Python ≥ 3.11 con numpy y Pillow (generador de tokens y del fondo de pantalla)
 - Recomendado: `inter-font` (fuente de respaldo si no tienes SF Pro)
 
 ## Desarrollo
