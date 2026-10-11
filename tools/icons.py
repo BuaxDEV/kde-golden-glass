@@ -79,6 +79,8 @@ GLYPHS: dict[str, str] = {
     "trash": ('<path d="M2.4 4.1 H13.6 M6 4.1 V2.4 H10 V4.1"/><path d="M3.8 4.1 L4.6 13.2 Q4.7 14.1 5.6 14.1 '
               'H10.4 Q11.3 14.1 11.4 13.2 L12.2 4.1"/><path d="M6.6 6.6 V11.6 M9.4 6.6 V11.6"/>'),
     "favorites": '<path d="M8 1.9 L9.8 5.8 L14 6.2 L10.8 9 L11.8 13.2 L8 11 L4.2 13.2 L5.2 9 L2 6.2 L6.2 5.8 Z"/>',
+    "folder-plus": ('<path d="M1.8 4.1 Q1.8 2.9 3 2.9 H6.1 L7.6 4.4 H13 Q14.2 4.4 14.2 5.6 V12.3 '
+                    'Q14.2 13.5 13 13.5 H3 Q1.8 13.5 1.8 12.3 Z"/><path d="M8 6.8 V11.2 M5.8 9 H10.2"/>'),
     "applications": ('<rect x="2" y="2" width="5" height="5" rx="1.4"/><rect x="9" y="2" width="5" height="5" rx="1.4"/>'
                      '<rect x="2" y="9" width="5" height="5" rx="1.4"/><rect x="9" y="9" width="5" height="5" rx="1.4"/>'),
 }
@@ -92,10 +94,21 @@ class Icon:
     glyph: str               # símbolo (pequeño, simbólico y grabado en la carpeta)
     context: str             # places | devices
     large: str = "folder"    # cómo se dibuja desde 32 px: folder | trash | trash-full | drive | ...
+    color: str | None = None  # color fijo en vez del acento (carpetas de color de Dolphin)
 
+
+# Colores que Dolphin ofrece en «Asignar color a carpeta» (colores de macOS).
+FOLDER_COLORS = {
+    "red": "#FF3B30", "orange": "#FF9500", "yellow": "#FFCC00", "green": "#34C759",
+    "cyan": "#32ADE6", "blue": "#007AFF", "violet": "#AF52DE", "magenta": "#FF2D55",
+    "brown": "#A2845E", "grey": "#8E8E93", "black": "#3A3A3C",
+}
 
 ICONS: tuple[Icon, ...] = (
-    Icon(("folder", "inode-directory", "folder-blue"), "folder", "places", "folder-plain"),
+    Icon(("folder", "inode-directory"), "folder", "places", "folder-plain"),
+    # Acciones: sin ellas, KDE recortaría «folder-new» hasta «folder» en este
+    # tema antes de mirar los heredados y se perdería el «+».
+    Icon(("folder-new", "folder-add"), "folder-plus", "places", "folder"),
     Icon(("folder-open", "folder-blue-open"), "folder", "places", "folder-plain"),
     Icon(("user-home", "folder-home", "folder-blue-home"), "home", "places"),
     Icon(("user-desktop", "folder-desktop"), "desktop", "places"),
@@ -112,6 +125,8 @@ ICONS: tuple[Icon, ...] = (
     Icon(("folder-favorites", "folder-bookmark"), "favorites", "places"),
     Icon(("folder-recent", "folder-open-recent"), "recent", "places"),
     Icon(("folder-applications", "folder-appimage"), "applications", "places"),
+    *(Icon((f"folder-{name}",), "folder", "places", "folder-plain", color)
+      for name, color in FOLDER_COLORS.items()),
     Icon(("user-trash", "trash-empty"), "trash", "places", "trash"),
     Icon(("user-trash-full", "trash-full"), "trash", "places", "trash-full"),
     Icon(("drive-harddisk", "drive-harddisk-root", "drive-harddisk-solidstate", "drive-multidisk"),
@@ -123,10 +138,12 @@ ICONS: tuple[Icon, ...] = (
 )
 
 
-def _svg(size: int, body: str, fallback: dict[str, str]) -> str:
+def _svg(size: int, body: str, fallback: dict[str, str], canvas: int | None = None) -> str:
+    """Envuelve `body` (dibujado en un lienzo `canvas`, por defecto `size`)."""
     style = (f'.ColorScheme-Text{{color:{fallback["text"]};}}'
              f'.ColorScheme-Accent{{color:{fallback["accent"]};}}')
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {size} {size}">'
+    c = canvas or size
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {c} {c}">'
             f'<defs><style type="text/css" id="current-color-scheme">{style}</style></defs>'
             f"{body}</svg>\n")
 
@@ -135,9 +152,12 @@ def small(icon: Icon, size: int, scheme: str) -> str:
     """Símbolo solo, centrado; a 22/24 se escala desde la cuadrícula de 16."""
     scale = {16: 1.0, 22: 1.25, 24: 1.375}[size]
     offset = (size - 16 * scale) / 2
-    return (f'<g class="{scheme}" fill="none" stroke="currentColor" stroke-width="{STROKE}" '
+    glyph, paint = GLYPHS[icon.glyph], f'class="{scheme}" stroke="currentColor"'
+    if icon.color and scheme == "ColorScheme-Accent":
+        glyph, paint = glyph.replace("currentColor", icon.color), f'stroke="{icon.color}"'
+    return (f'<g {paint} fill="none" stroke-width="{STROKE}" '
             f'stroke-linecap="round" stroke-linejoin="round" '
-            f'transform="translate({offset:g} {offset:g}) scale({scale:g})">{GLYPHS[icon.glyph]}</g>')
+            f'transform="translate({offset:g} {offset:g}) scale({scale:g})">{glyph}</g>')
 
 
 # Carpeta de macOS 27 en un lienzo de 64. Las capas parten del acento
@@ -147,13 +167,17 @@ FOLDER_BACK = ("M5 14.5 Q5 9.5 10 9.5 H22.6 Q25 9.5 26.7 11.2 L28.6 13.1 Q29.4 1
 FOLDER_FRONT = "M5 25 Q5 20.4 9.6 20.4 H54.4 Q59 20.4 59 25 V49.4 Q59 54 54.4 54 H9.6 Q5 54 5 49.4 Z"
 
 
-def folder(glyph: str | None) -> str:
+def folder(glyph: str | None, color: str | None = None) -> str:
+    """Carpeta en el acento, o en `color` fijo."""
+    paint = f'fill="{color}"' if color else 'fill="currentColor" class="ColorScheme-Accent"'
     emboss = ""
     if glyph:
         s = 1.25
+        body, ink = GLYPHS[glyph], 'stroke="currentColor" class="ColorScheme-Accent"'
+        if color:
+            body, ink = body.replace("currentColor", color), f'stroke="{color}"'
         emboss = (f'<g transform="translate({32 - 8 * s:g} {37.4 - 8 * s:g}) scale({s})" fill="none" '
-                  f'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" '
-                  f'class="ColorScheme-Accent">{GLYPHS[glyph]}</g>'
+                  f'{ink} stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{body}</g>'
                   f'<g transform="translate({32 - 8 * s:g} {37.4 - 8 * s:g}) scale({s})" fill="none" '
                   f'stroke="#FFFFFF" stroke-opacity=".22" stroke-width="1.5" stroke-linecap="round" '
                   f'stroke-linejoin="round">{GLYPHS[glyph].replace("currentColor", "#FFFFFF")}</g>')
@@ -167,12 +191,12 @@ def folder(glyph: str | None) -> str:
         # sombra de contacto
         f'<path d="{FOLDER_FRONT}" transform="translate(0 1.2)" fill="#000000" fill-opacity=".14"/>'
         # pestaña y fondo
-        f'<path d="{FOLDER_BACK}" fill="currentColor" class="ColorScheme-Accent"/>'
+        f'<path d="{FOLDER_BACK}" {paint}/>'
         f'<path d="{FOLDER_BACK}" fill="url(#back)"/>'
         # papel asomando
         '<rect x="9" y="16.5" width="46" height="10" rx="2" fill="#FFFFFF" fill-opacity=".85"/>'
         # frente
-        f'<path d="{FOLDER_FRONT}" fill="currentColor" class="ColorScheme-Accent"/>'
+        f'<path d="{FOLDER_FRONT}" {paint}/>'
         f'<path d="{FOLDER_FRONT}" fill="url(#front)"/>'
         # filo de luz superior
         '<path d="M9.6 21.1 H54.4" stroke="#FFFFFF" stroke-opacity=".7" stroke-width=".9" stroke-linecap="round"/>'
@@ -246,9 +270,9 @@ def device(kind: str) -> str:
 
 def large(icon: Icon) -> str:
     if icon.large == "folder":
-        return folder(icon.glyph)
+        return folder(icon.glyph, icon.color)
     if icon.large == "folder-plain":
-        return folder(None)
+        return folder(None, icon.color)
     if icon.large in ("trash", "trash-full"):
         return trash(icon.large == "trash-full")
     return device(icon.large)
@@ -256,16 +280,17 @@ def large(icon: Icon) -> str:
 
 # --- paquete ------------------------------------------------------------------
 
-def _directories(contexts: list[str]) -> list[tuple[str, dict[str, str]]]:
+def _directories(contexts: list[str], symbolic: set[str]) -> list[tuple[str, dict[str, str]]]:
     dirs = []
     for ctx in contexts:
-        label = ctx.capitalize()
+        label = {"mimetypes": "MimeTypes"}.get(ctx, ctx.capitalize())  # nombres de la especificación
         for size in SMALL:
             dirs.append((f"{ctx}/{size}", {"Size": str(size), "Context": label, "Type": "Fixed"}))
         dirs.append((f"{ctx}/scalable", {"Size": "64", "MinSize": "32", "MaxSize": "512",
                                          "Context": label, "Type": "Scalable"}))
-        dirs.append((f"{ctx}/symbolic", {"Size": "16", "MinSize": "8", "MaxSize": "512",
-                                         "Context": label, "Type": "Scalable"}))
+        if ctx in symbolic:
+            dirs.append((f"{ctx}/symbolic", {"Size": "16", "MinSize": "8", "MaxSize": "512",
+                                             "Context": label, "Type": "Scalable"}))
     return dirs
 
 
@@ -290,30 +315,50 @@ def _link(target: str, link: Path) -> None:
         link.symlink_to(target)
 
 
+def _family(tokens: dict) -> str:
+    """Fuente real de las etiquetas: el alias del tema resuelto por fontconfig."""
+    import subprocess
+    try:
+        return subprocess.run(["fc-match", "-f", "%{family[0]}", f"{tokens['font']['sans']}:bold"],
+                              capture_output=True, text=True, check=True).stdout or "Inter"
+    except (OSError, subprocess.CalledProcessError):
+        return "Inter"
+
+
 def build(tokens: dict, out: Path) -> list[Path]:
+    import icons_mime
+
     fallback = {"accent": tokens["light"]["accent"], "text": tokens["light"]["label"][:7]}
     base = out / "icons"
     for theme in THEMES:
         if (base / theme).exists():
             shutil.rmtree(base / theme)
     root = base / "GoldenGlass"
-    contexts = sorted({i.context for i in ICONS})
 
+    # (ruta relativa, svg, alias)
+    entries: list[tuple[str, str, tuple[str, ...]]] = []
     for icon in ICONS:
         main, aliases = icon.names[0], icon.names[1:]
-        files = {f"{icon.context}/scalable/{main}.svg": _svg(64, large(icon), fallback)}
-        files[f"{icon.context}/symbolic/{main}-symbolic.svg"] = _svg(
-            16, small(icon, 16, "ColorScheme-Text"), fallback)
+        entries.append((f"{icon.context}/scalable/{main}.svg", _svg(64, large(icon), fallback), aliases))
+        entries.append((f"{icon.context}/symbolic/{main}-symbolic.svg",
+                        _svg(16, small(icon, 16, "ColorScheme-Text"), fallback), aliases))
         for size in SMALL:
-            files[f"{icon.context}/{size}/{main}.svg"] = _svg(size, small(icon, size, "ColorScheme-Accent"), fallback)
-        for rel, text in files.items():
-            path = root / rel
-            _write(path, text)
-            for alias in aliases:
-                suffix = "-symbolic.svg" if rel.endswith("-symbolic.svg") else ".svg"
-                _link(path.name, path.parent / f"{alias}{suffix}")
+            entries.append((f"{icon.context}/{size}/{main}.svg",
+                            _svg(size, small(icon, size, "ColorScheme-Accent"), fallback), aliases))
+    for rel, (canvas, body), aliases in icons_mime.files(_family(tokens)):
+        size = int(rel.split("/")[1]) if rel.split("/")[1].isdigit() else canvas
+        entries.append((rel, _svg(size, body, fallback, canvas), aliases))
 
-    dirs = _directories(contexts)
+    for rel, text, aliases in entries:
+        path = root / rel
+        _write(path, text)
+        for alias in aliases:
+            suffix = "-symbolic.svg" if rel.endswith("-symbolic.svg") else ".svg"
+            _link(path.name, path.parent / f"{alias}{suffix}")
+
+    contexts = sorted({rel.split("/")[0] for rel, _, _ in entries})
+    symbolic = {rel.split("/")[0] for rel, _, _ in entries if "/symbolic/" in rel}
+    dirs = _directories(contexts, symbolic)
     for theme, (name, inherits) in THEMES.items():
         _write(base / theme / "index.theme", _index(name, inherits, dirs))
     # El tema oscuro comparte los iconos (siguen al esquema de colores) y solo

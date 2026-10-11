@@ -6,7 +6,7 @@ dock, semáforos, variantes clara/oscura/automática.
 
 > Proyecto independiente. No contiene assets, fuentes ni marcas de Apple.
 
-**Estado:** F0–F4 completas; F5 en curso (fondos, cursores e iconos base listos; faltan iconos de archivos y apps). Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+**Estado:** F0–F4 completas; F5 en curso (fondos, cursores, iconos base y de archivos listos; faltan iconos de apps). Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Requisitos
 
