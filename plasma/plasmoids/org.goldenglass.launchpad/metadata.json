@@ -9,7 +9,7 @@
         "Category": "Application Launchers",
         "Description": "All your applications in a centered panel with search and categories, like macOS Apps",
         "Description[es]": "Todas tus aplicaciones en un panel centrado con buscador y categorías, como Apps de macOS",
-        "Icon": "view-app-grid",
+        "Icon": "goldenglass-apps",
         "Id": "org.goldenglass.launchpad",
         "License": "GPL-3.0-or-later",
         "Name": "Apps",

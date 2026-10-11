@@ -239,7 +239,8 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     (`actionList`) se leen solo al abrir el menú contextual: leerlas al cargar
     tumba plasmashell. Los menús (contextual y ordenar) son ventanas emergentes
     propias (`popupType: Popup.Window`): dentro del panel quedaban recortados
-    y sin blur. Se declara `org.kde.plasma.launchermenu`: Meta lo abre.
+    y sin blur. El icono del dock es `goldenglass-apps` del tema de iconos (claro u oscuro),
+    con `view-app-grid` de respaldo. Se declara `org.kde.plasma.launchermenu`: Meta lo abre.
   - `org.goldenglass.systemmenu` ✅ — menú del logo como el menú Apple: Acerca de
     este equipo (kinfocenter), Preferencias del Sistema, Tienda (solo si está
     Discover), Forzar salida (KWin `killWindow`), Reposo, Reiniciar…, Apagar…,
