@@ -74,6 +74,9 @@ dock_hiding = "autohide"
 # Plasma): entra decelerando y sale acelerando. KWin usa 200 ms por defecto.
 slide_in_ms = 280
 slide_out_ms = 220
+# Escritorios independientes por pantalla, como «Las pantallas tienen espacios
+# independientes» de macOS (opción de KWin desde Plasma 6.7)
+per_screen_desktops = true
 popup_margin = 10        # margen de contenido de diálogos y popups
 tooltip_margin = 6
 popup_shadow = 28        # tamaño de la sombra de popups y dock

@@ -98,3 +98,13 @@ krunner.writeEntry("FreeFloating", true);
 // --- Atajos de macOS (script de KWin org.goldenglass.shortcuts) -------------
 // Ctrl+↑ Mission Control, Ctrl+↓ App Exposé.
 ConfigFile("kwinrc", "Plugins").writeEntry("org.goldenglass.shortcutsEnabled", true);
+
+// --- Escritorios por pantalla (Plasma ≥ 6.7) --------------------------------
+// Como macOS: cada pantalla cambia de escritorio por su cuenta (Meta+Ctrl+←/→
+// actúa en la pantalla con el foco). El script «Virtual Desktops Only on
+// Primary» de kdeplasma-addons fija las ventanas de las demás pantallas y
+// choca con esto: se desactiva.
+ConfigFile("kwinrc", "Windows").writeEntry("PerOutputVirtualDesktops", @PER_SCREEN_DESKTOPS@);
+if (@PER_SCREEN_DESKTOPS@) {
+    ConfigFile("kwinrc", "Plugins").writeEntry("virtualdesktopsonlyonprimaryEnabled", false);
+}
