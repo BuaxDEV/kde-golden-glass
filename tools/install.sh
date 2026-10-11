@@ -29,6 +29,7 @@ declare -A TARGETS=(
   [build/plasma/plasmoids/org.goldenglass.systemmenu]="$DATA/plasma/plasmoids/org.goldenglass.systemmenu"
   [build/plasma/plasmoids/org.goldenglass.controlcenter]="$DATA/plasma/plasmoids/org.goldenglass.controlcenter"
   [build/plasma/plasmoids/org.goldenglass.launchpad]="$DATA/plasma/plasmoids/org.goldenglass.launchpad"
+  [build/wallpapers/GoldenGlass]="$DATA/wallpapers/GoldenGlass"
   [assets/logo/goldenglass.svg]="$DATA/icons/hicolor/scalable/apps/goldenglass.svg"
   [assets/logo/goldenglass-symbolic.svg]="$DATA/icons/hicolor/scalable/apps/goldenglass-symbolic.svg"
 )

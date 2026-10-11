@@ -236,8 +236,12 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
   el color de acento en las barras laterales, como en macOS 27.
 - **Cursores:** propios, estilo macOS, fuente SVG → xcursor + cursores SVG de
   Plasma 6 (nítidos a cualquier escala).
-- **Wallpapers:** originales generados por nosotros (no el de Apple), con
-  variante día/noche.
+- **Wallpapers** ✅ (`tools/wallpaper.py`): cintas de vidrio sobre la bahía al
+  atardecer (día) y de noche, generadas con numpy (sin imágenes en el repo) en
+  5120×2880 y 3840×2400, con `images/` e `images_dark/` para que Plasma las
+  cambie con el tema claro/oscuro. El Global Theme las pone de fondo y el Plasma
+  Style las declara fondo por defecto (también para la pantalla de bloqueo).
+  Requiere `python-numpy` y `python-pillow` al generar.
 - **Acento:** azul macOS por defecto (`#007AFF` claro / `#0A84FF` oscuro),
   sobreescribible por el acento del sistema.
 
@@ -277,7 +281,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
-| F5 | Iconos, cursores, wallpapers | pendiente |
+| F5 | Iconos, cursores, wallpapers | en curso (wallpapers) |
 | F6 | GTK, PKGBUILD, CI en GitHub | pendiente |
 
 ## 8. Fuera de alcance
