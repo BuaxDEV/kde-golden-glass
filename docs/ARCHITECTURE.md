@@ -24,6 +24,9 @@ Tema completo para KDE Plasma en CachyOS inspirado en macOS 27 "Golden Gate"
 | Menús | Sin iconos junto a cada comando | `kstyle/` |
 | Barra de menús | Desbordamiento de iconos tras un chevron «»; fondo translúcido opcional | `plasma/desktoptheme`, layout |
 | Iconos de app | Squircle con capas y más detalle | `icons/` |
+| Liquid Glass | El fondo se curva como una lente en los bordes del vidrio, con dispersión, filo de luz y tinte que se adapta al fondo | `kwin-effect/` (F11) |
+| Dock | Ampliación de los iconos bajo el cursor | `plasma/plasmoids/org.goldenglass.dock` (F10) |
+| Arranque y sesión | Logo con barra de progreso, pantalla de inicio de sesión como la de bloqueo, sonidos del sistema | `plymouth/`, `login/`, `tools/sounds.py` (F7–F9) |
 
 Fuentes: Six Colors (review), 9to5Mac (slider de Liquid Glass), Digital Trends,
 Wccftech. Los valores numéricos exactos (radios, opacidades) no están publicados:
@@ -51,6 +54,11 @@ sombras, tipografía, semáforos) viven en **`tokens/goldenglass.toml`**.
 | `build/cursors/GoldenGlass-cursors/` (QtSvg, se cachea) | Tema de cursores (SVG + Xcursor) | ✅ F5 |
 | `build/icons/GoldenGlass{,-Dark}/` (SVG dibujados por código) | Tema de iconos claro/oscuro | F5 (base ✅) |
 | `build/gtk/GoldenGlass{,-Dark}/`, `build/gtk/libadwaita.css` | GTK3 / GTK4 / libadwaita | ✅ F6 |
+| `build/sounds/GoldenGlass/` (numpy, se cachea) | Tema de sonidos freedesktop | F7 |
+| `build/plymouth/goldenglass{,-light}/` (logo rasterizado con QtSvg) | Temas de Plymouth negro y gris | F8 |
+| `build/login/sddm/GoldenGlass/` (desde `login/sddm/`) | Tema de SDDM | F9 |
+| `contents/ui/tokens.js` del dock (lo genera `tools/plasmoids.py`) | Plasmoid `org.goldenglass.dock` | F10 |
+| `goldenglass_tokens.h` (secciones `[dock]` y `[glass.refraction]`) | Valores de fábrica del dock y del efecto de KWin | F10, F11 |
 
 **Regla:** los archivos generados no se editan a mano ni se versionan. Se cambia
 el token y se regenera (`install.sh` y el PKGBUILD lo hacen solos).
@@ -61,16 +69,20 @@ el token y se regenera (`install.sh` y el PKGBUILD lo hacen solos).
 goldenglass/
 ├── tokens/              # goldenglass.toml
 ├── tools/               # gen_tokens.py (+ plasma_theme.py, lookandfeel.py, wallpaper.py,
-│                        # cursors.py…), install.sh,
+│                        # cursors.py, sounds.py, plymouth.py…), install.sh,
+│                        # system.py (goldenglass-system),
 │                        # preview_plasma.py (vista previa), sandbox.sh (sesión aislada)
 ├── assets/logo/         # logo GoldenGlass (símbolo monocromo y versión a color)
 ├── kstyle/              # QStyle C++ (fork de Darkly) → goldenglass6.so
 ├── kdecoration/         # Plugin KDecoration3
+├── kwin-effect/         # efecto de KWin goldenglass_glass (F11)
 ├── kcm/                 # Módulo de Ajustes "GoldenGlass"
 ├── plasma/
 │   ├── look-and-feel/   # plantilla común de los Global Themes (layout, splash)
 │   ├── shell/           # shell org.goldenglass.desktop (pantalla de bloqueo)
-│   └── plasmoids/       # Centro de control, Apps, menú de sistema, papelera
+│   └── plasmoids/       # Centro de control, Apps, menú de sistema, papelera, dock
+├── login/sddm/          # tema QML de SDDM (F9)
+├── plymouth/            # plantilla del tema de Plymouth (script) (F8)
 ├── fontconfig/          # alias de familias tipográficas
 ├── packaging/           # PKGBUILD dividido
 ├── docs/
@@ -131,9 +143,11 @@ goldenglass/
   dibuja cada aplicación.
 
 ### 4.3 Efecto de vidrio
-- **Blur nativo de KWin + superficies semitransparentes.** Sin efecto KWin propio
-  ni dependencias de terceros. Sin refracción.
+- **Base: blur nativo de KWin + superficies semitransparentes.** Es lo que se
+  ve sin el efecto propio (o si no carga) y lo que siguen usando las ventanas
+  de las apps.
 - La opacidad de cada superficie sale del nivel de vidrio activo.
+- **Refracción (F11):** efecto propio `goldenglass_glass`, ver 4.14.
 
 ### 4.4 Nivel de vidrio — `goldenglass-glass` y módulo de Ajustes (`kcm/`)
 
@@ -164,6 +178,17 @@ cerca) y valores intermedios; se aplica en vivo al soltar ejecutando
 español en `po/es`. `kcm_apply_test` (prueba de integración, dentro de una
 sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 
+Secciones previstas (con los valores de fábrica en los tokens):
+
+| Sección | Contenido | Fase |
+|---|---|---|
+| Vidrio | slider actual + interruptor **Refracción** (efecto `goldenglass_glass`) | ✅ / F11 |
+| Dock | **Ampliación** (interruptor, activada de fábrica) y su tamaño máximo, tamaño del dock | F10 |
+| Sistema | Sonidos, chime al iniciar sesión, Plymouth (negro / gris) y pantalla de inicio de sesión. Llama a `goldenglass-system` (4.9) | F7–F9 |
+
+Las secciones Dock y Sistema no encajan en «Colores y temas»: al empezar F7 se
+decide si el módulo pasa a tener páginas propias o si son módulos aparte.
+
 ### 4.5 Escritorio Plasma — `plasma/`
 - **Plasma Style** `GoldenGlass`: lo genera `tools/plasma_theme.py` dibujando
   cada pieza de FrameSvg por código (esquinas, bordes, máscara de blur, sombra).
@@ -177,8 +202,8 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
   `org.goldenglass.dark.desktop`. Incluyen:
   - Script de layout: panel superior (menú de sistema, menú global, bandeja,
     reloj) + **dock** = panel nativo flotante centrado con gestor de tareas solo
-    iconos (sin magnificación), **autoocultable** como en macOS («Ocultar y
-    mostrar automáticamente», token `plasma.dock_hiding`): aparece al llevar el
+    iconos (sin magnificación hasta F10, ver 4.13), **autoocultable** como en
+    macOS («Ocultar y mostrar automáticamente», token `plasma.dock_hiding`): aparece al llevar el
     cursor al borde inferior y las ventanas maximizadas usan toda la pantalla.
     Plasma lo anima con el efecto *Sliding Popups* de KWin (entra decelerando y
     sale acelerando); el script fija sus tiempos en `kwinrc`
@@ -351,6 +376,166 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
   `gtk-application-prefer-dark-theme`, por eso hay dos temas. Al cambiar a
   otro Global Theme restaura el tema GTK anterior.
 
+### 4.9 Integración con el sistema — `goldenglass-system` (F7–F9)
+- Los paquetes de sonidos, Plymouth y login **solo instalan**: nada se activa
+  al instalar ni con hooks de pacman. Se activa con
+  `goldenglass-system enable|disable|status <sounds|chime|plymouth|login>`
+  (`tools/system.py`) o desde la sección Sistema del módulo de Ajustes, que lo
+  llama.
+- Lo que es del usuario (sonidos, chime) se escribe en su `~/.config` sin root.
+  Lo del sistema (Plymouth, login) se ejecuta con **pkexec** y una acción de
+  polkit propia (`org.goldenglass.system`); solo entonces se pide la contraseña.
+- **Reversible:** antes de cambiar algo se guarda el valor anterior
+  (`/var/lib/goldenglass/` para el sistema, `~/.local/state/goldenglass/` para
+  el usuario) y `disable` lo restaura.
+- No cambia de gestor de inicio de sesión, ni la línea de comandos del kernel,
+  ni los `HOOKS` de mkinitcpio: si falta algo (p. ej. `splash` o el hook
+  `plymouth`) lo avisa y no lo toca.
+
+### 4.10 Sonidos — `tools/sounds.py` (F7)
+- **Sintetizados por código** con numpy, como los fondos: sin binarios en el
+  repo. Timbre de cristal (parciales casi armónicos con caída exponencial),
+  parámetros en `[sounds]` de los tokens (volumen, tono base, caída y un
+  bloque por evento). Salida en Ogg Vorbis (`.oga`); el codificador se elige
+  al empezar la fase. Se cachea como los fondos.
+- Tema freedesktop `GoldenGlass` (`build/sounds/GoldenGlass/`,
+  `index.theme` + `stereo/`). Solo los eventos que tiene macOS:
+
+  | Evento | Nombres freedesktop |
+  |---|---|
+  | Alerta / error | `dialog-warning`, `dialog-error`, `bell` |
+  | Notificación | `message-new-instant`, `dialog-information` |
+  | Vaciar papelera | `trash-empty` |
+  | Captura de pantalla | `screen-capture`, `camera-shutter` |
+  | Respuesta del volumen | `audio-volume-change` |
+  | Conectar / desconectar | `device-added`, `device-removed` |
+  | Batería baja | `battery-low`, `battery-caution` |
+  | Chime | `desktop-login` |
+
+- **El resto, en silencio**, como macOS (sin heredar Ocean). Ojo: la
+  especificación siempre recurre al tema `freedesktop` cuando un tema no tiene
+  un sonido, así que no basta con omitirlos; los nombres que Plasma usa y no
+  cubrimos apuntan a un `silence.oga`. Se verifica en la fase qué nombres pide
+  Plasma 6.7.
+- Activación (`goldenglass-system enable sounds`): `kdeglobals [Sounds]
+  Theme=GoldenGlass`. El **chime** es aparte (`enable chime`): activa el
+  sonido del evento de inicio de sesión de Plasma (a verificar el evento
+  exacto de `plasma_workspace.notifyrc` en 6.7).
+- Paquete `goldenglass-sounds`.
+
+### 4.11 Arranque — Plymouth (F8)
+- Dos temas: **`goldenglass`** (negro, logo blanco; el de fábrica) y
+  **`goldenglass-light`** (gris claro, logo oscuro), como las dos variantes del
+  arranque de Mac. Se elige con `goldenglass-system enable plymouth
+  [--variant dark|light]`.
+- Logo GoldenGlass (`assets/logo/goldenglass-symbolic.svg`) rasterizado con
+  QtSvg a varias escalas (se elige según la resolución) y **barra de progreso
+  fina** redondeada bajo el logo, que avanza con el progreso de arranque.
+  Mismas proporciones que el splash de Plasma, para que la secuencia arranque →
+  login → escritorio se vea continua.
+- **Plugin `script`** de Plymouth (`plymouth/goldenglass.script.in`, plantilla
+  que rellena `tools/plymouth.py` con los tokens `[boot]`): da control total
+  sobre la petición de contraseña.
+- **Contraseña de disco (LUKS)** estilo FileVault: campo de vidrio con puntos
+  y el texto de la petición. También mensajes (fsck) y el modo de apagado.
+- Activación: `plymouth-set-default-theme` + `mkinitcpio -P` (en CachyOS con
+  Limine los hooks de limine-mkinitcpio actualizan las entradas). Si
+  `mkinitcpio` falla se restaura el tema anterior.
+- Paquete `goldenglass-plymouth`.
+
+### 4.12 Inicio de sesión — SDDM y Plasma Login Manager (F9)
+- **Plasma Login Manager** (PLM, el sucesor de SDDM de KDE, el que usa CachyOS
+  con Plasma 6.7) **no admite temas**: su interfaz va compilada en el binario
+  (`qrc:/qt/qml/org/kde/plasma/login/Main.qml`). Por eso hay dos caminos:
+- **SDDM: tema propio `GoldenGlass`** (`login/sddm/`, QML Qt 6,
+  `QtVersion=6`), con el **diseño de nuestra pantalla de bloqueo**: reloj
+  grande arriba, fondo difuminado, avatar y contraseña abajo; con varios
+  usuarios, fila de avatares. Reposo / Reiniciar / Apagar, sesión y teclado,
+  discretos. Solo Qt Quick (sin módulos de Plasma: corre como el usuario
+  `sddm`); blur con `MultiEffect`. Colores, radios y fuentes en un
+  `theme.conf` generado desde los tokens; traducciones `.qm` desde `po/`.
+- **Claro/oscuro según la hora:** fondo de día o de noche (franja horaria en
+  `[login]` de los tokens); los controles son siempre vidrio oscuro con texto
+  claro, como el login de macOS.
+- **PLM:** lo que permite: el fondo GoldenGlass y la sincronización de los
+  ajustes de Plasma del usuario (colores, Plasma Style, fuentes, cursor,
+  iconos) al usuario `plasmalogin`. La disposición sigue siendo la de KDE.
+- `goldenglass-system enable login` detecta el gestor activo
+  (`display-manager.service`): con SDDM escribe
+  `/etc/sddm.conf.d/goldenglass.conf`; con PLM aplica lo anterior. **Nunca
+  cambia de gestor.**
+- Vista previa sin cerrar sesión: `sddm-greeter-qt6 --test-mode --theme
+  build/login/sddm/GoldenGlass`.
+- Paquete `goldenglass-login` (SDDM como dependencia opcional).
+
+### 4.13 Dock con ampliación — `org.goldenglass.dock` (F10)
+- Hoy el dock son cuatro plasmoids en un panel (Apps, `icontasks`,
+  separador, Papelera). Un panel recorta su contenido a su grosor y cada
+  plasmoid es independiente, así que la ampliación no puede cruzar de uno a
+  otro. Se sustituyen por **un plasmoid de dock unificado**:
+  - Apps (el diálogo actual de `org.goldenglass.launchpad`, que hereda la
+    declaración `org.kde.plasma.launchermenu`: Meta lo abre), apps fijadas y
+    abiertas (`TasksModel` de libtaskmanager, el mismo modelo que usa
+    `icontasks`), separador y Papelera. El código de Apps y Papelera se
+    comparte en tiempo de generación (`tools/plasmoids.py`); los plasmoids
+    sueltos siguen disponibles para otros paneles.
+  - **Ampliación como macOS:** el icono bajo el cursor crece hasta el tamaño
+    máximo y los vecinos con una caída suave; los iconos crecen hacia arriba y
+    la placa de vidrio se ensancha sin crecer en altura. Activada de fábrica.
+    Tokens `[dock]`: `magnification`, `magnification_size`, `spread`,
+    duraciones.
+  - El panel se hace más alto (margen transparente para los iconos ampliados)
+    y **sin fondo propio**: el plasmoid dibuja la placa de vidrio. Un módulo
+    QML en C++ (`org.goldenglass.private.dock`) fija en la ventana del panel la
+    **región de blur** (`KWindowEffects`) y la **región de entrada** (solo la
+    placa y los iconos: el margen transparente deja pasar los clics).
+  - Configuración en `goldenglassrc [Dock]` (sección Dock del módulo de
+    Ajustes); el plasmoid la sigue en vivo con KConfigWatcher desde el módulo
+    C++.
+  - Va en `goldenglass-kstyle` (necesita la parte compilada). El script de
+    layout usa el dock nuevo si está instalado (`knownWidgetTypes`); si no,
+    monta el dock actual.
+- **Spike al empezar la fase:** quitar el fondo del panel sin tocar el de la
+  barra de menús (comparten SVG), y comprobar que PanelView no pisa la región
+  de blur ni la de entrada, también con autoocultación. Si no es viable, el
+  plan B es un dock como app propia con layer-shell (lo que hacía Latte Dock).
+- Paridad con el dock actual: clic, menú contextual (fijar, salir, acciones de
+  la app), arrastrar para reordenar, soltar archivos sobre una app, punto de app
+  abierta y autoocultación. Las vistas previas de ventanas en el tooltip se
+  deciden en la fase.
+
+### 4.14 Refracción — efecto de KWin `goldenglass_glass` (F11)
+- **Fork del efecto Blur de KWin 6.7** (`kwin-effect/`, C++, en el mismo
+  árbol CMake que `kstyle/`; GPL-2.0-or-later como el original). Mismo
+  difuminado y, en el mismo shader, la refracción. **Sustituye a Blur:** solo
+  uno de los dos puede atender el protocolo de blur de Wayland, así que al
+  activarlo se desactiva Blur en `kwinrc` y al desactivarlo vuelve.
+- **Solo las superficies de Plasma** llevan refracción: dock, barra de menús,
+  popups, Centro de control, Apps, tooltips y Spotlight (se reconocen por app
+  id y tipo de ventana: plasmashell, krunner). Las ventanas de las apps
+  reciben el blur normal, como en macOS.
+- **Rasgos:**
+  - **Refracción en los bordes:** el fondo se curva como una lente cerca del
+    borde redondeado; el centro queda plano.
+  - **Dispersión cromática** leve en la zona refractada.
+  - **Brillo especular** fijo en el borde superior (como los semáforos).
+  - **Tinte adaptativo:** aclara u oscurece el fondo según su luminancia media
+    para mantener la legibilidad.
+- **Sigue al slider de vidrio:** más claro = más refracción, más opaco = casi
+  ninguna (`[glass.refraction]` de los tokens da los extremos). Interruptor
+  «Refracción» en el módulo de Ajustes para apagarlo. `goldenglass-glass` ya
+  llama a `KWin.reconfigure`, que relee `goldenglassrc`.
+- **Forma:** el protocolo de blur solo da una región (rectángulos). La lente
+  necesita la forma redondeada: se toma el rectángulo de cada componente de la
+  región y el radio del tipo de superficie desde los tokens (dock, popup…).
+  Se valida en el spike.
+- **Red de seguridad:** al iniciar sesión, si el efecto está activado pero
+  KWin no lo ha cargado (p. ej. tras actualizar KWin sin recompilar), se
+  reactiva Blur para no quedarse sin difuminado.
+- **Spike al empezar la fase:** compilar el fork fuera del árbol de KWin con
+  las cabeceras de `/usr/include/kwin`, sustituir a Blur en caliente y
+  obtener la forma de las superficies.
+
 ## 5. Distribución
 
 - **PKGBUILD dividido ✅** (`packaging/goldenglass/`, compila la rama `main` del
@@ -364,7 +549,15 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
   | `goldenglass-cursors` | tema de cursores |
   | `goldenglass-wallpapers` | fondo día/noche |
   | `goldenglass-gtk` | temas GTK, CSS de libadwaita y `goldenglass-gtk-sync` (autostart) |
-  | `goldenglass` | metapaquete |
+  | `goldenglass-sounds` (F7) | tema de sonidos |
+  | `goldenglass-plymouth` (F8) | temas de Plymouth negro y gris |
+  | `goldenglass-login` (F9) | tema de SDDM y fondo para Plasma Login Manager |
+  | `goldenglass` | metapaquete (sonidos, Plymouth y login como dependencias opcionales) |
+
+  `goldenglass-system` y su acción de polkit van en `goldenglass-plasma`, del
+  que dependen los tres paquetes de sistema. Lo compilado de F10 y F11 (dock
+  con su módulo QML y el efecto `goldenglass_glass`) va en
+  `goldenglass-kstyle`, que ya se recompila con cada actualización de KDE.
 
   Se genera con `GOLDENGLASS_SYSTEM=1`: los enlaces de protección de los
   iconos y el import de adw-gtk3 solo apuntan a `/usr`, nunca al `/home` de
@@ -399,11 +592,20 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
 | F5 | Iconos, cursores, wallpapers | ✅ |
 | F6 | GTK, PKGBUILD, CI en GitHub | ✅ |
+| F7 | Sonidos sintetizados, chime, `goldenglass-system`, sección Sistema del módulo de Ajustes | |
+| F8 | Plymouth negro y gris con contraseña LUKS | |
+| F9 | Tema de SDDM + fondo y sincronización en Plasma Login Manager | |
+| F10 | Spike del panel → dock unificado con ampliación → sección Dock | |
+| F11 | Spike del fork de Blur → efecto `goldenglass_glass` con refracción → interruptor en Vidrio | |
+
+Orden de menor a mayor riesgo: lo independiente primero; lo que depende de la
+API interna de KWin y de Plasma, al final.
 
 ## 8. Fuera de alcance
 
-SDDM, Plymouth, sonidos del sistema, dock con magnificación, efecto KWin propio
-con refracción, X11 y Plasma < 6.7.
+X11 y Plasma < 6.7. Gestores de inicio de sesión distintos de SDDM y Plasma
+Login Manager (GDM, LightDM…). Un fork del greeter de Plasma Login Manager.
+Refracción en las ventanas de las apps.
 
 ## 9. Riesgos
 
@@ -416,3 +618,10 @@ con refracción, X11 y Plasma < 6.7.
 | libadwaita ignora temas | Solo colores; documentado |
 | Los plasmoids usan módulos QML privados de Plasma (sin API estable) | Mínimo Plasma 6.7; probar en el sandbox tras cada actualización de Plasma |
 | Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` (barra y dock comparten SVG) | `radius.dock ≤ menubar_height / 2` (14 px); el generador lo valida |
+| Plasma Login Manager no admite temas: el diseño propio solo se ve con SDDM | En PLM se aplica fondo y sincronización; si KDE añade temas, se porta el QML de SDDM |
+| La especificación de sonidos recurre a `freedesktop` para lo que falta | Los nombres no cubiertos apuntan a `silence.oga` |
+| Activar Plymouth regenera el initramfs con root | Comando explícito, aviso previo, restauración del tema anterior si `mkinitcpio` falla |
+| Quitar el fondo del panel y fijar sus regiones de blur y entrada no tiene API en Plasma | Spike al inicio de F10; plan B: dock como app con layer-shell; si no está el dock nuevo, el layout monta el actual |
+| El dock unificado pierde funciones de `icontasks` | Lista de paridad en 4.13; mismo `TasksModel` |
+| La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle`; comprobación al iniciar sesión que reactiva Blur si el efecto no carga |
+| Coste de GPU de la refracción | Solo superficies de Plasma; interruptor en el módulo de Ajustes |
