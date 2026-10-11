@@ -6,7 +6,7 @@ Tema completo para KDE Plasma en CachyOS inspirado en macOS 27 "Golden Gate"
 ## 1. Objetivos
 
 - Fidelidad **alta** a macOS: barra de menús superior con menú global, dock
-  centrado, semáforos a la izquierda, Spotlight, Launchpad, Centro de control.
+  centrado, semáforos a la izquierda, Spotlight, Apps, Centro de control.
 - Variantes **clara, oscura y automática** (día/noche).
 - Replicar el **slider de transparencia** de macOS 27 como módulo de Ajustes.
 - Distribuible en CachyOS/Arch mediante PKGBUILD.
@@ -70,7 +70,7 @@ goldenglass/
 ├── plasma/
 │   ├── look-and-feel/   # plantilla común de los Global Themes (layout, splash)
 │   ├── shell/           # shell org.goldenglass.desktop (pantalla de bloqueo)
-│   └── plasmoids/       # Centro de control, Launchpad, menú de sistema
+│   └── plasmoids/       # Centro de control, Apps, menú de sistema
 ├── fontconfig/          # alias de familias tipográficas
 ├── packaging/           # PKGBUILD dividido
 ├── docs/
@@ -203,11 +203,20 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     DDC/CI), sonido con silencio, vidrio (`goldenglass-glass`) y lo que se
     reproduce (MPRIS). Usa los módulos QML de Plasma (privados: se revisan en
     cada actualización de Plasma).
-  - `org.goldenglass.launchpad` ✅ — primer elemento del dock; ventana
-    `DashboardWindow` de Plasma (pantalla completa, blur) con buscador
-    (`krunner_services`), páginas de hasta 7×5 apps de «Todas las aplicaciones»
-    (`RootModel`) y puntos de página. Se declara `org.kde.plasma.launchermenu`:
-    la tecla Meta lo abre.
+  - `org.goldenglass.launchpad` ✅ **Apps** — primer elemento del dock, como
+    Apps de macOS 26/27 (que sustituyó a Launchpad y vive en Spotlight): un
+    `PlasmaCore.Dialog` flotante centrado en la pantalla del dock (vidrio, blur
+    y sombra del Plasma Style) con buscador, etiquetas de categoría, «Sugeridas»
+    (`RecentUsageModel`) y secciones por categoría con «Mostrar más», en
+    cuadrícula o lista y por categoría o por nombre (se recuerda en la
+    configuración del plasmoid). Las categorías del menú de KDE (`RootModel`,
+    identificadas por su icono) se agrupan en las 7 de macOS (`categories.js`).
+    Teclado: flechas y Return, Tab entre etiquetas, Escape borra y luego
+    cierra; si lo escrito no es una app, «Buscar en Spotlight» pasa la consulta
+    a KRunner. Medidas en `[apps]` de los tokens (`contents/ui/tokens.js`, que
+    `tools/plasmoids.py` genera en cada plasmoid). Las acciones de Kicker
+    (`actionList`) se leen solo al abrir el menú contextual: leerlas al cargar
+    tumba plasmashell. Se declara `org.kde.plasma.launchermenu`: Meta lo abre.
   - `org.goldenglass.systemmenu` ✅ — menú del logo como el menú Apple: Acerca de
     este equipo (kinfocenter), Preferencias del Sistema, Tienda (solo si está
     Discover), Forzar salida (KWin `killWindow`), Reposo, Reiniciar…, Apagar…,

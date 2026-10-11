@@ -123,6 +123,18 @@ window_title_weight = "DemiBold"
 # ---------------------------------------------------------------------------
 # Semáforos (iguales en claro y oscuro)
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Apps (lanzador del dock): panel centrado como el de Spotlight en macOS 26/27
+# ---------------------------------------------------------------------------
+[apps]
+width = 760          # px del contenido del panel (sin el borde de vidrio)
+height = 580
+columns = 6          # iconos por fila en cuadrícula
+icon_size = 60       # px, cuadrícula
+list_icon_size = 24  # px, lista
+section_rows = 2     # filas por categoría antes de «Mostrar más»
+suggested = 6        # apps en «Sugeridas»
+
 [traffic_lights]
 diameter = 12        # px
 gap = 8              # px entre bordes de círculos (centros a diameter + gap)
