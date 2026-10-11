@@ -79,6 +79,7 @@ if [[ -z ${GG_SANDBOX_INNER:-} ]]; then
   DESTDIR="$STAGE" cmake --install "$ROOT/build/cmake" >/dev/null
   export QT_PLUGIN_PATH="$STAGE/usr/lib/qt6/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
   export XDG_DATA_DIRS="$STAGE/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+  export PATH="$STAGE/usr/bin:$PATH"
 
   # El bus de sesión busca servicios primero en $XDG_DATA_HOME/dbus-1/services.
   mkdir -p -- "$XDG_DATA_HOME/dbus-1/services"

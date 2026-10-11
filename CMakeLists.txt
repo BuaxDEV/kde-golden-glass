@@ -111,6 +111,14 @@ endif()
 
 ki18n_install(po)
 
+# Comando goldenglass-glass (nivel de vidrio en vivo) y lo que usa en ejecución.
+# El lanzador encuentra glass.py por ruta relativa: vale en /usr y con DESTDIR.
+install(FILES tools/glass.py tools/plasma_theme.py DESTINATION "${KDE_INSTALL_DATADIR}/goldenglass/tools")
+install(FILES tokens/goldenglass.toml DESTINATION "${KDE_INSTALL_DATADIR}/goldenglass/tokens")
+file(RELATIVE_PATH GOLDENGLASS_REL_DATA "${KDE_INSTALL_FULL_BINDIR}" "${KDE_INSTALL_FULL_DATADIR}/goldenglass")
+configure_file(tools/goldenglass-glass.in "${CMAKE_CURRENT_BINARY_DIR}/goldenglass-glass" @ONLY)
+install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/goldenglass-glass" DESTINATION ${KDE_INSTALL_BINDIR})
+
 # Cabecera de versión para el módulo de configuración del estilo.
 include(ECMSetupVersion)
 ecm_setup_version(${PROJECT_VERSION} VARIABLE_PREFIX GOLDENGLASS

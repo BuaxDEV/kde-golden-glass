@@ -1,0 +1,6 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# goldenglass-glass: nivel de vidrio de GoldenGlass en vivo (ver glass.py).
+# Generado por CMake desde tools/goldenglass-glass.in.
+here=$(dirname "$(readlink -f "$0")")
+exec python3 "$here/@GOLDENGLASS_REL_DATA@/tools/glass.py" "$@"
