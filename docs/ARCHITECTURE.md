@@ -192,6 +192,10 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     se pueden cambiar en Preferencias › Atajos. Cambiar de escritorio sigue en
     Meta+Ctrl+←/→: Ctrl+←/→ es saltar palabra en Linux. KWin carga el script
     al reconfigurarse o en el siguiente inicio de sesión.
+  - Escritorios independientes por pantalla, como «Las pantallas tienen
+    espacios independientes» de macOS (`plasma.per_screen_desktops`): el layout
+    activa `[Windows] PerOutputVirtualDesktops` de KWin (Plasma ≥ 6.7) y
+    desactiva el script «Virtual Desktops Only on Primary», que choca con ello.
   - Splash de inicio (logo + barra de progreso).
   - Fuentes, esquema de color, Plasma Style, estilo de apps `GoldenGlass` y
     decoración `org.goldenglass.decoration` (requieren el paquete
