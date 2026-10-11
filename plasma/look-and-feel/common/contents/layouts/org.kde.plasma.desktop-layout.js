@@ -83,7 +83,7 @@ tasks.writeConfig("taskHoverEffect", false);
 tasks.writeConfig("iconSpacing", 1);
 
 dock.addWidget("org.kde.plasma.marginsseparator");
-dock.addWidget("org.kde.plasma.trash");
+dock.addWidget("org.goldenglass.trash");
 
 // --- Modo oscuro: el interruptor del Centro de control (DarkModeControl de
 // Plasma) y el cambio automático día/noche alternan entre estos dos temas.

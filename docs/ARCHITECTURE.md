@@ -70,7 +70,7 @@ goldenglass/
 ├── plasma/
 │   ├── look-and-feel/   # plantilla común de los Global Themes (layout, splash)
 │   ├── shell/           # shell org.goldenglass.desktop (pantalla de bloqueo)
-│   └── plasmoids/       # Centro de control, Apps, menú de sistema
+│   └── plasmoids/       # Centro de control, Apps, menú de sistema, papelera
 ├── fontconfig/          # alias de familias tipográficas
 ├── packaging/           # PKGBUILD dividido
 ├── docs/
@@ -240,6 +240,12 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     tumba plasmashell. Los menús (contextual y ordenar) son ventanas emergentes
     propias (`popupType: Popup.Window`): dentro del panel quedaban recortados
     y sin blur. Se declara `org.kde.plasma.launchermenu`: Meta lo abre.
+  - `org.goldenglass.trash` ✅ — papelera del dock como la de macOS: icono a
+    color del tema (`user-trash`/`user-trash-full` según haya archivos en
+    `~/.local/share/Trash/files`, que crea si falta: `FolderListModel` lista el
+    directorio actual si la carpeta no existe), clic abre `trash:/`, soltar
+    archivos los tira con `gio trash` y el menú «Vaciar papelera…» pide
+    confirmación (`kdialog`) antes de `ktrash6 --empty`.
   - `org.goldenglass.systemmenu` ✅ — menú del logo como el menú Apple: Acerca de
     este equipo (kinfocenter), Preferencias del Sistema, Tienda (solo si está
     Discover), Forzar salida (KWin `killWindow`), Reposo, Reiniciar…, Apagar…,
@@ -303,8 +309,8 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     que los temas declaran siempre (vale también con el tema en `/usr`).
     Volver a ejecutarlo al instalar apps; las apps con `Icon=` como ruta
     absoluta no se pueden sustituir desde un tema.
-  - La papelera de Plasma pide `user-trash-symbolic` dentro de un panel: en el
-    dock sale el símbolo, no la papelera a color.
+  - La papelera de Plasma pide `user-trash-symbolic` dentro de un panel; por
+    eso el dock usa `org.goldenglass.trash` (ver plasmoids), con el icono a color.
 - **Cursores** ✅ (`tools/cursors.py`, tema `GoldenGlass-cursors`): dibujados
   por código como los de macOS (flecha e I negras con borde blanco, manos
   blancas con borde negro, sombra suave, rueda de colores animada para

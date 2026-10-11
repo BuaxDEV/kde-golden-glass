@@ -117,7 +117,7 @@ package_goldenglass-plasma() {
   pkgdesc="GoldenGlass Plasma style, global themes, lock screen, plasmoids and color schemes"
   arch=(any)
   depends=(plasma-workspace plasma-desktop kscreenlocker plasma5support plasma-nm plasma-pa bluez-qt
-           powerdevil kcmutils fontconfig inter-font)
+           powerdevil kcmutils fontconfig inter-font kdialog glib2 kio)
   optdepends=('goldenglass-kstyle: widget style and window decoration used by the global themes'
               'goldenglass-icons: icon theme used by the global themes'
               'goldenglass-cursors: cursor theme used by the global themes'
