@@ -49,6 +49,7 @@ sombras, tipografía, semáforos) viven en **`tokens/goldenglass.toml`**.
 | `build/plasma/look-and-feel/org.goldenglass.{light,dark}.desktop/` | Global Themes (desde `plasma/look-and-feel/common/`) | ✅ F2 |
 | `build/wallpapers/GoldenGlass/` (numpy, se cachea) | Fondo de pantalla día/noche | ✅ F5 |
 | `build/cursors/GoldenGlass-cursors/` (QtSvg, se cachea) | Tema de cursores (SVG + Xcursor) | ✅ F5 |
+| `build/icons/GoldenGlass{,-Dark}/` (SVG dibujados por código) | Tema de iconos claro/oscuro | F5 (base ✅) |
 | `gtk/*.css` | GTK3 / GTK4 | F6 |
 
 **Regla:** los archivos generados no se editan a mano ni se versionan. Se cambia
@@ -71,7 +72,6 @@ goldenglass/
 │   ├── shell/           # shell org.goldenglass.desktop (pantalla de bloqueo)
 │   └── plasmoids/       # Centro de control, Launchpad, menú de sistema
 ├── gtk/                 # (generado en parte)
-├── icons/               # GoldenGlass + GoldenGlass-Dark
 ├── fontconfig/          # alias de familias tipográficas
 ├── packaging/           # PKGBUILD dividido
 ├── docs/
@@ -231,10 +231,20 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
   detectada al aplicarse.
 
 ### 4.7 Iconos, cursores y wallpapers
-- **Iconos:** diseño propio de carpetas, lugares, sistema, acciones y ~50 apps
-  más usadas (squircle con capas). Hereda (`Inherits=`) de **WhiteSur** (AUR).
-  Los simbólicos de lugares (16 px) usan `ColorScheme-Highlight` para salir en
-  el color de acento en las barras laterales, como en macOS 27.
+- **Iconos** (`tools/icons.py`), por bloques:
+  - **Base ✅:** carpetas, lugares y dispositivos. Desde 32 px, carpetas de
+    macOS 27 en el color de acento con el símbolo grabado; papelera y unidades a
+    color. A 16/22/24 px solo el símbolo en acento (barra lateral estilo Finder,
+    también en las listas de Dolphin); `*-symbolic` en el color del texto.
+    Todo usa las clases `ColorScheme-Accent`/`-Text` con
+    `FollowsColorScheme=true`, así que sigue al acento y al modo claro/oscuro.
+    Dos temas: `GoldenGlass` (hereda WhiteSur → breeze) y `GoldenGlass-Dark`
+    (mismas carpetas por enlace; hereda WhiteSur-dark → breeze-dark).
+    WhiteSur (AUR) es dependencia opcional.
+  - **Pendiente:** tipos de archivo (`feature/icons-mimetypes`) y ~50 apps
+    (`feature/icons-apps`, squircle con capas).
+  - La papelera de Plasma pide `user-trash-symbolic` dentro de un panel: en el
+    dock sale el símbolo, no la papelera a color.
 - **Cursores** ✅ (`tools/cursors.py`, tema `GoldenGlass-cursors`): dibujados
   por código como los de macOS (flecha e I negras con borde blanco, manos
   blancas con borde negro, sombra suave, rueda de colores animada para
@@ -289,7 +299,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
-| F5 | Iconos, cursores, wallpapers | en curso (wallpapers ✅, cursores ✅) |
+| F5 | Iconos, cursores, wallpapers | en curso (wallpapers ✅, cursores ✅, iconos base ✅) |
 | F6 | GTK, PKGBUILD, CI en GitHub | pendiente |
 
 ## 8. Fuera de alcance

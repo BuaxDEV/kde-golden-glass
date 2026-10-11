@@ -24,6 +24,7 @@ PLASMA_THEME = "GoldenGlass"
 WIDGET_STYLE = "GoldenGlass"
 DECORATION = "org.goldenglass.decoration"
 CURSOR_THEME = "GoldenGlass-cursors"  # tools/cursors.py
+ICON_THEMES = {"light": "GoldenGlass", "dark": "GoldenGlass-Dark"}  # tools/icons.py
 
 VARIANTS = {
     "light": ("org.goldenglass.light.desktop", "GoldenGlass Light", "GoldenGlassLight"),
@@ -105,6 +106,9 @@ def defaults(tokens: dict, variant: str) -> str:
         "",
         "[kdeglobals][KDE]",
         f"widgetStyle={WIDGET_STYLE}",
+        "",
+        "[kdeglobals][Icons]",
+        f"Theme={ICON_THEMES[variant]}",
         "",
         "[plasmarc][Theme]",
         f"name={PLASMA_THEME}",
