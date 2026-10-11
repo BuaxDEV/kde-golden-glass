@@ -141,28 +141,21 @@ en `share/goldenglass`) aplica un nivel en vivo a las tres capas:
 
 El cambio de tema se hace dentro de plasmashell (`evaluateScript`,
 `theme = …`), de forma síncrona; si plasmashell no corre, se escribe `plasmarc`.
+Para cambios rápidos seguidos: al regenerar `GoldenGlassTuned` se borra su caché
+de KSvg (caduca por segundos) y el rebote espera 0,35 s (libplasma agrupa los
+avisos de cambio de tema cada 100 ms).
 Verificado en el sandbox midiendo la barra de menús, el título y la toolbar de
 Dolphin en 0 → 1 → 0,5 → 0 → 0 → 1.
 
 #### Módulo de Ajustes
-- Aparece en Preferencias del Sistema › Apariencia › GoldenGlass.
-- **Slider de vidrio** continuo con 3 muescas; vista previa en vivo.
-- Selector de acento: "Sistema" (por defecto, respeta el acento de Plasma).
-- Escribe `~/.config/goldenglassrc`. Consumidores:
-  - `kstyle/` y `kdecoration/`: recarga en vivo.
-  - Plasma Style: los SVG tienen la opacidad fija, así que se regeneran con
-    `gen_tokens.py --glass-level N`. **Spike F3 (resultado):** Plasma no relee un
-    tema cuyos archivos cambian, y reaplicar el mismo nombre no hace nada
-    (`ThemePrivate::setThemeName` sale si el nombre no cambia; no hay API de
-    recarga). Dos vías sí recargan en vivo, medidas en el sandbox con el color
-    de la barra de menús:
-    - **Alternar identificadores:** regenerar en un segundo id y cambiar
-      `plasmarc [Theme] name` a él (y la siguiente vez, al revés). Sin parpadeo;
-      el coste es una segunda entrada en la lista de Estilos de Plasma (el KCM
-      no permite ocultar temas).
-    - **Rebote:** cambiar un instante a Breeze y volver. Una sola entrada, pero
-      se ve Breeze un momento y depende de que las dos notificaciones de
-      configuración no se fusionen.
+
+`kcm/` (`kcm_goldenglass`, C++ + QML): Preferencias del Sistema › Colores y
+temas › **Vidrio**. Control con las tres muescas de los tokens (imán al soltar
+cerca) y valores intermedios; se aplica en vivo al soltar ejecutando
+`goldenglass-glass`; si se suelta varias veces, solo se encola el último nivel.
+"Predeterminados" vuelve al nivel de fábrica; no hay "Aplicar". Traducción al
+español en `po/es`. `kcm_apply_test` (prueba de integración, dentro de una
+sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 
 ### 4.5 Escritorio Plasma — `plasma/`
 - **Plasma Style** `GoldenGlass`: lo genera `tools/plasma_theme.py` dibujando
@@ -267,7 +260,7 @@ Dolphin en 0 → 1 → 0,5 → 0 → 0 → 1.
 | F0 | Repo, tokens, generador, color schemes, fontconfig, `install.sh` | ✅ |
 | F1 | Fork de Darkly renombrado: QStyle + decoración (semáforos, radios, sidebar, toolbar unificada) | ✅ |
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
-| F3 | Spike de opacidad del Plasma Style → KCM completo | pendiente |
+| F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | pendiente |
 | F5 | Iconos, cursores, wallpapers | pendiente |
 | F6 | GTK, PKGBUILD, CI en GitHub | pendiente |

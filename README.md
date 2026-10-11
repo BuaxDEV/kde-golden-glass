@@ -6,7 +6,7 @@ dock, semáforos, variantes clara/oscura/automática.
 
 > Proyecto independiente. No contiene assets, fuentes ni marcas de Apple.
 
-**Estado:** F0, F1 y F2 completas; siguiente F3 (control de transparencia). Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+**Estado:** F0–F3 completas; siguiente F4 (Centro de control, Launchpad, menú de sistema). Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Requisitos
 
@@ -36,7 +36,7 @@ sudo pacman -R goldenglass-kstyle                # desinstalar
 Requiere `extra-cmake-modules`. Volver a ejecutar `makepkg -si` tras actualizar
 Qt o KDE.
 
-Nivel de vidrio en vivo (requiere `goldenglass-kstyle` instalado):
+Nivel de vidrio en vivo: Preferencias del Sistema › Colores y temas › Vidrio, o desde la terminal (requiere `goldenglass-kstyle` instalado):
 
 ```sh
 goldenglass-glass --level 0.8   # 0 = más transparente, 1 = más opaco
