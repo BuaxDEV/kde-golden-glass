@@ -134,9 +134,19 @@ goldenglass/
 - Selector de acento: "Sistema" (por defecto, respeta el acento de Plasma).
 - Escribe `~/.config/goldenglassrc`. Consumidores:
   - `kstyle/` y `kdecoration/`: recarga en vivo.
-  - Plasma Style: **⚠ riesgo** — los SVG tienen opacidad fija. Plan: regenerar el
-    tema desde plantillas en `~/.local/share/plasma/desktoptheme/GoldenGlass` y
-    forzar la recarga de Plasma. **Se valida con un spike antes de F3.**
+  - Plasma Style: los SVG tienen la opacidad fija, así que se regeneran con
+    `gen_tokens.py --glass-level N`. **Spike F3 (resultado):** Plasma no relee un
+    tema cuyos archivos cambian, y reaplicar el mismo nombre no hace nada
+    (`ThemePrivate::setThemeName` sale si el nombre no cambia; no hay API de
+    recarga). Dos vías sí recargan en vivo, medidas en el sandbox con el color
+    de la barra de menús:
+    - **Alternar identificadores:** regenerar en un segundo id y cambiar
+      `plasmarc [Theme] name` a él (y la siguiente vez, al revés). Sin parpadeo;
+      el coste es una segunda entrada en la lista de Estilos de Plasma (el KCM
+      no permite ocultar temas).
+    - **Rebote:** cambiar un instante a Breeze y volver. Una sola entrada, pero
+      se ve Breeze un momento y depende de que las dos notificaciones de
+      configuración no se fusionen.
 
 ### 4.5 Escritorio Plasma — `plasma/`
 - **Plasma Style** `GoldenGlass`: lo genera `tools/plasma_theme.py` dibujando
@@ -255,7 +265,7 @@ con refracción, X11 y Plasma < 6.7.
 
 | Riesgo | Mitigación |
 |---|---|
-| Opacidad del Plasma Style no ajustable en vivo | Spike en F3; plan B: 3 sub-temas fijos (claro/medio/opaco) |
+| Opacidad del Plasma Style no ajustable en vivo | Resuelto en el spike de F3: regenerar + alternar id (o rebote por Breeze); plan B: 3 sub-temas fijos |
 | Divergencia del fork de Darkly respecto a upstream | Renombrado limpio y registro de cambios propios para poder hacer rebase |
 | Roturas por actualizaciones de Qt/KDE (rolling) | PKGBUILD con rebuild; CI contra la versión actual de Arch |
 | Alias de fuente no resuelto por Qt | Plan B descrito en 4.6 |
