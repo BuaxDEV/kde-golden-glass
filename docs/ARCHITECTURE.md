@@ -199,8 +199,14 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
   - `org.goldenglass.controlcenter` — Wi-Fi, Bluetooth, sonido, brillo, modo
     oscuro, slider de vidrio.
   - `org.goldenglass.launchpad` — cuadrícula de apps a pantalla completa con blur.
-  - `org.goldenglass.systemmenu` — menú del "logo" (Acerca de, Ajustes, Suspender,
-    Reiniciar, Apagar, Bloquear, Cerrar sesión).
+  - `org.goldenglass.systemmenu` ✅ — menú del logo como el menú Apple: Acerca de
+    este equipo (kinfocenter), Preferencias del Sistema, Tienda (solo si está
+    Discover), Forzar salida (KWin `killWindow`), Reposo, Reiniciar…, Apagar…,
+    Bloquear pantalla, Cerrar sesión de <usuario>… (las tres con "…" piden
+    confirmación). Atajo Alt+F1.
+  - Los plasmoids viven en `plasma/plasmoids/<id>/` con sus traducciones en
+    `po/<idioma>.po`; `tools/plasmoids.py` los copia a `build/` y compila las
+    traducciones dentro del paquete (`contents/locale`).
 - **Modo automático:** se apoya en el cambio día/noche nativo de Plasma entre los
   dos Global Themes. Los wallpapers usan `images_dark/` para cambiar solos.
 
@@ -261,7 +267,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F1 | Fork de Darkly renombrado: QStyle + decoración (semáforos, radios, sidebar, toolbar unificada) | ✅ |
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
-| F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | pendiente |
+| F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | en curso (menú de sistema) |
 | F5 | Iconos, cursores, wallpapers | pendiente |
 | F6 | GTK, PKGBUILD, CI en GitHub | pendiente |
 
