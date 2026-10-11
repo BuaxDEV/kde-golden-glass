@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [{ "Name": "GoldenGlass contributors" }],
+        "Category": "Application Launchers",
+        "Description": "Full screen grid of all applications with search, like macOS Launchpad",
+        "Description[es]": "Cuadrícula a pantalla completa con todas las aplicaciones y un buscador, como el Launchpad de macOS",
+        "Icon": "view-app-grid",
+        "Id": "org.goldenglass.launchpad",
+        "License": "GPL-3.0-or-later",
+        "Name": "Launchpad",
+        "Website": "https://github.com/brayanAP/buapdev-cachyos-kde-macos"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-Provides": ["org.kde.plasma.launchermenu"]
+}
