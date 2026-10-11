@@ -226,9 +226,11 @@ PlasmoidItem {
         hoverEnabled: true
         onClicked: root.toggle()
 
+        // Icono del tema GoldenGlass (claro u oscuro según el tema de iconos)
         Kirigami.Icon {
             anchors.fill: parent
-            source: Qt.resolvedUrl("../images/launchpad.svg")
+            source: "goldenglass-apps"
+            fallback: "view-app-grid"
             active: icon.containsMouse
         }
     }

@@ -239,7 +239,8 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     (`actionList`) se leen solo al abrir el menú contextual: leerlas al cargar
     tumba plasmashell. Los menús (contextual y ordenar) son ventanas emergentes
     propias (`popupType: Popup.Window`): dentro del panel quedaban recortados
-    y sin blur. Se declara `org.kde.plasma.launchermenu`: Meta lo abre.
+    y sin blur. El icono del dock es `goldenglass-apps` del tema de iconos (claro u oscuro),
+    con `view-app-grid` de respaldo. Se declara `org.kde.plasma.launchermenu`: Meta lo abre.
   - `org.goldenglass.trash` ✅ — papelera del dock como la de macOS: icono a
     color del tema (`user-trash`/`user-trash-full` según haya archivos en
     `~/.local/share/Trash/files`, que crea si falta: `FolderListModel` lista el
