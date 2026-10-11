@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Authors": [{ "Name": "GoldenGlass contributors" }],
+        "Description": "macOS-style shortcuts: Ctrl+Up for Mission Control (overview) and Ctrl+Down for App Exposé",
+        "Description[es]": "Atajos como en macOS: Ctrl+↑ para Mission Control (vista general) y Ctrl+↓ para App Exposé",
+        "EnabledByDefault": false,
+        "Id": "org.goldenglass.shortcuts",
+        "License": "GPL-3.0-or-later",
+        "Name": "GoldenGlass shortcuts",
+        "Name[es]": "Atajos de GoldenGlass",
+        "Website": "https://github.com/brayanAP/kde-golden-glass"
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js"
+}
