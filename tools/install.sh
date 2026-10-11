@@ -33,6 +33,9 @@ declare -A TARGETS=(
   [build/cursors/GoldenGlass-cursors]="$DATA/icons/GoldenGlass-cursors"
   [build/icons/GoldenGlass]="$DATA/icons/GoldenGlass"
   [build/icons/GoldenGlass-Dark]="$DATA/icons/GoldenGlass-Dark"
+  [build/gtk/GoldenGlass]="$DATA/themes/GoldenGlass"
+  [build/gtk/GoldenGlass-Dark]="$DATA/themes/GoldenGlass-Dark"
+  [build/gtk/libadwaita.css]="$DATA/goldenglass/gtk/libadwaita.css"
   [assets/logo/goldenglass.svg]="$DATA/icons/hicolor/scalable/apps/goldenglass.svg"
   [assets/logo/goldenglass-symbolic.svg]="$DATA/icons/hicolor/scalable/apps/goldenglass-symbolic.svg"
 )
@@ -50,7 +53,12 @@ refresh_caches() {
   command -v kbuildsycoca6 >/dev/null && kbuildsycoca6 >/dev/null 2>&1 || true
 }
 
+AUTOSTART="$CONF/autostart/goldenglass-gtk-sync.desktop"
+
 if [[ $mode == uninstall ]]; then
+  pkill -u "$USER" -f "$ROOT/tools/gtk_sync.py" 2>/dev/null || true
+  python3 "$ROOT/tools/gtk_sync.py" --restore 2>/dev/null || true
+  rm -fv -- "$AUTOSTART"
   for dst in "${TARGETS[@]}"; do
     [[ -e $dst || -L $dst ]] && rm -rfv -- "$dst"
   done
@@ -74,6 +82,21 @@ for src in "${!TARGETS[@]}"; do
     install -Dm644 -v -- "$ROOT/$src" "$dst"
   fi
 done
+
+# GTK: el Global Theme no puede fijarlo; goldenglass-gtk-sync lo aplica mientras
+# el Global Theme sea GoldenGlass (arranca con la sesión).
+mkdir -p -- "$(dirname -- "$AUTOSTART")"
+cat >"$AUTOSTART" <<EOF
+[Desktop Entry]
+Type=Application
+Name=GoldenGlass GTK sync
+Comment=Applies the GoldenGlass GTK theme while the GoldenGlass global theme is active
+Exec=python3 "$ROOT/tools/gtk_sync.py"
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=1
+NoDisplay=true
+EOF
+python3 "$ROOT/tools/gtk_sync.py" --once || true
 
 # Apps de terceros encerradas en squircle a partir de sus iconos instalados.
 # (Volver a ejecutar tools/wrap_icons.py al instalar apps nuevas.)
