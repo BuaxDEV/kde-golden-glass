@@ -73,6 +73,7 @@ def header(tokens: dict) -> str:
         ("Semáforos y colores fijos (px, 0xAARRGGBB)", None, None),
         ("TrafficLightDiameter", tl["diameter"], "diámetro"),
         ("TrafficLightGap", tl["gap"], "separación entre bordes"),
+        ("TrafficLightInactiveColored", bool(tl["inactive_colored"]), "en color también sin foco"),
     ]
     colors = [
         ("TrafficLightClose", tl["close"]),
@@ -81,7 +82,9 @@ def header(tokens: dict) -> str:
         ("TrafficLightMinimizeBorder", tl["minimize_border"]),
         ("TrafficLightZoom", tl["zoom"]),
         ("TrafficLightZoomBorder", tl["zoom_border"]),
-        ("TrafficLightGlyph", tl["glyph"]),
+        ("TrafficLightCloseGlyph", tl["close_glyph"]),
+        ("TrafficLightMinimizeGlyph", tl["minimize_glyph"]),
+        ("TrafficLightZoomGlyph", tl["zoom_glyph"]),
         ("TrafficLightInactiveLight", tokens["light"]["traffic_light_inactive"]),
         ("TrafficLightInactiveDark", tokens["dark"]["traffic_light_inactive"]),
         ("SidebarLight", tokens["light"]["sidebar"]),

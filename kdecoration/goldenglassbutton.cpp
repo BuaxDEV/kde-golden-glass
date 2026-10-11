@@ -203,9 +203,9 @@ void Button::drawTrafficLight(QPainter *painter) const
     }
 
     TrafficLight::State state;
-    // Colored while the window is active or the group is hovered (as in
-    // macOS, hovering an inactive window's buttons lights them up).
-    state.lit = d->window()->isActive() || m_groupHovered;
+    // Colored always (token traffic_lights.inactive_colored) or, as in macOS,
+    // while the window is active or the group is hovered.
+    state.lit = Tokens::TrafficLightInactiveColored || d->window()->isActive() || m_groupHovered;
     state.pressed = isPressed();
     state.maximized = isChecked();
     state.darkTitleBar = qGray(d->titleBarColor().rgb()) < 128;

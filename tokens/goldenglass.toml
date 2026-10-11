@@ -136,15 +136,20 @@ section_rows = 2     # filas por categoría antes de «Mostrar más»
 suggested = 6        # apps en «Sugeridas»
 
 [traffic_lights]
-diameter = 12        # px
+# macOS 27 (Golden Gate): gemas de vidrio algo mayores que los 12 px planos
+# de Big Sur–Tahoe, con brillo arriba y abajo. Glifo tintado por botón.
+diameter = 14        # px
 gap = 8              # px entre bordes de círculos (centros a diameter + gap)
+inactive_colored = true  # también en color en ventanas sin foco (macOS los pone grises)
 close = "#FF5F57"
 close_border = "#E0443E"
+close_glyph = "#4D0000"
 minimize = "#FEBC2E"
 minimize_border = "#DEA123"
+minimize_glyph = "#995700"
 zoom = "#28C840"
 zoom_border = "#1AAB29"
-glyph = "#00000099"
+zoom_glyph = "#006500"
 
 # ---------------------------------------------------------------------------
 # Paleta clara

@@ -110,11 +110,18 @@ goldenglass/
 
 ### 4.2 Decoración de ventanas — `kdecoration/` (C++, KDecoration3)
 - En el mismo árbol CMake que `kstyle/` (como Breeze/Darkly), config compartida.
-- **Semáforos** (`goldenglasstrafficlight.cpp`): cerrar, minimizar y maximizar
-  como círculos de vidrio de 12 px separados 8 px (tokens `traffic_lights`).
-  Al pasar el ratón por cualquiera aparecen los símbolos en los tres; en ventanas
-  inactivas son grises y se colorean al pasar el ratón. El zoom apunta hacia
-  dentro con la ventana maximizada. `build/cmake/bin/trafficlight_preview
+- **Semáforos** (`goldenglasstrafficlight.cpp`), como los de macOS 27 Golden
+  Gate (Liquid Glass): gemas de vidrio de 14 px separadas 8 px con sombra suave
+  que las separa de la ventana, relleno con volumen, borde fino, **brillo arriba
+  y brillo abajo** y glifo tintado por botón (×, −, triángulos de pantalla
+  completa; tokens `traffic_lights`). Al pulsar se encogen un poco. Al pasar el
+  ratón por cualquiera aparecen los símbolos en los tres. Siempre en color, también
+  en ventanas sin foco (`traffic_lights.inactive_colored`; con `false`, como
+  macOS: vidrio gris con los brillos atenuados que se colorea al pasar el ratón). El
+  zoom apunta hacia dentro con la ventana maximizada. **Posición** con la regla
+  de Apple: el primer círculo está tan lejos del borde izquierdo como del
+  superior (`Decoration::leftButtonsPadding`). Los semáforos CSD de GTK usan
+  los mismos colores, glifos y brillos. `build/cmake/bin/trafficlight_preview
   salida.png` dibuja todos los estados para revisarlos sin KWin.
 - Radio de esquina y sombras desde los tokens.
 - **Toolbar unificada:** con `decoration.glass_titlebar` la barra de título usa
