@@ -26,6 +26,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import tomllib
 from pathlib import Path
 
@@ -40,6 +41,10 @@ TUNED_ID = BASE_ID + "Tuned"
 TUNED_NAME = "GoldenGlass (vidrio ajustado)"
 RC = "goldenglassrc"
 STYLE_KEYS = ("MenuOpacity", "ToolBarOpacity", "DolphinSidebarOpacity")
+# libplasma agrupa los avisos de cambio de tema con un temporizador de 100 ms
+# (ThemePrivate::updateNotificationTimer): en el rebote hay que dejar que el
+# tema intermedio llegue a los paneles antes de volver, o no se repintan.
+BOUNCE_DELAY = 0.35
 
 
 def load_tokens() -> dict:
@@ -49,6 +54,10 @@ def load_tokens() -> dict:
 
 def data_home() -> Path:
     return Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
+
+
+def cache_home() -> Path:
+    return Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
 
 
 def kread(file: str, group: str, key: str, default: str = "") -> str:
@@ -100,8 +109,12 @@ def write_tuned_theme(tokens: dict, level: float) -> None:
             shutil.rmtree(dst)
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src, dst)
-        # KSvg descarta su caché si metadata.json es más nuevo que ella.
+        # KSvg solo descarta la caché de imágenes del tema si metadata.json es
+        # más nuevo, comparando segundos: dos niveles aplicados en el mismo
+        # segundo reutilizarían las imágenes del anterior. Se borra la caché
+        # para que la próxima carga renderice los SVG nuevos.
         (dst / "metadata.json").touch()
+        (cache_home() / f"plasma_theme_{TUNED_ID}.kcache").unlink(missing_ok=True)
 
 
 def set_level(level: float, reload_plasma: bool = True) -> None:
@@ -125,6 +138,7 @@ def set_level(level: float, reload_plasma: bool = True) -> None:
             # Mismo id con archivos nuevos: pasar un instante por el tema base
             # (solo cambia la opacidad; nunca se ve otro tema).
             set_plasma_theme(BASE_ID)
+            time.sleep(BOUNCE_DELAY)
         if current != target or target == TUNED_ID:
             set_plasma_theme(target)
 

@@ -57,6 +57,10 @@ def header(tokens: dict) -> str:
         ("WindowRadius", rad["window"], "esquinas de ventana (decoración y blur)"),
         ("Vidrio", None, None),
         ("GlassOpacity", glass, "% de opacidad en el nivel por defecto del slider"),
+        ("GlassDefaultLevel", float(tokens["glass"]["default_level"]), "nivel del slider de fábrica (0..1)"),
+        ("GlassNotchClear", float(tokens["glass"]["notch"]["clear"]["position"]), "muesca «más claro»"),
+        ("GlassNotchMedium", float(tokens["glass"]["notch"]["medium"]["position"]), "muesca «medio»"),
+        ("GlassNotchOpaque", float(tokens["glass"]["notch"]["opaque"]["position"]), "muesca «más opaco»"),
         ("Sombras de ventana", None, None),
         ("ShadowSize", _shadow_size_index(shadow["size"]),
          f"{SHADOW_SIZES[_shadow_size_index(shadow['size'])]} ({shadow['size']} px)"),
@@ -100,6 +104,8 @@ def header(tokens: dict) -> str:
         else:
             if isinstance(value, bool):
                 out.append(f"inline constexpr bool {name} = {str(value).lower()}; // {comment}")
+            elif isinstance(value, float):
+                out.append(f"inline constexpr double {name} = {value!r}; // {comment}")
             else:
                 out.append(f"inline constexpr int {name} = {value}; // {comment}")
     for name, value in colors:

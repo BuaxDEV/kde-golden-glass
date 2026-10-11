@@ -28,7 +28,6 @@ include(KDECompilerSettings NO_POLICY_SCOPE)
 include(KDEClangFormat)
 
 set(QT_NO_CREATE_VERSIONLESS_TARGETS ON)
-set(QT_NO_CREATE_VERSIONLESS_FUNCTIONS ON)
 
 set(QT_MAJOR_VERSION 6)
 
@@ -108,6 +107,8 @@ if(WITH_DECORATIONS)
     )
     add_subdirectory(kdecoration)
 endif()
+
+add_subdirectory(kcm)
 
 ki18n_install(po)
 

@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Description": "Glass transparency of the desktop, window title bars, toolbars and menus",
+        "Description[es]": "Transparencia del vidrio del escritorio, las barras de título, las toolbars y los menús",
+        "FormFactors": ["desktop"],
+        "Icon": "goldenglass",
+        "Name": "Glass",
+        "Name[es]": "Vidrio"
+    },
+    "X-KDE-Keywords": "glass,transparency,opacity,blur,goldenglass,liquid glass",
+    "X-KDE-Keywords[es]": "vidrio,transparencia,opacidad,desenfoque,goldenglass,liquid glass",
+    "X-KDE-System-Settings-Parent-Category": "themes",
+    "X-KDE-Weight": 51
+}
