@@ -252,7 +252,19 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     `<tipo>-x-generic` antes de mirar los heredados. Por eso no se publican
     `text|image|audio|video|application-x-generic`, y las acciones `folder-*`
     importantes se dibujan (si no, acabarían en `folder`).
-  - **Pendiente:** ~50 apps (`feature/icons-apps`, squircle con capas).
+  - **Apps ✅** (`tools/icons_apps.py`): 35 apps de KDE, CachyOS, terminales
+    y utilidades, en squircle de superelipse con sombra, brillo y filo de
+    vidrio. Claro: fondo del color de la app y símbolo blanco; oscuro (tema
+    `GoldenGlass-Dark`, carpeta `apps` propia): fondo grafito y símbolo en el
+    color. No se dibujan marcas de terceros.
+  - **Protección de nombres:** al generar se crean en `<tema>/inherited/`
+    enlaces al icono real (en WhiteSur, Breeze o hicolor) de cada nombre que
+    el recorte llevaría a una de nuestras apps (`preferences-system-bluetooth`
+    → `preferences-system`, `kdeconnect-tray` → `kdeconnect`…). Dependen de
+    los temas instalados en la máquina que genera; si uno desaparece, el
+    enlace roto no molesta.
+  - **Pendiente:** encerrar en squircle las apps de terceros, a partir de su
+    icono instalado (`install.sh`), como hace macOS.
   - La papelera de Plasma pide `user-trash-symbolic` dentro de un panel: en el
     dock sale el símbolo, no la papelera a color.
 - **Cursores** ✅ (`tools/cursors.py`, tema `GoldenGlass-cursors`): dibujados
@@ -309,7 +321,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
-| F5 | Iconos, cursores, wallpapers | en curso (wallpapers ✅, cursores ✅, iconos base y tipos de archivo ✅) |
+| F5 | Iconos, cursores, wallpapers | en curso (wallpapers ✅, cursores ✅, iconos base, tipos de archivo y apps ✅) |
 | F6 | GTK, PKGBUILD, CI en GitHub | pendiente |
 
 ## 8. Fuera de alcance

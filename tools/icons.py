@@ -25,6 +25,7 @@ Uso directo para iterar el diseño:
 
 from __future__ import annotations
 
+import os
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -280,17 +281,20 @@ def large(icon: Icon) -> str:
 
 # --- paquete ------------------------------------------------------------------
 
-def _directories(contexts: list[str], symbolic: set[str]) -> list[tuple[str, dict[str, str]]]:
+def _directories(subdirs: set[str]) -> list[tuple[str, dict[str, str]]]:
+    """Entradas de index.theme para las carpetas «contexto/tamaño» usadas."""
     dirs = []
-    for ctx in contexts:
-        label = {"mimetypes": "MimeTypes"}.get(ctx, ctx.capitalize())  # nombres de la especificación
-        for size in SMALL:
-            dirs.append((f"{ctx}/{size}", {"Size": str(size), "Context": label, "Type": "Fixed"}))
-        dirs.append((f"{ctx}/scalable", {"Size": "64", "MinSize": "32", "MaxSize": "512",
-                                         "Context": label, "Type": "Scalable"}))
-        if ctx in symbolic:
-            dirs.append((f"{ctx}/symbolic", {"Size": "16", "MinSize": "8", "MaxSize": "512",
-                                             "Context": label, "Type": "Scalable"}))
+    for d in sorted(subdirs, key=lambda d: (d.split("/")[0], d.split("/")[1].isdigit() is False, d)):
+        ctx, sub = d.split("/")
+        label = {"mimetypes": "MimeTypes", "apps": "Applications"}.get(ctx, ctx.capitalize())  # especificación
+        if sub.isdigit():
+            keys = {"Size": sub, "Type": "Fixed"}
+        elif sub == "symbolic":
+            keys = {"Size": "16", "MinSize": "8", "MaxSize": "512", "Type": "Scalable"}
+        else:  # scalable: desde 32 si hay tamaños pequeños dibujados aparte
+            has_small = any(o.startswith(f"{ctx}/") and o.split("/")[1].isdigit() for o in subdirs)
+            keys = {"Size": "64", "MinSize": "32" if has_small else "8", "MaxSize": "512", "Type": "Scalable"}
+        dirs.append((d, {**keys, "Context": label}))
     return dirs
 
 
@@ -325,7 +329,84 @@ def _family(tokens: dict) -> str:
         return "Inter"
 
 
+# --- protección contra el recorte de nombres -----------------------------------
+# KIconLoader, dentro de cada tema y antes de pasar a los heredados, recorta el
+# nombre que no encuentra («preferences-system-bluetooth» → «preferences-system»).
+# Con nuestras apps eso se quedaría con iconos ajenos (categorías de
+# Preferencias, iconos de bandeja «kdeconnect-tray», «klipper-symbolic»…). Para
+# cada uno se añade un enlace al archivo del primer tema heredado que lo tiene,
+# así el nombre exacto se encuentra aquí. Si ese tema desaparece, el enlace
+# queda roto y KDE sigue buscando como siempre.
+
+MEDIA_TYPES = {"text", "application", "image", "audio", "inode", "video", "message", "model", "multipart",
+               "x-content", "x-epoc"}
+ICON_BASES = (Path.home() / ".local/share/icons", Path("/usr/local/share/icons"), Path("/usr/share/icons"))
+
+
+def _resolves_to(name: str, ours: set[str]) -> str | None:
+    """Nombre propio al que KIconLoader recortaría `name` dentro de este tema."""
+    symbolic, generic, cur = name.endswith("-symbolic"), name.endswith("-x-generic"), name
+    while cur:
+        if cur in ours:
+            return cur
+        if generic:
+            return None
+        if symbolic:
+            cur = cur[: -len("-symbolic")]
+            if cur in ours:
+                return cur
+        i = cur.rfind("-")
+        if i > 1:
+            cur = cur[:i]
+            if cur.endswith("-x"):
+                cur = cur[:-2]
+            if symbolic:
+                cur += "-symbolic"
+        elif cur in MEDIA_TYPES:
+            cur, generic = cur + "-x-generic", True
+        else:
+            return None
+    return None
+
+
+def _theme_index(theme: str) -> dict[str, Path]:
+    """nombre → mejor archivo (SVG escalable o el mayor) de un tema instalado."""
+    best: dict[str, tuple[int, Path]] = {}
+    for base in ICON_BASES:
+        root = base / theme
+        if not root.is_dir() or root.name.startswith("GoldenGlass"):
+            continue
+        for dirpath, _, filenames in os.walk(root, followlinks=True):
+            parts = Path(dirpath).relative_to(root).parts
+            size = next((int(p.split("@")[0].split("x")[0]) for p in parts if p.split("@")[0].split("x")[0].isdigit()), 0)
+            for f in filenames:
+                stem, ext = os.path.splitext(f)
+                if ext not in (".svg", ".png"):
+                    continue
+                score = (2000 if "scalable" in parts or "symbolic" in parts else size) + (1000 if ext == ".svg" else 0)
+                if stem not in best or score > best[stem][0]:
+                    best[stem] = (score, Path(dirpath) / f)
+        break  # el primero que tenga el tema gana, como en KDE
+    return {k: v for k, (_, v) in best.items()}
+
+
+def _guards(theme_root: Path, inherits: str, protect: set[str], ours: set[str]) -> int:
+    """Enlaces en <tema>/inherited/ para los nombres heredados que se recortarían
+    hasta uno de `protect`. Devuelve cuántos."""
+    targets: dict[str, Path] = {}
+    for theme in inherits.split(","):
+        for name, path in _theme_index(theme).items():
+            if name not in ours and name not in targets and _resolves_to(name, ours) in protect:
+                targets[name] = path
+    folder = theme_root / "inherited"
+    folder.mkdir(parents=True, exist_ok=True)
+    for name, path in sorted(targets.items()):
+        _link(str(path), folder / f"{name}{path.suffix}")
+    return len(targets)
+
+
 def build(tokens: dict, out: Path) -> list[Path]:
+    import icons_apps
     import icons_mime
 
     fallback = {"accent": tokens["light"]["accent"], "text": tokens["light"]["label"][:7]}
@@ -335,8 +416,10 @@ def build(tokens: dict, out: Path) -> list[Path]:
             shutil.rmtree(base / theme)
     root = base / "GoldenGlass"
 
-    # (ruta relativa, svg, alias)
+    # (ruta relativa, svg, alias) del tema claro; lo que no esté en el oscuro
+    # se comparte por enlace (sigue al esquema de colores)
     entries: list[tuple[str, str, tuple[str, ...]]] = []
+    dark_entries: list[tuple[str, str, tuple[str, ...]]] = []
     for icon in ICONS:
         main, aliases = icon.names[0], icon.names[1:]
         entries.append((f"{icon.context}/scalable/{main}.svg", _svg(64, large(icon), fallback), aliases))
@@ -348,22 +431,39 @@ def build(tokens: dict, out: Path) -> list[Path]:
     for rel, (canvas, body), aliases in icons_mime.files(_family(tokens)):
         size = int(rel.split("/")[1]) if rel.split("/")[1].isdigit() else canvas
         entries.append((rel, _svg(size, body, fallback, canvas), aliases))
+    # Apps: dibujo distinto en claro y oscuro
+    for theme, rel, body, aliases in icons_apps.files():
+        (entries if theme == "GoldenGlass" else dark_entries).append((rel, _svg(64, body, fallback), aliases))
 
-    for rel, text, aliases in entries:
-        path = root / rel
-        _write(path, text)
-        for alias in aliases:
-            suffix = "-symbolic.svg" if rel.endswith("-symbolic.svg") else ".svg"
-            _link(path.name, path.parent / f"{alias}{suffix}")
+    for theme_root, items in ((root, entries), (base / "GoldenGlass-Dark", dark_entries)):
+        for rel, text, aliases in items:
+            path = theme_root / rel
+            _write(path, text)
+            for alias in aliases:
+                suffix = "-symbolic.svg" if rel.endswith("-symbolic.svg") else ".svg"
+                _link(path.name, path.parent / f"{alias}{suffix}")
 
-    contexts = sorted({rel.split("/")[0] for rel, _, _ in entries})
-    symbolic = {rel.split("/")[0] for rel, _, _ in entries if "/symbolic/" in rel}
-    dirs = _directories(contexts, symbolic)
+    # Protección: solo para los nombres de apps (las carpetas y documentos que
+    # absorben variantes, p. ej. «folder-android» → «folder», son deseables).
+    app_names = {Path(rel).stem for rel, _, _ in entries if rel.startswith("apps/")}
+    app_names |= {a for rel, _, aliases in entries if rel.startswith("apps/") for a in aliases}
+    shared = {Path(rel).stem for rel, _, _ in entries if not rel.startswith("apps/")}
+    shared |= {a for rel, _, aliases in entries if not rel.startswith("apps/") for a in aliases}
+    for theme, (_, inherits) in THEMES.items():
+        own = dark_entries if theme == "GoldenGlass-Dark" else entries
+        ours = shared | {Path(rel).stem for rel, _, _ in own} | {a for _, _, aliases in own for a in aliases}
+        _guards(base / theme, inherits, app_names, ours)
+
+    subdirs = {rel.rsplit("/", 1)[0] for rel, _, _ in entries}
     for theme, (name, inherits) in THEMES.items():
-        _write(base / theme / "index.theme", _index(name, inherits, dirs))
-    # El tema oscuro comparte los iconos (siguen al esquema de colores) y solo
-    # cambia la herencia.
-    for ctx in contexts:
+        extra = {"inherited"} if (base / theme / "inherited").exists() else set()
+        _write(base / theme / "index.theme", _index(name, inherits, _directories(subdirs) + [
+            (d, {"Size": "64", "MinSize": "8", "MaxSize": "512", "Type": "Scalable", "Context": "Applications"})
+            for d in extra]))
+    # El tema oscuro comparte los demás iconos (siguen al esquema de colores):
+    # solo cambian las apps y la herencia.
+    own = {rel.split("/")[0] for rel, _, _ in dark_entries}
+    for ctx in sorted({rel.split("/")[0] for rel, _, _ in entries} - own):
         _link(f"../GoldenGlass/{ctx}", base / "GoldenGlass-Dark" / ctx)
     return [base / theme for theme in THEMES]
 
