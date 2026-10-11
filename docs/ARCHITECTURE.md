@@ -241,8 +241,18 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     Dos temas: `GoldenGlass` (hereda WhiteSur → breeze) y `GoldenGlass-Dark`
     (mismas carpetas por enlace; hereda WhiteSur-dark → breeze-dark).
     WhiteSur (AUR) es dependencia opcional.
-  - **Pendiente:** tipos de archivo (`feature/icons-mimetypes`) y ~50 apps
-    (`feature/icons-apps`, squircle con capas).
+    Incluye las carpetas de color de Dolphin («Asignar color a carpeta») y
+    `folder-new`.
+  - **Tipos de archivo ✅** (`tools/icons_mime.py`): hoja blanca con esquina
+    doblada, símbolo del tipo en su color y la extensión en gris (texto a
+    trazos con la fuente del tema al generar). Categorías de shared-mime-info
+    y ~80 tipos concretos; lo demás sale de WhiteSur.
+  - **Ojo con los temas parciales:** dentro de cada tema KIconLoader recorta
+    los nombres que no encuentra (`audio-volume-muted` → `audio`) y prueba
+    `<tipo>-x-generic` antes de mirar los heredados. Por eso no se publican
+    `text|image|audio|video|application-x-generic`, y las acciones `folder-*`
+    importantes se dibujan (si no, acabarían en `folder`).
+  - **Pendiente:** ~50 apps (`feature/icons-apps`, squircle con capas).
   - La papelera de Plasma pide `user-trash-symbolic` dentro de un panel: en el
     dock sale el símbolo, no la papelera a color.
 - **Cursores** ✅ (`tools/cursors.py`, tema `GoldenGlass-cursors`): dibujados
@@ -299,7 +309,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
-| F5 | Iconos, cursores, wallpapers | en curso (wallpapers ✅, cursores ✅, iconos base ✅) |
+| F5 | Iconos, cursores, wallpapers | en curso (wallpapers ✅, cursores ✅, iconos base y tipos de archivo ✅) |
 | F6 | GTK, PKGBUILD, CI en GitHub | pendiente |
 
 ## 8. Fuera de alcance
