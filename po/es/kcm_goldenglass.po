@@ -1,0 +1,59 @@
+# Traducción al español del módulo de Ajustes «Vidrio» de GoldenGlass.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kcm_goldenglass\n"
+"Language: es\n"
+"PO-Revision-Date: 2026-10-10 18:00+0000\n"
+"Last-Translator: GoldenGlass contributors\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgctxt "@info:status"
+msgid "The glass level could not be applied: %1"
+msgstr "No se pudo aplicar el nivel de vidrio: %1"
+
+msgctxt "@info:status"
+msgid "goldenglass-glass could not be started: %1"
+msgstr "No se pudo iniciar goldenglass-glass: %1"
+
+msgctxt "@info:status"
+msgid "goldenglass-glass was not found. Is the goldenglass-kstyle package installed?"
+msgstr "No se encontró goldenglass-glass. ¿Está instalado el paquete goldenglass-kstyle?"
+
+msgctxt "@label:slider"
+msgid "Glass:"
+msgstr "Vidrio:"
+
+msgctxt "@label:slider"
+msgid "Glass"
+msgstr "Vidrio"
+
+msgctxt "@item:inrange glass level"
+msgid "Clearer"
+msgstr "Más claro"
+
+msgctxt "@item:inrange glass level"
+msgid "Default"
+msgstr "Predeterminado"
+
+msgctxt "@item:inrange glass level"
+msgid "More opaque"
+msgstr "Más opaco"
+
+msgctxt "@info:status"
+msgid "Applying…"
+msgstr "Aplicando…"
+
+msgctxt "@info"
+msgid ""
+"Changes the glass of the menu bar, the dock, popups, window title bars, "
+"toolbars, sidebars and menus. A clearer glass shows more of what is behind; "
+"a more opaque glass is easier to read."
+msgstr ""
+"Cambia el vidrio de la barra de menús, el dock, los popups, las barras de "
+"título, las toolbars, las barras laterales y los menús. Un vidrio más claro "
+"deja ver más lo que hay detrás; uno más opaco se lee mejor."
