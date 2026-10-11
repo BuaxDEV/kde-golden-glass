@@ -75,5 +75,9 @@ for src in "${!TARGETS[@]}"; do
   fi
 done
 
+# Apps de terceros encerradas en squircle a partir de sus iconos instalados.
+# (Volver a ejecutar tools/wrap_icons.py al instalar apps nuevas.)
+python3 "$ROOT/tools/wrap_icons.py" || echo "Aviso: no se pudieron encerrar los iconos de terceros" >&2
+
 refresh_caches
 echo "Listo. Aplicar: plasma-apply-lookandfeel -a org.goldenglass.light.desktop (o .dark.desktop)"
