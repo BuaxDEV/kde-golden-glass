@@ -1,0 +1,3 @@
+# makepkg reescribe pkgver= en cada compilación: el filtro «pkgver» (ver
+# tools/setup-git.sh) lo normaliza a VERSION para que git no lo vea cambiado.
+PKGBUILD filter=pkgver
