@@ -58,6 +58,10 @@ SettingsProvider *SettingsProvider::self()
 //__________________________________________________________________
 void SettingsProvider::reconfigure()
 {
+    // GoldenGlass: re-read goldenglassrc. The decoration reads the glass opacity
+    // (Style/ToolBarOpacity) through this same shared config object.
+    m_config->reparseConfiguration();
+
     if (!m_defaultSettings) {
         m_defaultSettings = InternalSettingsPtr(new InternalSettings());
         m_defaultSettings->setCurrentGroup(QStringLiteral("Windeco"));
