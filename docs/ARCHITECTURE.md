@@ -177,7 +177,14 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
   `org.goldenglass.dark.desktop`. Incluyen:
   - Script de layout: panel superior (menú de sistema, menú global, bandeja,
     reloj) + **dock** = panel nativo flotante centrado con gestor de tareas solo
-    iconos (sin magnificación).
+    iconos (sin magnificación), **autoocultable** como en macOS («Ocultar y
+    mostrar automáticamente», token `plasma.dock_hiding`): aparece al llevar el
+    cursor al borde inferior y las ventanas maximizadas usan toda la pantalla.
+    Plasma lo anima con el efecto *Sliding Popups* de KWin (entra decelerando y
+    sale acelerando); el script fija sus tiempos en `kwinrc`
+    (`plasma.slide_in_ms`/`slide_out_ms`, que también usan los popups de
+    Plasma) porque KLookAndFeelManager ignora esa clave en `contents/defaults`.
+    Límite: Plasma espera 500 ms fijos tras salir el cursor antes de ocultarlo.
   - Atajos de macOS (script de KWin `org.goldenglass.shortcuts`, en
     `plasma/kwin/scripts/`, que el layout activa en `kwinrc`): Ctrl+↑ Mission
     Control (vista general de KWin con los escritorios) y Ctrl+↓ App Exposé

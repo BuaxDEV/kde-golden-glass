@@ -56,7 +56,14 @@ dock.location = "bottom";
 dock.floating = true;
 dock.lengthMode = "fit";
 dock.alignment = "center";
-dock.hiding = "none";
+dock.hiding = "@DOCK_HIDING@";
+
+// Deslizamiento del dock al aparecer/ocultarse (efecto Sliding Popups de KWin,
+// también el de los popups de Plasma): KLookAndFeelManager ignora esta clave en
+// contents/defaults, así que se escribe aquí.
+const slide = ConfigFile("kwinrc", "Effect-slidingpopups");
+slide.writeEntry("SlideInTime", @SLIDE_IN_MS@);
+slide.writeEntry("SlideOutTime", @SLIDE_OUT_MS@);
 dock.opacity = "translucent";
 dock.height = DOCK_HEIGHT;
 

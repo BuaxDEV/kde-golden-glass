@@ -66,6 +66,9 @@ def values(tokens: dict, variant: str) -> dict[str, str]:
     return {
         "MENUBAR_HEIGHT": str(tokens["plasma"]["menubar_height"]),
         "DOCK_HEIGHT": str(_dock_height(tokens)),
+        "DOCK_HIDING": tokens["plasma"]["dock_hiding"],
+        "SLIDE_IN_MS": str(tokens["plasma"]["slide_in_ms"]),
+        "SLIDE_OUT_MS": str(tokens["plasma"]["slide_out_ms"]),
         "SPLASH_BACKGROUND": splash_bg,
         "SPLASH_TRACK": _with_alpha(splash_fg, track_alpha),
         "SPLASH_FILL": splash_fg,
