@@ -11,7 +11,7 @@
 # Tras actualizar Qt o KDE: volver a ejecutar makepkg -si.
 
 pkgname=goldenglass-kstyle
-pkgver=0.1.0.r49.ge0d6eb7
+pkgver=0.1.0
 pkgrel=1
 pkgdesc="GoldenGlass widget style and window decoration for KDE Plasma (macOS 27 inspired)"
 arch=(x86_64)
