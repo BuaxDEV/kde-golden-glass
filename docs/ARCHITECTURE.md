@@ -328,7 +328,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
-| F5 | Iconos, cursores, wallpapers | en curso (wallpapers ✅, cursores ✅, iconos ✅) |
+| F5 | Iconos, cursores, wallpapers | ✅ |
 | F6 | GTK, PKGBUILD, CI en GitHub | pendiente |
 
 ## 8. Fuera de alcance
