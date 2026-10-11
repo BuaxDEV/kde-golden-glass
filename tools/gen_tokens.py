@@ -222,7 +222,7 @@ def main(argv: list[str] | None = None) -> int:
 
     written += plasma_theme.build(tokens, args.out, args.glass_level)
     written += lookandfeel.build(tokens, args.out)
-    written += plasmoids.build(args.out)
+    written += plasmoids.build(args.out, tokens)
     written += wallpaper.build(args.out)
     written += cursors.build(args.out)
     written += icons.build(tokens, args.out)
