@@ -36,6 +36,13 @@ sudo pacman -R goldenglass-kstyle                # desinstalar
 Requiere `extra-cmake-modules`. Volver a ejecutar `makepkg -si` tras actualizar
 Qt o KDE.
 
+Nivel de vidrio en vivo (requiere `goldenglass-kstyle` instalado):
+
+```sh
+goldenglass-glass --level 0.8   # 0 = más transparente, 1 = más opaco
+goldenglass-glass --get
+```
+
 `--resetLayout` (o marcar "Disposición del escritorio y ventanas" al aplicar el
 Global Theme) es necesario para la barra de menús, el dock, los botones de
 ventana a la izquierda y la pantalla de bloqueo. Tu layout anterior no se borra:
