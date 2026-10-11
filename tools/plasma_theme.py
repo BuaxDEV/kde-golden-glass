@@ -402,7 +402,10 @@ def build(tokens: dict, out: Path, level: float | None = None) -> list[Path]:
         "[ContrastEffect]", "enabled=true",
         f"contrast={vib['contrast']}", f"intensity={vib['intensity']}", f"saturation={vib['saturation']}",
         "", "[BlurBehindEffect]", "enabled=true",
-        "", "[AdaptiveTransparency]", "enabled=false", "",
+        "", "[AdaptiveTransparency]", "enabled=false",
+        # Fondo por defecto (escritorios nuevos y pantalla de bloqueo).
+        "", "[Wallpaper]", "defaultWallpaperTheme=GoldenGlass", "defaultFileSuffix=.jpg",
+        "defaultWidth=5120", "defaultHeight=2880", "",
     ])
     files["metadata.json"] = json.dumps({
         "KPlugin": {

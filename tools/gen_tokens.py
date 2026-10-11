@@ -10,6 +10,7 @@ Salidas (en build/, no versionado):
   build/plasma/desktoptheme/GoldenGlass/   (Plasma Style)
   build/plasma/look-and-feel/org.goldenglass.{light,dark}.desktop/
   build/plasma/plasmoids/<id>/            (plasmoids con sus traducciones)
+  build/wallpapers/GoldenGlass/           (fondo día/noche; se cachea)
 
 Uso:
   python3 tools/gen_tokens.py [--tokens RUTA] [--out DIR]
@@ -31,6 +32,7 @@ import cxx_tokens  # noqa: E402
 import lookandfeel  # noqa: E402
 import plasma_theme  # noqa: E402
 import plasmoids  # noqa: E402
+import wallpaper  # noqa: E402
 
 VARIANTS = {
     "light": ("GoldenGlassLight", "GoldenGlass Light"),
@@ -215,6 +217,7 @@ def main(argv: list[str] | None = None) -> int:
     written += plasma_theme.build(tokens, args.out, args.glass_level)
     written += lookandfeel.build(tokens, args.out)
     written += plasmoids.build(args.out)
+    written += wallpaper.build(args.out)
 
     for p in written:
         print(f"  {p.relative_to(ROOT) if p.is_relative_to(ROOT) else p}")
