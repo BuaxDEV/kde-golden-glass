@@ -5941,9 +5941,6 @@ bool Style::drawMenuItemControl(const QStyleOption *option, QPainter *painter, c
     if (menuItemOption->menuItemType == QStyleOptionMenuItem::EmptyArea)
         return true;
 
-    // store window state
-    const bool windowActive(widget && widget->isActiveWindow());
-
     // copy rect and palette
     const auto &rect(option->rect);
     const auto &palette(option->palette);
