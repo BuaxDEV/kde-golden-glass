@@ -50,7 +50,7 @@ sombras, tipografía, semáforos) viven en **`tokens/goldenglass.toml`**.
 | `build/wallpapers/GoldenGlass/` (numpy, se cachea) | Fondo de pantalla día/noche | ✅ F5 |
 | `build/cursors/GoldenGlass-cursors/` (QtSvg, se cachea) | Tema de cursores (SVG + Xcursor) | ✅ F5 |
 | `build/icons/GoldenGlass{,-Dark}/` (SVG dibujados por código) | Tema de iconos claro/oscuro | F5 (base ✅) |
-| `gtk/*.css` | GTK3 / GTK4 | F6 |
+| `build/gtk/GoldenGlass{,-Dark}/`, `build/gtk/libadwaita.css` | GTK3 / GTK4 / libadwaita | ✅ F6 |
 
 **Regla:** los archivos generados no se editan a mano ni se versionan. Se cambia
 el token y se regenera (`install.sh` y el PKGBUILD lo hacen solos).
@@ -71,7 +71,6 @@ goldenglass/
 │   ├── look-and-feel/   # plantilla común de los Global Themes (layout, splash)
 │   ├── shell/           # shell org.goldenglass.desktop (pantalla de bloqueo)
 │   └── plasmoids/       # Centro de control, Launchpad, menú de sistema
-├── gtk/                 # (generado en parte)
 ├── fontconfig/          # alias de familias tipográficas
 ├── packaging/           # PKGBUILD dividido
 ├── docs/
@@ -292,10 +291,22 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 - **Acento:** azul macOS por defecto (`#007AFF` claro / `#0A84FF` oscuro),
   sobreescribible por el acento del sistema.
 
-### 4.8 GTK — `gtk/`
-- GTK3: tema completo generado desde tokens.
-- GTK4/libadwaita: **solo colores** vía `~/.config/gtk-4.0/gtk.css` (libadwaita no
-  admite temas oficialmente). Limitación aceptada.
+### 4.8 GTK ✅ — `tools/gtk.py`, `tools/gtk_sync.py`
+- **Temas `GoldenGlass` y `GoldenGlass-Dark`** (GTK3 y GTK4 sin libadwaita):
+  importan **adw-gtk3** (dependencia: `adw-gtk-theme`) y encima redefinen la
+  paleta con la de los tokens, los radios de macOS y los semáforos de las
+  ventanas con decoración propia (CSD).
+- **libadwaita** no admite temas: `build/gtk/libadwaita.css` (variables CSS de
+  libadwaita, claro y oscuro por `prefers-color-scheme`, el acento lo da el
+  portal) se copia a `~/.config/gtk-4.0/gtk.css` solo si no existe o ya es
+  nuestro (marca en la primera línea); si es de otra herramienta no se toca.
+- **`goldenglass-gtk-sync`** (autostart de la sesión): el Global Theme no puede
+  fijar GTK, así que mientras sea GoldenGlass pone `GoldenGlass` o
+  `GoldenGlass-Dark` según el esquema de KDE con la API de kde-gtk-config
+  (`org.kde.GtkConfig.setGtkTheme`), y escucha la señal de KConfig de
+  `kdeglobals` para cambiar en vivo. GTK3 en Wayland no sigue
+  `gtk-application-prefer-dark-theme`, por eso hay dos temas. Al cambiar a
+  otro Global Theme restaura el tema GTK anterior.
 
 ## 5. Distribución
 
@@ -329,7 +340,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
 | F5 | Iconos, cursores, wallpapers | ✅ |
-| F6 | GTK, PKGBUILD, CI en GitHub | pendiente |
+| F6 | GTK, PKGBUILD, CI en GitHub | en curso (GTK ✅) |
 
 ## 8. Fuera de alcance
 
