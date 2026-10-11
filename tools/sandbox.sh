@@ -59,6 +59,8 @@ if [[ -z ${GG_SANDBOX_INNER:-} ]]; then
   export XDG_CACHE_HOME="$HOME_DIR/cache" XDG_STATE_HOME="$HOME_DIR/state"
   # Como startplasma: los defaults del Global Theme se leen de kdedefaults/.
   export XDG_CONFIG_DIRS="$XDG_CONFIG_HOME/kdedefaults:${XDG_CONFIG_DIRS:-/etc/xdg}"
+  # libXcursor busca en ~/.local/share/icons (HOME real), no en XDG_DATA_HOME.
+  export XCURSOR_PATH="$XDG_DATA_HOME/icons:/usr/share/icons:/usr/share/pixmaps"
   export XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true KDE_SESSION_VERSION=6
   # Directorio de sockets propio (ruta corta: los sockets Unix admiten ~108
   # caracteres): los servicios no ven los de la sesión real (PipeWire, portales…).

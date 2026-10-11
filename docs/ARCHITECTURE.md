@@ -47,6 +47,8 @@ sombras, tipografía, semáforos) viven en **`tokens/goldenglass.toml`**.
 | `build/cmake/generated/goldenglass_tokens.h` (lo genera CMake al configurar) | Valores por defecto de los `.kcfg` del estilo y la decoración | ✅ F1 |
 | `build/plasma/desktoptheme/GoldenGlass/` (SVG dibujados por código) | Plasma Style | ✅ F2 |
 | `build/plasma/look-and-feel/org.goldenglass.{light,dark}.desktop/` | Global Themes (desde `plasma/look-and-feel/common/`) | ✅ F2 |
+| `build/wallpapers/GoldenGlass/` (numpy, se cachea) | Fondo de pantalla día/noche | ✅ F5 |
+| `build/cursors/GoldenGlass-cursors/` (QtSvg, se cachea) | Tema de cursores (SVG + Xcursor) | ✅ F5 |
 | `gtk/*.css` | GTK3 / GTK4 | F6 |
 
 **Regla:** los archivos generados no se editan a mano ni se versionan. Se cambia
@@ -57,7 +59,8 @@ el token y se regenera (`install.sh` y el PKGBUILD lo hacen solos).
 ```
 goldenglass/
 ├── tokens/              # goldenglass.toml
-├── tools/               # gen_tokens.py (+ plasma_theme.py, lookandfeel.py), install.sh,
+├── tools/               # gen_tokens.py (+ plasma_theme.py, lookandfeel.py, wallpaper.py,
+│                        # cursors.py…), install.sh,
 │                        # preview_plasma.py (vista previa), sandbox.sh (sesión aislada)
 ├── assets/logo/         # logo GoldenGlass (símbolo monocromo y versión a color)
 ├── kstyle/              # QStyle C++ (fork de Darkly) → goldenglass6.so
@@ -69,8 +72,6 @@ goldenglass/
 │   └── plasmoids/       # Centro de control, Launchpad, menú de sistema
 ├── gtk/                 # (generado en parte)
 ├── icons/               # GoldenGlass + GoldenGlass-Dark
-├── cursors/             # SVG fuente → xcursor + cursores SVG
-├── wallpapers/          # variantes claro/oscuro
 ├── fontconfig/          # alias de familias tipográficas
 ├── packaging/           # PKGBUILD dividido
 ├── docs/
@@ -234,8 +235,15 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
   más usadas (squircle con capas). Hereda (`Inherits=`) de **WhiteSur** (AUR).
   Los simbólicos de lugares (16 px) usan `ColorScheme-Highlight` para salir en
   el color de acento en las barras laterales, como en macOS 27.
-- **Cursores:** propios, estilo macOS, fuente SVG → xcursor + cursores SVG de
-  Plasma 6 (nítidos a cualquier escala).
+- **Cursores** ✅ (`tools/cursors.py`, tema `GoldenGlass-cursors`): dibujados
+  por código como los de macOS (flecha e I negras con borde blanco, manos
+  blancas con borde negro, sombra suave, rueda de colores animada para
+  «ocupado»/«trabajando»). Cada cursor se describe una vez en un lienzo 32×32
+  (tamaño nominal 24) y de ahí salen los SVG de `cursors_scalable/` que usa
+  KWin y los Xcursor de `cursors/` (XWayland), escritos en Python y
+  rasterizados con QtSvg en 18–72. Los nombres CSS/X11/hash son enlaces;
+  `Inherits=breeze_cursors` cubre lo que falte. El Global Theme lo activa
+  (`[kcminputrc][Mouse] cursorTheme`). Requiere `python-pyqt6` al generar.
 - **Wallpapers** ✅ (`tools/wallpaper.py`): cintas de vidrio sobre la bahía al
   atardecer (día) y de noche, generadas con numpy (sin imágenes en el repo) en
   5120×2880 y 3840×2400, con `images/` e `images_dark/` para que Plasma las
@@ -281,7 +289,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
-| F5 | Iconos, cursores, wallpapers | en curso (wallpapers) |
+| F5 | Iconos, cursores, wallpapers | en curso (wallpapers ✅, cursores ✅) |
 | F6 | GTK, PKGBUILD, CI en GitHub | pendiente |
 
 ## 8. Fuera de alcance

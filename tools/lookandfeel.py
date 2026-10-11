@@ -23,6 +23,7 @@ PLASMA_THEME = "GoldenGlass"
 # Breeze para ambos.
 WIDGET_STYLE = "GoldenGlass"
 DECORATION = "org.goldenglass.decoration"
+CURSOR_THEME = "GoldenGlass-cursors"  # tools/cursors.py
 
 VARIANTS = {
     "light": ("org.goldenglass.light.desktop", "GoldenGlass Light", "GoldenGlassLight"),
@@ -110,6 +111,9 @@ def defaults(tokens: dict, variant: str) -> str:
         "",
         "[Wallpaper]",
         "Image=GoldenGlass",
+        "",
+        "[kcminputrc][Mouse]",
+        f"cursorTheme={CURSOR_THEME}",
         "",
         "[kwinrc][org.kde.kdecoration2]",
         f"library={DECORATION}",
