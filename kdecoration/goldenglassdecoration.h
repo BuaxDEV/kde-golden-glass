@@ -121,6 +121,8 @@ private Q_SLOTS:
     void recalculateBorders();
     void updateBlur();
     void updateButtonsGeometry();
+    //* left padding of the left button group (traffic lights: Apple's inset rule)
+    int leftButtonsPadding(int vPadding, int fallback) const;
     void updateButtonsGeometryDelayed();
     void updateTitleBar();
     void updateAnimationState();

@@ -116,6 +116,11 @@ public:
     }
 
     //* padding
+    QMargins padding() const
+    {
+        return m_padding;
+    }
+
     void setPadding(const QMargins &value)
     {
         m_padding = value;

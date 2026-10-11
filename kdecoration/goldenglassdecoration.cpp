@@ -702,6 +702,27 @@ void Decoration::updateTrafficLightsHover()
 }
 
 //________________________________________________________________
+int Decoration::leftButtonsPadding(int vPadding, int fallback) const
+{
+    // macOS: the traffic lights sit as far from the left edge as from the
+    // top, i.e. the first circle's center x equals its center y.
+    const auto buttons = m_leftButtons->buttons();
+    if (buttons.isEmpty() || !static_cast<Button *>(buttons.front())->isTrafficLight()) {
+        return fallback;
+    }
+    const auto *first = static_cast<Button *>(buttons.front());
+    // from size and padding, not geometry(): that already includes the group
+    // position when the layout is recomputed
+    const qreal centerY = vPadding + first->padding().top() + first->preferredSize().height() / 2;
+    const qreal cell = Tokens::TrafficLightDiameter + Tokens::TrafficLightGap;
+    // The group is placed after the side border (if any) and each cell has
+    // half the gap on its left: measure from the outer edge, and let the cell
+    // overlap the border (negative padding) without leaving the window.
+    const int border = isLeftEdge() ? 0 : borderLeft();
+    return std::max(-border, int(std::lround(centerY - cell / 2 - border)));
+}
+
+//________________________________________________________________
 void Decoration::updateButtonsGeometry()
 {
 if (m_internalSettings->floatingTitlebar()){
@@ -732,7 +753,7 @@ if (m_internalSettings->floatingTitlebar()){
 
         // padding
         int vPadding = (isTopEdge() ? 0 : s->smallSpacing() * Metrics::TitleBar_TopMargin) + (isMaximized() ? 0 : 1);
-        const int hPadding = s->smallSpacing() * Metrics::TitleBar_SideMargin;
+        const int hPadding = leftButtonsPadding(vPadding, s->smallSpacing() * Metrics::TitleBar_SideMargin);
 
         if (isLeftEdge()) {
             // add offsets on the side buttons, to preserve padding, but satisfy Fitts law
@@ -759,7 +780,7 @@ if (m_internalSettings->floatingTitlebar()){
 
         // padding
         int vPadding = (isTopEdge() ? 0 : s->smallSpacing() * Metrics::TitleBar_TopMargin) + (isMaximized() ? 0 : 1);
-        const int hPadding = s->smallSpacing() * Metrics::TitleBar_SideMargin;
+        const int hPadding = leftButtonsPadding(vPadding, s->smallSpacing() * Metrics::TitleBar_SideMargin);
 
         if (isRightEdge()) {
             auto button = static_cast<Button *>(m_rightButtons->buttons().back());
@@ -806,7 +827,7 @@ if (m_internalSettings->floatingTitlebar()){
 
         // padding
         const int vPadding = isTopEdge() ? 0 : s->smallSpacing() * Metrics::TitleBar_TopMargin;
-        const int hPadding = s->smallSpacing() * Metrics::TitleBar_SideMargin;
+        const int hPadding = leftButtonsPadding(vPadding, s->smallSpacing() * Metrics::TitleBar_SideMargin);
         if (isLeftEdge()) {
             // add offsets on the side buttons, to preserve padding, but satisfy Fitts law
             auto button = static_cast<Button *>(m_leftButtons->buttons().front());
@@ -832,7 +853,7 @@ if (m_internalSettings->floatingTitlebar()){
 
         // padding
         const int vPadding = isTopEdge() ? 0 : s->smallSpacing() * Metrics::TitleBar_TopMargin;
-        const int hPadding = s->smallSpacing() * Metrics::TitleBar_SideMargin;
+        const int hPadding = leftButtonsPadding(vPadding, s->smallSpacing() * Metrics::TitleBar_SideMargin);
         if (isRightEdge()) {
             auto button = static_cast<Button *>(m_rightButtons->buttons().back());
 

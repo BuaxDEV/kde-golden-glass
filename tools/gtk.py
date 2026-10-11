@@ -97,8 +97,11 @@ def _shape(tokens: dict, gtk4: bool, inactive: str = "@traffic_light_inactive") 
     lights = []
     for cls, key in (("close", "close"), ("minimize", "minimize"), ("maximize", "zoom")):
         sel = ", ".join(f"{s.strip()}.{cls}" for s in controls.split(","))
+        glyph_sel = ", ".join(f"{x.strip()} image" for x in sel.split(","))
         lights.append(
-            f"{sel} {{ background: {tl[key]}; box-shadow: inset 0 0 0 0.5px {tl[key + '_border']}; }}\n")
+            f"{sel} {{ background-color: {tl[key]}; "
+            f"box-shadow: inset 0 0 0 0.5px {tl[key + '_border']}, 0 0.5px 1px rgba(0, 0, 0, 0.25); }}\n"
+            f"{glyph_sel} {{ color: {tl[key + '_glyph']}; }}\n")
     backdrop = ", ".join(f"{s.strip()}:backdrop" for s in controls.split(","))
     hover_img = ", ".join(f"{s.strip()}:hover image" for s in controls.split(","))
     all_img = ", ".join(f"{s.strip()} image" for s in controls.split(","))
@@ -117,10 +120,13 @@ window.maximized .titlebar, window.maximized headerbar, window.tiled headerbar {
 /* Semáforos (ventanas con decoración propia) */
 {controls} {{
   min-width: {d}px; min-height: {d}px; padding: 0; margin: 0 {gap / 2:g}px;
-  border-radius: 9999px; border: none; background-image: none;
+  border-radius: 9999px; border: none;
+  /* vidrio de macOS 27: brillo arriba y brillo abajo */
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 48%),
+                    radial-gradient(ellipse at 50% 100%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 60%);
 }}
-{"".join(lights)}{backdrop} {{ background: {inactive}; box-shadow: none; }}
-{all_img} {{ opacity: 0; -gtk-icon-transform: scale(0.6); color: {_css_color(tl['glyph'])}; }}
+{"".join(lights)}{backdrop} {{ background-color: {inactive}; background-image: none; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.12); }}
+{all_img} {{ opacity: 0; -gtk-icon-transform: scale(0.6); }}
 {hover_img} {{ opacity: 1; }}
 """
 
