@@ -35,6 +35,10 @@ for (let screen = 0; screen < screenCount; ++screen) {
 
     menubar.addWidget("org.kde.plasma.systemtray");
 
+    // Centro de control (Wi‑Fi, Bluetooth, modo oscuro, No molestar, brillo,
+    // sonido, vidrio, multimedia), junto al reloj como en macOS.
+    menubar.addWidget("org.goldenglass.controlcenter");
+
     // Reloj estilo macOS: "sáb 10 oct 13:04".
     const clock = menubar.addWidget("org.kde.plasma.digitalclock");
     clock.currentConfigGroup = ["Appearance"];
@@ -70,6 +74,12 @@ tasks.writeConfig("iconSpacing", 1);
 
 dock.addWidget("org.kde.plasma.marginsseparator");
 dock.addWidget("org.kde.plasma.trash");
+
+// --- Modo oscuro: el interruptor del Centro de control (DarkModeControl de
+// Plasma) y el cambio automático día/noche alternan entre estos dos temas.
+const lookAndFeel = ConfigFile("kdeglobals", "KDE");
+lookAndFeel.writeEntry("DefaultLightLookAndFeel", "org.goldenglass.light.desktop");
+lookAndFeel.writeEntry("DefaultDarkLookAndFeel", "org.goldenglass.dark.desktop");
 
 // --- Spotlight: KRunner flotante y centrado ---------------------------------
 const krunner = ConfigFile("krunnerrc", "General");
