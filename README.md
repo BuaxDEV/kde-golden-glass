@@ -56,6 +56,20 @@ directorios XDG propios en `build/sandbox/home`.
 Todo valor visual se cambia en `tokens/goldenglass.toml`, nunca en los archivos
 generados.
 
+## Apps con barra de título propia
+
+Algunas apps dibujan su propia barra (sin la decoración de KWin) y por eso no
+muestran los semáforos de GoldenGlass por sí solas:
+
+| App | Ajuste |
+|---|---|
+| Brave, Chrome, Chromium, Edge, Vivaldi | `brave://settings/appearance` (o `chrome://…`) › **Tema: GTK**, con "Usar la barra de título y los bordes del sistema" desactivado: dibujan los semáforos con el tema GTK GoldenGlass y mantienen las pestañas en la barra |
+| VS Code, VSCodium y otras apps Electron | `"window.titleBarStyle": "native"` en los ajustes: usan la barra de KWin con los semáforos |
+| Apps GTK con barra propia (Meld, apps de GNOME) | nada: el tema GTK GoldenGlass ya incluye los semáforos |
+
+Firefox: Menú › Más herramientas › Personalizar barra de herramientas › marcar
+**Barra de título** para usar la decoración de KWin.
+
 ## Licencia
 
 Código: GPL-3.0-or-later. Assets gráficos: CC-BY-SA-4.0. Ver `LICENSES/`.
