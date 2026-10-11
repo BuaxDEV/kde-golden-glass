@@ -60,6 +60,9 @@ dock.hiding = "none";
 dock.opacity = "translucent";
 dock.height = DOCK_HEIGHT;
 
+// Launchpad primero (como en macOS); la tecla Meta también lo abre.
+dock.addWidget("org.goldenglass.launchpad");
+
 const tasks = dock.addWidget("org.kde.plasma.icontasks");
 tasks.currentConfigGroup = ["General"];
 tasks.writeConfig("launchers", [

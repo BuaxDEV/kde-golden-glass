@@ -203,7 +203,11 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
     DDC/CI), sonido con silencio, vidrio (`goldenglass-glass`) y lo que se
     reproduce (MPRIS). Usa los módulos QML de Plasma (privados: se revisan en
     cada actualización de Plasma).
-  - `org.goldenglass.launchpad` — cuadrícula de apps a pantalla completa con blur.
+  - `org.goldenglass.launchpad` ✅ — primer elemento del dock; ventana
+    `DashboardWindow` de Plasma (pantalla completa, blur) con buscador
+    (`krunner_services`), páginas de hasta 7×5 apps de «Todas las aplicaciones»
+    (`RootModel`) y puntos de página. Se declara `org.kde.plasma.launchermenu`:
+    la tecla Meta lo abre.
   - `org.goldenglass.systemmenu` ✅ — menú del logo como el menú Apple: Acerca de
     este equipo (kinfocenter), Preferencias del Sistema, Tienda (solo si está
     Discover), Forzar salida (KWin `killWindow`), Reposo, Reiniciar…, Apagar…,
@@ -272,7 +276,7 @@ sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 | F1 | Fork de Darkly renombrado: QStyle + decoración (semáforos, radios, sidebar, toolbar unificada) | ✅ |
 | F2 | Plasma Style, Global Themes, layout (barra superior + dock), Spotlight, pantalla de bloqueo | ✅ |
 | F3 | Spike de opacidad del Plasma Style → KCM completo | ✅ |
-| F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | en curso (menú de sistema y Centro de control) |
+| F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
 | F5 | Iconos, cursores, wallpapers | pendiente |
 | F6 | GTK, PKGBUILD, CI en GitHub | pendiente |
 
