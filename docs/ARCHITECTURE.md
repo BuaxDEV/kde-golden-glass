@@ -55,7 +55,7 @@ sombras, tipografía, semáforos) viven en **`tokens/goldenglass.toml`**.
 | `build/icons/GoldenGlass{,-Dark}/` (SVG dibujados por código) | Tema de iconos claro/oscuro | F5 (base ✅) |
 | `build/gtk/GoldenGlass{,-Dark}/`, `build/gtk/libadwaita.css` | GTK3 / GTK4 / libadwaita | ✅ F6 |
 | `build/sounds/GoldenGlass/` (numpy + python-soundfile, se cachea) | Tema de sonidos freedesktop | ✅ F7 |
-| `build/plymouth/goldenglass{,-light}/` (logo rasterizado con QtSvg) | Temas de Plymouth negro y gris | F8 |
+| `build/plymouth/goldenglass{,-light}/` (piezas dibujadas con QtSvg/QPainter, se cachea) | Temas de Plymouth negro y gris | ✅ F8 |
 | `build/login/sddm/GoldenGlass/` (desde `login/sddm/`) | Tema de SDDM | F9 |
 | `contents/ui/tokens.js` del dock (lo genera `tools/plasmoids.py`) | Plasmoid `org.goldenglass.dock` | F10 |
 | `goldenglass_tokens.h` (secciones `[dock]` y `[glass.refraction]`) | Valores de fábrica del dock y del efecto de KWin | F10, F11 |
@@ -188,7 +188,7 @@ dentro de «Vidrio».
 |---|---|---|---|
 | Vidrio (`kcm_goldenglass`) | Colores y temas | slider actual + interruptor **Refracción** (efecto `goldenglass_glass`) | ✅ / F11 |
 | Efectos de sonido (`kcm_goldenglass_sounds`) | Multimedia | sonidos de GoldenGlass y sonido al iniciar sesión, con botón para escucharlos (`pw-play`); llama a `goldenglass-system` (4.9) | ✅ F7 |
-| Arranque e inicio de sesión | Sesión (a confirmar en F8) | Plymouth (negro / gris) y pantalla de inicio de sesión | F8–F9 |
+| Arranque e inicio de sesión (`kcm_goldenglass_boot`) | Colores y temas, junto a «Pantalla de bienvenida» | Pantalla de arranque: del sistema, GoldenGlass o GoldenGlass gris, con miniaturas dibujadas con las piezas del tema y los avisos de `goldenglass-system`. Se aplica con «Aplicar» (pide la contraseña y regenera el initramfs). La pantalla de inicio de sesión llega en F9 | ✅ F8 / F9 |
 | Dock | Escritorio y ventanas (a confirmar en F10) | **Ampliación** (interruptor, activada de fábrica) y su tamaño máximo, tamaño del dock | F10 |
 
 ### 4.5 Escritorio Plasma — `plasma/`
@@ -383,12 +383,18 @@ dentro de «Vidrio».
   al instalar ni con hooks de pacman. Se activa con
   `goldenglass-system enable|disable|status [--json] <parte…>`
   (`tools/system.py`, en `goldenglass-plasma`) o desde los módulos de Ajustes,
-  que lo llaman. Partes: `sounds` y `chime` ✅; `plymouth` y `login` llegan en
-  F8–F9.
+  que lo llaman. Partes: `sounds`, `chime` y `plymouth` ✅; `login` llega en
+  F9. `status --json` es lo que leen los módulos.
 - Lo que es del usuario (sonidos, chime) se escribe en su `~/.config` sin root,
   con `kwriteconfig6 --notify`.
-  Lo del sistema (Plymouth, login) se ejecuta con **pkexec** y una acción de
-  polkit propia (`org.goldenglass.system`); solo entonces se pide la contraseña.
+  Lo del sistema (Plymouth, login) necesita root: con `sudo` se hace en el
+  sitio; sin él, el comando se vuelve a lanzar con **pkexec** sobre un ayudante
+  fijo (`/usr/lib/goldenglass/system-helper`, que ejecuta `system.py` con
+  `python3 -I`) y la acción de polkit `org.goldenglass.system`
+  (`auth_admin_keep`, solo para ese ayudante). Solo entonces se pide la
+  contraseña. Con root se rechazan las partes del usuario, para no escribir en
+  la configuración de root. En desarrollo (sin el paquete) no hay ayudante: el
+  comando pide `sudo`.
 - **Reversible:** antes de cambiar algo se guarda el valor anterior
   (`/var/lib/goldenglass/` para el sistema, `~/.local/state/goldenglass/system.json`
   para el usuario; si la clave no existía se guarda como tal) y `disable` lo
@@ -443,24 +449,50 @@ dentro de «Vidrio».
   se le pone `Action=Sound`.
 - Paquete `goldenglass-sounds`.
 
-### 4.11 Arranque — Plymouth (F8)
+### 4.11 Arranque — Plymouth (F8) ✅
 - Dos temas: **`goldenglass`** (negro, logo blanco; el de fábrica) y
   **`goldenglass-light`** (gris claro, logo oscuro), como las dos variantes del
   arranque de Mac. Se elige con `goldenglass-system enable plymouth
-  [--variant dark|light]`.
-- Logo GoldenGlass (`assets/logo/goldenglass-symbolic.svg`) rasterizado con
-  QtSvg a varias escalas (se elige según la resolución) y **barra de progreso
-  fina** redondeada bajo el logo, que avanza con el progreso de arranque.
-  Mismas proporciones que el splash de Plasma, para que la secuencia arranque →
-  login → escritorio se vea continua.
+  [--variant dark|light]` o en el módulo «Arranque e inicio de sesión».
 - **Plugin `script`** de Plymouth (`plymouth/goldenglass.script.in`, plantilla
-  que rellena `tools/plymouth.py` con los tokens `[boot]`): da control total
-  sobre la petición de contraseña.
-- **Contraseña de disco (LUKS)** estilo FileVault: campo de vidrio con puntos
-  y el texto de la petición. También mensajes (fsck) y el modo de apagado.
-- Activación: `plymouth-set-default-theme` + `mkinitcpio -P` (en CachyOS con
-  Limine los hooks de limine-mkinitcpio actualizan las entradas). Si
-  `mkinitcpio` falla se restaura el tema anterior.
+  que rellena `tools/plymouth.py` con `[boot]` de los tokens; colores y
+  opacidades por variante en `[boot.dark]` y `[boot.light]`).
+- Piezas dibujadas al generar, a 1x, 2x y 3x: logo
+  (`assets/logo/goldenglass-symbolic.svg` recoloreado, con QtSvg), pista y
+  relleno de la barra, campo de contraseña, punto e icono de Bloq Mayús (con
+  QPainter). Las medidas de los tokens son para una pantalla de 1080 líneas:
+  el script escala con la altura de la pantalla, elige el juego de piezas más
+  cercano por encima y lo ajusta a la medida exacta.
+- **Mismas proporciones que el splash de Plasma** (logo de 126 px, barra de
+  216×6 a 54 px, desplazados 36 px hacia arriba), para que arranque → login →
+  escritorio se vea continuo.
+- **Barra de progreso fina** que sigue el progreso de arranque de Plymouth (lo
+  estima con la duración de arranques anteriores) y se mueve con suavidad. El
+  relleno es un recorte de la barra llena más su extremo redondeado aparte, así
+  el extremo no se deforma al crecer (`Image.Crop`).
+- **Contraseña de disco (LUKS)** estilo FileVault: campo de vidrio con un punto
+  por carácter, el texto de la petición debajo e icono de Bloq Mayús. Las
+  preguntas (`ask-question`) muestran lo escrito en el mismo campo. Los
+  mensajes (fsck…) van abajo, centrados.
+- **Apagar y reiniciar: solo el logo**, sin barra (Plymouth no sabe cuánto
+  falta).
+- **Fuente:** el hook `plymouth` de mkinitcpio mete en el initramfs el archivo
+  que resuelve fontconfig para `Font=`. Se usa **Inter Variable** (0,9 MB): el
+  alias `GoldenGlass Sans` da `Inter.ttc`, de 13 MB, que acabaría en cada
+  initramfs (y en sus copias de la ESP y de los snapshots).
+- Activación (root): `plymouth-set-default-theme -R <tema>`, que llama al
+  `plymouth-update-initrd` de la distribución (en CachyOS con Limine,
+  `limine-mkinitcpio`). El tema anterior se guarda una vez (cambiar de variante
+  no lo pisa) y `disable` lo restaura (si no hay ninguno guardado, `--reset`).
+  Si regenerar el initramfs falla, se vuelve a fijar el tema anterior sin
+  regenerar: el initramfs sigue siendo el de antes. Avisa (no corrige) si
+  falta `splash` en la línea de comandos del kernel o el hook `plymouth`.
+- **Vista previa sin reiniciar ni root:** `tools/preview_plymouth.sh [tema]
+  [ANCHOxALTO]` ejecuta Plymouth de verdad (renderer x11) en un contenedor
+  podman sobre un Xvfb y deja capturas de arranque, contraseña, pregunta,
+  mensaje y apagado en `build/plymouth-preview/`.
+- **Límite:** con varias pantallas de distinto tamaño, Plymouth da al script
+  la medida de la más pequeña: en las otras el conjunto no queda centrado.
 - Paquete `goldenglass-plymouth`.
 
 ### 4.12 Inicio de sesión — SDDM y Plasma Login Manager (F9)
@@ -570,7 +602,7 @@ dentro de «Vidrio».
   | `goldenglass-wallpapers` | fondo día/noche |
   | `goldenglass-gtk` | temas GTK, CSS de libadwaita y `goldenglass-gtk-sync` (autostart) |
   | `goldenglass-sounds` ✅ | tema de sonidos (se activa con `goldenglass-system` o en Efectos de sonido) |
-  | `goldenglass-plymouth` (F8) | temas de Plymouth negro y gris |
+  | `goldenglass-plymouth` ✅ | temas de Plymouth negro y gris (se activan con `goldenglass-system` o en Arranque e inicio de sesión) |
   | `goldenglass-login` (F9) | tema de SDDM y fondo para Plasma Login Manager |
   | `goldenglass` | metapaquete (sonidos, Plymouth y login como dependencias opcionales) |
 
@@ -613,7 +645,7 @@ dentro de «Vidrio».
 | F5 | Iconos, cursores, wallpapers | ✅ |
 | F6 | GTK, PKGBUILD, CI en GitHub | ✅ |
 | F7 | Sonidos sintetizados, chime, `goldenglass-system`, módulo Efectos de sonido | ✅ |
-| F8 | Plymouth negro y gris con contraseña LUKS | |
+| F8 | Plymouth negro y gris con contraseña LUKS, módulo Arranque e inicio de sesión | ✅ |
 | F9 | Tema de SDDM + fondo y sincronización en Plasma Login Manager | |
 | F10 | Spike del panel → dock unificado con ampliación → sección Dock | |
 | F11 | Spike del fork de Blur → efecto `goldenglass_glass` con refracción → interruptor en Vidrio | |
@@ -640,7 +672,8 @@ Refracción en las ventanas de las apps.
 | Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` (barra y dock comparten SVG) | `radius.dock ≤ menubar_height / 2` (14 px); el generador lo valida |
 | Plasma Login Manager no admite temas: el diseño propio solo se ve con SDDM | En PLM se aplica fondo y sincronización; si KDE añade temas, se porta el QML de SDDM |
 | La especificación de sonidos recurre a `freedesktop` para lo que falta | Los nombres no cubiertos llevan un `<nombre>.disabled` |
-| Activar Plymouth regenera el initramfs con root | Comando explícito, aviso previo, restauración del tema anterior si `mkinitcpio` falla |
+| Activar Plymouth regenera el initramfs con root | Comando explícito o «Aplicar» con pkexec; avisos de `splash` y del hook; si falla el initramfs se mantiene el tema anterior |
+| La fuente del tema entra en cada initramfs | Inter Variable (0,9 MB) en vez de `Inter.ttc` (13 MB) |
 | Quitar el fondo del panel y fijar sus regiones de blur y entrada no tiene API en Plasma | Spike al inicio de F10; plan B: dock como app con layer-shell; si no está el dock nuevo, el layout monta el actual |
 | El dock unificado pierde funciones de `icontasks` | Lista de paridad en 4.13; mismo `TasksModel` |
 | La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle`; comprobación al iniciar sesión que reactiva Blur si el efecto no carga |

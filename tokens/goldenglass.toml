@@ -162,6 +162,43 @@ zoom_border = "#1AAB29"
 zoom_glyph = "#006500"
 
 # ---------------------------------------------------------------------------
+# Arranque (Plymouth, tools/plymouth.py): logo y barra fina como el arranque de
+# Mac, con las proporciones del splash de Plasma. Medidas en px para una
+# pantalla de 1080 líneas; el script las escala con la altura de la pantalla.
+# ---------------------------------------------------------------------------
+[boot]
+logo_size = 126          # splash de Plasma: gridUnit × 7
+logo_offset = -36        # px del centro del logo al de la pantalla (− = arriba)
+bar_width = 216          # gridUnit × 12
+bar_height = 6
+bar_gap = 54             # del logo a la barra (gridUnit × 3)
+field_width = 240        # campo de contraseña del disco (LUKS), estilo FileVault
+field_height = 30
+field_gap = 44           # del logo al campo
+dot_size = 8             # puntos de la contraseña
+# Fuente del initramfs: el hook mete el archivo que resuelve fontconfig. Inter
+# Variable (0,9 MB) en vez del alias GoldenGlass Sans, que da Inter.ttc (13 MB).
+font = "Inter Variable"
+font_size = 13
+fade_ms = 400            # entrada del logo
+
+[boot.dark]              # tema goldenglass (el de fábrica)
+background = "#000000"
+foreground = "#FFFFFF"
+track_alpha = 0.25       # pista de la barra (primer plano con esta opacidad)
+field_alpha = 0.14       # relleno del campo
+field_border_alpha = 0.30
+text_alpha = 0.65        # mensajes y petición de contraseña
+
+[boot.light]             # tema goldenglass-light
+background = "#E3E3E6"
+foreground = "#1D1D1F"
+track_alpha = 0.18
+field_alpha = 0.08
+field_border_alpha = 0.22
+text_alpha = 0.60
+
+# ---------------------------------------------------------------------------
 # Sonidos (tools/sounds.py): sintetizados, timbre de cristal
 # ---------------------------------------------------------------------------
 # Cada evento es una lista de capas que suenan desde `at` (s):

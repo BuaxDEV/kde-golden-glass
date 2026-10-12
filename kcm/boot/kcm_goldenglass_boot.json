@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Description": "GoldenGlass boot screen: logo and thin progress bar, black or light gray",
+        "Description[es]": "Pantalla de arranque de GoldenGlass: logo y barra de progreso fina, negra o gris clara",
+        "FormFactors": ["desktop"],
+        "Icon": "goldenglass",
+        "Name": "Boot and Login",
+        "Name[es]": "Arranque e inicio de sesión"
+    },
+    "X-KDE-Keywords": "boot,plymouth,startup,splash,boot screen,login,luks,goldenglass",
+    "X-KDE-Keywords[es]": "arranque,plymouth,inicio,pantalla de arranque,inicio de sesión,luks,goldenglass",
+    "X-KDE-System-Settings-Parent-Category": "themes",
+    "X-KDE-Weight": 52
+}

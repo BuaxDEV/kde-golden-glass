@@ -21,6 +21,7 @@ python3 tools/gen_tokens.py              # regenera build/ desde tokens/goldengl
 python3 tools/preview_plasma.py          # vista previa del Plasma Style (build/preview-*.png, requiere PyQt6)
 python3 tools/preview_style.py           # vista previa del estilo de apps compilado: menú y controles
 python3 tools/sounds.py --play alert     # escuchar un sonido tal como está en los tokens
+tools/preview_plymouth.sh goldenglass    # Plymouth real en podman + Xvfb → build/plymouth-preview/*.png
 tools/sandbox.sh light                   # sesión Plasma aislada y sin ventana → capturas en build/sandbox/
 tools/install.sh --dev                   # instala en ~/.local con symlinks
 plasma-apply-lookandfeel -a org.goldenglass.light.desktop --resetLayout
@@ -40,7 +41,7 @@ sudo pacman -Rns goldenglass              # desinstalar
 
 Paquetes: `goldenglass-kstyle` (estilo, decoración, ajustes; C++), `goldenglass-plasma`,
 `goldenglass-icons`, `goldenglass-cursors`, `goldenglass-wallpapers`, `goldenglass-gtk` y,
-opcional, `goldenglass-sounds`.
+opcionales, `goldenglass-sounds` y `goldenglass-plymouth`.
 Volver a ejecutar `makepkg -si` tras actualizar Qt o KDE.
 
 Nivel de vidrio en vivo: Preferencias del Sistema › Colores y temas › Vidrio, o desde la terminal (requiere `goldenglass-kstyle` instalado):
@@ -58,6 +59,11 @@ sonido, o desde la terminal:
 goldenglass-system enable sounds chime   # disable deja todo como estaba
 goldenglass-system status
 ```
+
+Pantalla de arranque (requiere `goldenglass-plymouth`): Preferencias del Sistema ›
+Colores y temas › Arranque e inicio de sesión, o `goldenglass-system enable plymouth
+[--variant light]`. Pide la contraseña de administrador y regenera el initramfs;
+`disable plymouth` vuelve al tema anterior.
 
 `--resetLayout` (o marcar "Disposición del escritorio y ventanas" al aplicar el
 Global Theme) es necesario para la barra de menús, el dock, los botones de

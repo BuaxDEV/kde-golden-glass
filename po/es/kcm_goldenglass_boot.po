@@ -1,0 +1,69 @@
+# Traducción al español del módulo de Ajustes «Arranque e inicio de sesión» de GoldenGlass.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kcm_goldenglass_boot\n"
+"Language: es\n"
+"PO-Revision-Date: 2026-10-11 18:00+0000\n"
+"Last-Translator: GoldenGlass contributors\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgctxt "@info:status"
+msgid "The boot screen was not changed: authentication was canceled or denied."
+msgstr "No se cambió la pantalla de arranque: se canceló o denegó la autenticación."
+
+msgctxt "@info:status"
+msgid "The boot screen could not be changed: %1"
+msgstr "No se pudo cambiar la pantalla de arranque: %1"
+
+msgctxt "@info:status"
+msgid "goldenglass-system could not be started: %1"
+msgstr "No se pudo iniciar goldenglass-system: %1"
+
+msgctxt "@info:status"
+msgid "goldenglass-system was not found. Is the goldenglass-plasma package installed?"
+msgstr "No se encontró goldenglass-system. ¿Está instalado el paquete goldenglass-plasma?"
+
+msgctxt "@info:status"
+msgid "The current state could not be read: %1"
+msgstr "No se pudo leer el estado actual: %1"
+
+msgctxt "@info"
+msgid "The GoldenGlass boot screens are not installed (goldenglass-plymouth package)."
+msgstr "Las pantallas de arranque de GoldenGlass no están instaladas (paquete goldenglass-plymouth)."
+
+msgctxt "@info"
+msgid "The kernel command line has no “splash” option: no boot screen will be shown."
+msgstr "La línea de comandos del kernel no tiene la opción «splash»: no se mostrará ninguna pantalla de arranque."
+
+msgctxt "@info"
+msgid "The “plymouth” hook is missing from the mkinitcpio HOOKS: no boot screen will be shown."
+msgstr "Falta el hook «plymouth» en HOOKS de mkinitcpio: no se mostrará ninguna pantalla de arranque."
+
+msgctxt "@label"
+msgid "Boot screen:"
+msgstr "Pantalla de arranque:"
+
+msgctxt "@option:radio boot screen"
+msgid "System"
+msgstr "Del sistema"
+
+msgctxt "@option:radio boot screen"
+msgid "GoldenGlass"
+msgstr "GoldenGlass"
+
+msgctxt "@option:radio boot screen"
+msgid "GoldenGlass Light"
+msgstr "GoldenGlass gris"
+
+msgctxt "@info:status"
+msgid "Applying and rebuilding the initramfs…"
+msgstr "Aplicando y regenerando el initramfs…"
+
+msgctxt "@info"
+msgid "The logo and a thin progress bar while the computer starts, and the disk password, if it is encrypted, in a glass field. Applying asks for the administrator password and takes a moment while the initramfs is rebuilt."
+msgstr "El logo y una barra de progreso fina mientras arranca el equipo y, si el disco está cifrado, su contraseña en un campo de vidrio. Al aplicar se pide la contraseña de administrador y tarda un momento mientras se regenera el initramfs."
