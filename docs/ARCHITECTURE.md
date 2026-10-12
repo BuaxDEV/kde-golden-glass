@@ -596,10 +596,19 @@ dentro de «Vidrio».
 - **Cada icono** (`DockIcon.qml`): punto debajo si la app está abierta;
   **rebote** al arrancar (sin parar mientras dura el aviso de arranque,
   `IsStartup`) y al pedir atención (`attention_bounces` veces); más oscuro al
-  pulsar; nombre encima al pasar el ratón (tooltip de Plasma) y, si tiene
-  ventanas, **vistas previas** en vivo (`WindowPreviews.qml`:
-  `ScreencastingRequest` + `PipeWireSourceItem`, como el gestor de tareas de
-  Plasma; clic activa esa ventana).
+  pulsar; nombre encima al pasar el ratón y, si tiene ventanas, **vistas
+  previas** en vivo (`WindowPreviews.qml`: `ScreencastingRequest` +
+  `PipeWireSourceItem`, como el gestor de tareas de Plasma; clic activa esa
+  ventana).
+  - El tooltip es un `PlasmaCore.Dialog` de tipo `Tooltip` y no
+    `ToolTipArea`: en un panel, libplasma (`PopupPlasmaWindow`) coloca los
+    tooltips sobre el borde de la *máscara* de la ventana, que en el dock es la
+    placa, y taparían los iconos ampliados. `Dialog` (`popupPosition`) usa el
+    rectángulo del elemento: se ancla a uno invisible cuyo borde superior es el
+    del icono más ampliado (más un pequeño margen), con `location: Floating`
+    para que el globo tenga los cuatro bordes. Se recoloca cuando la ampliación
+    mueve el icono; con miniaturas espera un momento al salir para poder pasar
+    el ratón al tooltip.
 - **Clics:** izquierdo abre la app o trae su ventana más reciente (si ya está
   delante, la siguiente); central, nueva instancia; derecho, menú
   (`TaskMenu.qml`): acciones de la app (las del `.desktop`, de Kicker

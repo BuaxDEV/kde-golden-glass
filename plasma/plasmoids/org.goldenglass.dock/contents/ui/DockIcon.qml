@@ -13,6 +13,7 @@
 import QtQuick
 
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.core as PlasmaCore
 
 import "tokens.js" as T
@@ -123,19 +124,130 @@ Item {
     }
 
     // --- nombre (y miniaturas) encima --------------------------------------------
-    PlasmaCore.ToolTipArea {
-        anchors.fill: parent
-        active: tile.tooltipEnabled && !tile.pressed
-        interactive: tile.previews !== null
-        mainText: tile.previews === null ? tile.label : ""
-        mainItem: tile.previews !== null ? previewLoader.item as Item : null
-        location: PlasmaCore.Types.BottomEdge
+    // Ventana propia (Dialog de tipo Tooltip) y no PlasmaCore.ToolTipArea: en un
+    // panel, libplasma coloca sus tooltips sobre el borde de la máscara de la
+    // ventana, que en el dock es la placa, y taparían los iconos ampliados.
+    // Dialog los pone sobre el elemento que se le da: tipAnchor, cuyo borde
+    // superior es el del icono más ampliado, como el nombre en el Dock de macOS.
+    property real maxSize: size             // tamaño del icono más ampliado
+    readonly property bool tooltipShown: tooltip.visible
+
+    function showToolTip() {
+        tooltip.visible = true;
     }
 
-    Loader {
-        id: previewLoader
+    function hideToolTip() {
+        showTimer.stop();
+        tooltip.visible = false;
+    }
+
+    // un poco por encima del icono más ampliado: el globo no lo toca
+    Item {
+        id: tipAnchor
+        width: tile.width
+        height: tile.maxSize + Kirigami.Units.smallSpacing
+        y: tile.height - height
+    }
+
+    Timer {
+        id: showTimer
+        interval: T.tokens.dock.label_delay_ms
+        onTriggered: tile.showToolTip()
+    }
+    // con miniaturas, un margen para pasar el ratón del icono al tooltip
+    Timer {
+        id: hideTimer
+        interval: 300
+        onTriggered: {
+            if (!tile.hovered && !tooltipHover.hovered) {
+                tooltip.visible = false;
+            }
+        }
+    }
+
+    onHoveredChanged: {
+        if (hovered && tooltipEnabled) {
+            hideTimer.stop();
+            if (!tooltip.visible) {
+                showTimer.restart();
+            }
+        } else if (!hovered) {
+            showTimer.stop();
+            if (previews !== null) {
+                hideTimer.restart();
+            } else {
+                tooltip.visible = false;
+            }
+        }
+    }
+    onTooltipEnabledChanged: {
+        if (!tooltipEnabled) {
+            hideToolTip();
+        }
+    }
+    onPressedChanged: {
+        if (pressed) {
+            hideToolTip();
+        }
+    }
+
+    // la ampliación mueve el icono: se recoloca (Dialog solo lo hace al cambiar visualParent)
+    function reposition() {
+        if (tooltip.visible) {
+            tooltip.visualParent = null;
+            tooltip.visualParent = tipAnchor;
+        }
+    }
+    onXChanged: Qt.callLater(reposition)
+    onWidthChanged: Qt.callLater(reposition)
+
+    PlasmaCore.Dialog {
+        id: tooltip
+        type: PlasmaCore.Dialog.Tooltip
+        flags: Qt.WindowDoesNotAcceptFocus
+        // Floating: globo con los cuatro bordes (con BottomEdge, Dialog quita
+        // el de abajo, como si estuviera pegado al panel); se coloca igual encima
+        location: PlasmaCore.Types.Floating
+        visualParent: tipAnchor
+        hideOnWindowDeactivate: true
+        outputOnly: tile.previews === null
         visible: false
-        active: tile.previews !== null
-        sourceComponent: tile.previews
+
+        mainItem: Item {
+            implicitWidth: content.implicitWidth
+            implicitHeight: content.implicitHeight
+            width: implicitWidth
+            height: implicitHeight
+
+            HoverHandler {
+                id: tooltipHover
+                onHoveredChanged: {
+                    if (!hovered && !tile.hovered) {
+                        hideTimer.restart();
+                    }
+                }
+            }
+
+            Loader {
+                id: content
+                sourceComponent: tile.previews !== null ? tile.previews : labelComponent
+                Connections {
+                    target: content.item
+                    ignoreUnknownSignals: true
+                    function onActivated() {
+                        tile.hideToolTip();
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: labelComponent
+        PlasmaComponents3.Label {
+            text: tile.label
+            leftPadding: Kirigami.Units.smallSpacing
+            rightPadding: Kirigami.Units.smallSpacing
+        }
     }
 }

@@ -256,6 +256,7 @@ Item {
             size: dock.sizeAt(dock.centerOf(0, 0))
             y: row.height - height
             padding: dock.pad
+            maxSize: dock.maxSize
             iconSource: "goldenglass-apps"
             fallback: "view-app-grid"
             label: i18n("Apps")
@@ -284,6 +285,7 @@ Item {
                 size: dock.sizeAt(dock.centerOf(1 + index, 0))
                 y: row.height - height
                 padding: dock.pad
+                maxSize: dock.maxSize
                 iconSource: model.decoration
                 label: model.AppName || model.display || ""
                 running: model.IsWindow === true || model.IsGroupParent === true
@@ -409,6 +411,7 @@ Item {
                 size: dock.sizeAt(dock.centerOf(1 + dock.taskCount + index, 1))
                 y: row.height - height
                 padding: dock.pad
+                maxSize: dock.maxSize
                 iconSource: modelData.icon
                 label: modelData.name
                 hovered: recentArea.containsMouse
@@ -433,6 +436,7 @@ Item {
             size: dock.sizeAt(dock.centerOf(1 + dock.taskCount + dock.recentCount, dock.separatorCount))
             y: row.height - height
             padding: dock.pad
+            maxSize: dock.maxSize
             iconSource: trash.iconName
             label: i18n("Trash")
             hovered: trash.containsMouse || trash.dropping
