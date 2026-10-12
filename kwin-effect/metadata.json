@@ -1,0 +1,16 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "GoldenGlass contributors"
+            }
+        ],
+        "Category": "Appearance",
+        "Description": "Blur with Liquid Glass refraction for GoldenGlass: the background bends at the edges of Plasma's glass",
+        "Description[es]": "Blur con la refracción de Liquid Glass para GoldenGlass: el fondo se curva en los bordes del vidrio de Plasma",
+        "EnabledByDefault": false,
+        "License": "GPL",
+        "Name": "GoldenGlass Glass",
+        "Name[es]": "Vidrio GoldenGlass"
+    }
+}

@@ -50,6 +50,7 @@ include(KDEInstallDirs6)
 include(KDECMakeSettings)
 
 option(WITH_DECORATIONS "Build GoldenGlass window decorations for KWin" ON)
+option(WITH_KWIN_EFFECT "Build the GoldenGlass glass effect for KWin (blur with refraction)" ON)
 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED CONFIG COMPONENTS Widgets DBus)
 find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
@@ -109,6 +110,10 @@ if(WITH_DECORATIONS)
 endif()
 
 add_subdirectory(kcm)
+
+if(WITH_KWIN_EFFECT)
+    add_subdirectory(kwin-effect)
+endif()
 
 ki18n_install(po)
 
