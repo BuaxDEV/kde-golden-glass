@@ -38,6 +38,7 @@ declare -A TARGETS=(
   [build/gtk/GoldenGlass]="$DATA/themes/GoldenGlass"
   [build/gtk/GoldenGlass-Dark]="$DATA/themes/GoldenGlass-Dark"
   [build/gtk/libadwaita.css]="$DATA/goldenglass/gtk/libadwaita.css"
+  [build/sounds/GoldenGlass]="$DATA/sounds/GoldenGlass"
   [assets/logo/goldenglass.svg]="$DATA/icons/hicolor/scalable/apps/goldenglass.svg"
   [assets/logo/goldenglass-symbolic.svg]="$DATA/icons/hicolor/scalable/apps/goldenglass-symbolic.svg"
 )
@@ -56,11 +57,15 @@ refresh_caches() {
 }
 
 AUTOSTART="$CONF/autostart/goldenglass-gtk-sync.desktop"
+SYSTEM_BIN="$HOME/.local/bin/goldenglass-system"
 
 if [[ $mode == uninstall ]]; then
   pkill -u "$USER" -f "$ROOT/tools/gtk_sync.py" 2>/dev/null || true
   python3 "$ROOT/tools/gtk_sync.py" --restore 2>/dev/null || true
   rm -fv -- "$AUTOSTART"
+  # deja la configuración del usuario como estaba antes de goldenglass-system
+  python3 "$ROOT/tools/system.py" disable sounds chime || true
+  rm -fv -- "$SYSTEM_BIN"
   for dst in "${TARGETS[@]}"; do
     [[ -e $dst || -L $dst ]] && rm -rfv -- "$dst"
   done
@@ -99,6 +104,15 @@ X-KDE-autostart-phase=1
 NoDisplay=true
 EOF
 python3 "$ROOT/tools/gtk_sync.py" --once || true
+
+# goldenglass-system (sonidos, chime): lo usa el módulo «Efectos de sonido».
+# No activa nada: `goldenglass-system enable sounds chime`.
+mkdir -p -- "$(dirname -- "$SYSTEM_BIN")"
+cat >"$SYSTEM_BIN" <<EOF
+#!/bin/sh
+exec python3 "$ROOT/tools/system.py" "\$@"
+EOF
+chmod 755 "$SYSTEM_BIN"
 
 # Apps de terceros encerradas en squircle a partir de sus iconos instalados.
 # (Volver a ejecutar tools/wrap_icons.py al instalar apps nuevas.)

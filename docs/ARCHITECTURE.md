@@ -54,7 +54,7 @@ sombras, tipografía, semáforos) viven en **`tokens/goldenglass.toml`**.
 | `build/cursors/GoldenGlass-cursors/` (QtSvg, se cachea) | Tema de cursores (SVG + Xcursor) | ✅ F5 |
 | `build/icons/GoldenGlass{,-Dark}/` (SVG dibujados por código) | Tema de iconos claro/oscuro | F5 (base ✅) |
 | `build/gtk/GoldenGlass{,-Dark}/`, `build/gtk/libadwaita.css` | GTK3 / GTK4 / libadwaita | ✅ F6 |
-| `build/sounds/GoldenGlass/` (numpy, se cachea) | Tema de sonidos freedesktop | F7 |
+| `build/sounds/GoldenGlass/` (numpy + python-soundfile, se cachea) | Tema de sonidos freedesktop | ✅ F7 |
 | `build/plymouth/goldenglass{,-light}/` (logo rasterizado con QtSvg) | Temas de Plymouth negro y gris | F8 |
 | `build/login/sddm/GoldenGlass/` (desde `login/sddm/`) | Tema de SDDM | F9 |
 | `contents/ui/tokens.js` del dock (lo genera `tools/plasmoids.py`) | Plasmoid `org.goldenglass.dock` | F10 |
@@ -178,16 +178,18 @@ cerca) y valores intermedios; se aplica en vivo al soltar ejecutando
 español en `po/es`. `kcm_apply_test` (prueba de integración, dentro de una
 sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 
-Secciones previstas (con los valores de fábrica en los tokens):
+#### Otros módulos de Ajustes
 
-| Sección | Contenido | Fase |
-|---|---|---|
-| Vidrio | slider actual + interruptor **Refracción** (efecto `goldenglass_glass`) | ✅ / F11 |
-| Dock | **Ampliación** (interruptor, activada de fábrica) y su tamaño máximo, tamaño del dock | F10 |
-| Sistema | Sonidos, chime al iniciar sesión, Plymouth (negro / gris) y pantalla de inicio de sesión. Llama a `goldenglass-system` (4.9) | F7–F9 |
+Como en macOS, cada ajuste vive donde el usuario lo busca: **módulos aparte**
+(cada uno en `kcm/<nombre>/`, con su dominio de traducción) en vez de páginas
+dentro de «Vidrio».
 
-Las secciones Dock y Sistema no encajan en «Colores y temas»: al empezar F7 se
-decide si el módulo pasa a tener páginas propias o si son módulos aparte.
+| Módulo | Dónde | Contenido | Fase |
+|---|---|---|---|
+| Vidrio (`kcm_goldenglass`) | Colores y temas | slider actual + interruptor **Refracción** (efecto `goldenglass_glass`) | ✅ / F11 |
+| Efectos de sonido (`kcm_goldenglass_sounds`) | Multimedia | sonidos de GoldenGlass y sonido al iniciar sesión, con botón para escucharlos (`pw-play`); llama a `goldenglass-system` (4.9) | ✅ F7 |
+| Arranque e inicio de sesión | Sesión (a confirmar en F8) | Plymouth (negro / gris) y pantalla de inicio de sesión | F8–F9 |
+| Dock | Escritorio y ventanas (a confirmar en F10) | **Ampliación** (interruptor, activada de fábrica) y su tamaño máximo, tamaño del dock | F10 |
 
 ### 4.5 Escritorio Plasma — `plasma/`
 - **Plasma Style** `GoldenGlass`: lo genera `tools/plasma_theme.py` dibujando
@@ -379,48 +381,66 @@ decide si el módulo pasa a tener páginas propias o si son módulos aparte.
 ### 4.9 Integración con el sistema — `goldenglass-system` (F7–F9)
 - Los paquetes de sonidos, Plymouth y login **solo instalan**: nada se activa
   al instalar ni con hooks de pacman. Se activa con
-  `goldenglass-system enable|disable|status <sounds|chime|plymouth|login>`
-  (`tools/system.py`) o desde la sección Sistema del módulo de Ajustes, que lo
-  llama.
-- Lo que es del usuario (sonidos, chime) se escribe en su `~/.config` sin root.
+  `goldenglass-system enable|disable|status [--json] <parte…>`
+  (`tools/system.py`, en `goldenglass-plasma`) o desde los módulos de Ajustes,
+  que lo llaman. Partes: `sounds` y `chime` ✅; `plymouth` y `login` llegan en
+  F8–F9.
+- Lo que es del usuario (sonidos, chime) se escribe en su `~/.config` sin root,
+  con `kwriteconfig6 --notify`.
   Lo del sistema (Plymouth, login) se ejecuta con **pkexec** y una acción de
   polkit propia (`org.goldenglass.system`); solo entonces se pide la contraseña.
 - **Reversible:** antes de cambiar algo se guarda el valor anterior
-  (`/var/lib/goldenglass/` para el sistema, `~/.local/state/goldenglass/` para
-  el usuario) y `disable` lo restaura.
+  (`/var/lib/goldenglass/` para el sistema, `~/.local/state/goldenglass/system.json`
+  para el usuario; si la clave no existía se guarda como tal) y `disable` lo
+  restaura. Un segundo `enable` no pisa lo guardado, y `disable` no toca una
+  clave que el usuario haya cambiado después. `tools/install.sh --uninstall`
+  desactiva las partes del usuario antes de borrar.
 - No cambia de gestor de inicio de sesión, ni la línea de comandos del kernel,
   ni los `HOOKS` de mkinitcpio: si falta algo (p. ej. `splash` o el hook
   `plymouth`) lo avisa y no lo toca.
 
 ### 4.10 Sonidos — `tools/sounds.py` (F7)
 - **Sintetizados por código** con numpy, como los fondos: sin binarios en el
-  repo. Timbre de cristal (parciales casi armónicos con caída exponencial),
-  parámetros en `[sounds]` de los tokens (volumen, tono base, caída y un
-  bloque por evento). Salida en Ogg Vorbis (`.oga`); el codificador se elige
-  al empezar la fase. Se cachea como los fondos.
+  repo. Cada evento de `[sounds.events]` en los tokens es una lista de capas:
+  notas de cristal (parciales casi armónicos con caída exponencial, glissando
+  opcional) y ráfagas de ruido filtrado (sueltas, para el papel). Se mezclan,
+  pasan por una cola de sala corta, distinta en cada canal, y se normalizan
+  (`volume` × `gain`). Ogg Vorbis (`.oga`) con `python-soundfile` (solo al
+  generar). Se cachea con el hash del generador y de `[sounds]`.
+- Iterar el diseño: `python3 tools/sounds.py --play notification alert` (con
+  `pw-play`) o `--preview DIR` (un `.wav` por evento).
 - Tema freedesktop `GoldenGlass` (`build/sounds/GoldenGlass/`,
-  `index.theme` + `stereo/`). Solo los eventos que tiene macOS:
+  `index.theme` + `stereo/`). El nombre principal de cada evento es un archivo y
+  los demás son enlaces. Los eventos de macOS y los de Plasma que no deben
+  perderse (temporizador, cargador, avisos, contraseña):
 
   | Evento | Nombres freedesktop |
   |---|---|
-  | Alerta / error | `dialog-warning`, `dialog-error`, `bell` |
-  | Notificación | `message-new-instant`, `dialog-information` |
+  | Alerta (también avisos de diálogos KDE) | `bell`, `bell-window-system`, `dialog-warning`, `dialog-error`, `dialog-error-critical`, `dialog-error-serious` |
+  | Notificación | `message-new-instant`, `message-new-email` |
   | Vaciar papelera | `trash-empty` |
   | Captura de pantalla | `screen-capture`, `camera-shutter` |
   | Respuesta del volumen | `audio-volume-change` |
   | Conectar / desconectar | `device-added`, `device-removed` |
   | Batería baja | `battery-low`, `battery-caution` |
+  | Enchufar el cargador | `power-plug` |
+  | Alarma del temporizador | `alarm-clock-elapsed` |
+  | Contraseña de administrador | `dialog-warning-auth` |
   | Chime | `desktop-login` |
 
-- **El resto, en silencio**, como macOS (sin heredar Ocean). Ojo: la
-  especificación siempre recurre al tema `freedesktop` cuando un tema no tiene
-  un sonido, así que no basta con omitirlos; los nombres que Plasma usa y no
-  cubrimos apuntan a un `silence.oga`. Se verifica en la fase qué nombres pide
-  Plasma 6.7.
+- **El resto, en silencio**, como macOS (sin heredar Ocean): información y
+  pregunta de los diálogos, desenchufar, cerrar sesión, completado, mensajes,
+  llamadas… La especificación siempre recurre al tema `freedesktop` cuando a
+  un tema le falta un sonido; un archivo vacío `<nombre>.disabled` corta esa
+  búsqueda (verificado con libcanberra: «Sound disabled»). Se dejan sin tocar
+  los de la prueba de altavoces (`audio-channel-*`, `audio-test-signal`).
 - Activación (`goldenglass-system enable sounds`): `kdeglobals [Sounds]
-  Theme=GoldenGlass`. El **chime** es aparte (`enable chime`): activa el
-  sonido del evento de inicio de sesión de Plasma (a verificar el evento
-  exacto de `plasma_workspace.notifyrc` en 6.7).
+  Theme=GoldenGlass` (lo leen KNotifications y plasma-pa) y, como Spectacle no
+  suena al capturar, `spectacle.notifyrc [Event/newScreenshotSaved]
+  Action=Popup|Sound`, `Sound=screen-capture`. El **chime** es aparte
+  (`enable chime`): Plasma trae el evento de inicio de sesión
+  (`plasma_workspace.notifyrc [Event/startkde]`, `desktop-login`) sin acción;
+  se le pone `Action=Sound`.
 - Paquete `goldenglass-sounds`.
 
 ### 4.11 Arranque — Plymouth (F8)
@@ -549,7 +569,7 @@ decide si el módulo pasa a tener páginas propias o si son módulos aparte.
   | `goldenglass-cursors` | tema de cursores |
   | `goldenglass-wallpapers` | fondo día/noche |
   | `goldenglass-gtk` | temas GTK, CSS de libadwaita y `goldenglass-gtk-sync` (autostart) |
-  | `goldenglass-sounds` (F7) | tema de sonidos |
+  | `goldenglass-sounds` ✅ | tema de sonidos (se activa con `goldenglass-system` o en Efectos de sonido) |
   | `goldenglass-plymouth` (F8) | temas de Plymouth negro y gris |
   | `goldenglass-login` (F9) | tema de SDDM y fondo para Plasma Login Manager |
   | `goldenglass` | metapaquete (sonidos, Plymouth y login como dependencias opcionales) |
@@ -592,7 +612,7 @@ decide si el módulo pasa a tener páginas propias o si son módulos aparte.
 | F4 | Plasmoids: Centro de control, Launchpad, menú de sistema | ✅ |
 | F5 | Iconos, cursores, wallpapers | ✅ |
 | F6 | GTK, PKGBUILD, CI en GitHub | ✅ |
-| F7 | Sonidos sintetizados, chime, `goldenglass-system`, sección Sistema del módulo de Ajustes | |
+| F7 | Sonidos sintetizados, chime, `goldenglass-system`, módulo Efectos de sonido | ✅ |
 | F8 | Plymouth negro y gris con contraseña LUKS | |
 | F9 | Tema de SDDM + fondo y sincronización en Plasma Login Manager | |
 | F10 | Spike del panel → dock unificado con ampliación → sección Dock | |
@@ -619,7 +639,7 @@ Refracción en las ventanas de las apps.
 | Los plasmoids usan módulos QML privados de Plasma (sin API estable) | Mínimo Plasma 6.7; probar en el sandbox tras cada actualización de Plasma |
 | Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` (barra y dock comparten SVG) | `radius.dock ≤ menubar_height / 2` (14 px); el generador lo valida |
 | Plasma Login Manager no admite temas: el diseño propio solo se ve con SDDM | En PLM se aplica fondo y sincronización; si KDE añade temas, se porta el QML de SDDM |
-| La especificación de sonidos recurre a `freedesktop` para lo que falta | Los nombres no cubiertos apuntan a `silence.oga` |
+| La especificación de sonidos recurre a `freedesktop` para lo que falta | Los nombres no cubiertos llevan un `<nombre>.disabled` |
 | Activar Plymouth regenera el initramfs con root | Comando explícito, aviso previo, restauración del tema anterior si `mkinitcpio` falla |
 | Quitar el fondo del panel y fijar sus regiones de blur y entrada no tiene API en Plasma | Spike al inicio de F10; plan B: dock como app con layer-shell; si no está el dock nuevo, el layout monta el actual |
 | El dock unificado pierde funciones de `icontasks` | Lista de paridad en 4.13; mismo `TasksModel` |

@@ -1,0 +1,57 @@
+# Traducción al español del módulo de Ajustes «Efectos de sonido» de GoldenGlass.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kcm_goldenglass_sounds\n"
+"Language: es\n"
+"PO-Revision-Date: 2026-10-11 18:00+0000\n"
+"Last-Translator: GoldenGlass contributors\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgctxt "@info:status"
+msgid "The change could not be applied: %1"
+msgstr "No se pudo aplicar el cambio: %1"
+
+msgctxt "@info:status"
+msgid "goldenglass-system could not be started: %1"
+msgstr "No se pudo iniciar goldenglass-system: %1"
+
+msgctxt "@info:status"
+msgid "goldenglass-system was not found. Is the goldenglass-plasma package installed?"
+msgstr "No se encontró goldenglass-system. ¿Está instalado el paquete goldenglass-plasma?"
+
+msgctxt "@info:status"
+msgid "The current state could not be read: %1"
+msgstr "No se pudo leer el estado actual: %1"
+
+msgctxt "@action:button"
+msgid "Listen"
+msgstr "Escuchar"
+
+msgctxt "@info"
+msgid "The GoldenGlass sound theme is not installed (goldenglass-sounds package)."
+msgstr "El tema de sonidos de GoldenGlass no está instalado (paquete goldenglass-sounds)."
+
+msgctxt "@label"
+msgid "Sound effects:"
+msgstr "Efectos de sonido:"
+
+msgctxt "@option:check"
+msgid "Use GoldenGlass sounds"
+msgstr "Usar los sonidos de GoldenGlass"
+
+msgctxt "@option:check"
+msgid "Play sound on login"
+msgstr "Reproducir un sonido al iniciar sesión"
+
+msgctxt "@info:status"
+msgid "Applying…"
+msgstr "Aplicando…"
+
+msgctxt "@info"
+msgid "Glass sounds for alerts, notifications, emptying the trash, screenshots, volume changes, devices, battery and charger, and the timer alarm. Everything else stays silent, like on macOS."
+msgstr "Sonidos de cristal para alertas, notificaciones, vaciar la papelera, capturas de pantalla, cambios de volumen, dispositivos, batería y cargador, y la alarma del temporizador. Lo demás queda en silencio, como en macOS."
