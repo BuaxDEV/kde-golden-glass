@@ -1,0 +1,18 @@
+# Traducción al español del tema de SDDM de GoldenGlass (se compila a es.qm).
+# Los textos son los de SddmComponents (contexto TextConstants); aquí solo se
+# corrigen los que SDDM no traduce o se cambian por los términos de macOS.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: sddm-theme-goldenglass\n"
+"Language: es\n"
+"PO-Revision-Date: 2026-10-12 18:00+0000\n"
+"Last-Translator: GoldenGlass contributors\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgctxt "TextConstants"
+msgid "Suspend"
+msgstr "Reposo"

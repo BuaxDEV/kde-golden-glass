@@ -56,7 +56,7 @@ sombras, tipografía, semáforos) viven en **`tokens/goldenglass.toml`**.
 | `build/gtk/GoldenGlass{,-Dark}/`, `build/gtk/libadwaita.css` | GTK3 / GTK4 / libadwaita | ✅ F6 |
 | `build/sounds/GoldenGlass/` (numpy + python-soundfile, se cachea) | Tema de sonidos freedesktop | ✅ F7 |
 | `build/plymouth/goldenglass{,-light}/` (piezas dibujadas con QtSvg/QPainter, se cachea) | Temas de Plymouth negro y gris | ✅ F8 |
-| `build/login/sddm/GoldenGlass/` (desde `login/sddm/`) | Tema de SDDM | F9 |
+| `build/login/sddm/GoldenGlass/` (desde `login/sddm/`, `theme.conf` y `.qm` generados) | Tema de SDDM | ✅ F9 |
 | `contents/ui/tokens.js` del dock (lo genera `tools/plasmoids.py`) | Plasmoid `org.goldenglass.dock` | F10 |
 | `goldenglass_tokens.h` (secciones `[dock]` y `[glass.refraction]`) | Valores de fábrica del dock y del efecto de KWin | F10, F11 |
 
@@ -188,7 +188,7 @@ dentro de «Vidrio».
 |---|---|---|---|
 | Vidrio (`kcm_goldenglass`) | Colores y temas | slider actual + interruptor **Refracción** (efecto `goldenglass_glass`) | ✅ / F11 |
 | Efectos de sonido (`kcm_goldenglass_sounds`) | Multimedia | sonidos de GoldenGlass y sonido al iniciar sesión, con botón para escucharlos (`pw-play`); llama a `goldenglass-system` (4.9) | ✅ F7 |
-| Arranque e inicio de sesión (`kcm_goldenglass_boot`) | Colores y temas, junto a «Pantalla de bienvenida» | Pantalla de arranque: del sistema, GoldenGlass o GoldenGlass gris, con miniaturas dibujadas con las piezas del tema y los avisos de `goldenglass-system`. Se aplica con «Aplicar» (pide la contraseña y regenera el initramfs). La pantalla de inicio de sesión llega en F9 | ✅ F8 / F9 |
+| Arranque e inicio de sesión (`kcm_goldenglass_boot`) | Colores y temas, junto a «Pantalla de bienvenida» | Pantalla de arranque: del sistema, GoldenGlass o GoldenGlass gris, con miniaturas dibujadas con las piezas del tema y los avisos de `goldenglass-system`. Pantalla de inicio de sesión: interruptor según el gestor activo (con SDDM, el tema; con Plasma Login Manager, fondo y ajustes, con la explicación). Se aplica con «Aplicar»: pide la contraseña (una vez para los dos cambios) y, si cambia Plymouth, regenera el initramfs | ✅ F8 / F9 |
 | Dock | Escritorio y ventanas (a confirmar en F10) | **Ampliación** (interruptor, activada de fábrica) y su tamaño máximo, tamaño del dock | F10 |
 
 ### 4.5 Escritorio Plasma — `plasma/`
@@ -383,8 +383,7 @@ dentro de «Vidrio».
   al instalar ni con hooks de pacman. Se activa con
   `goldenglass-system enable|disable|status [--json] <parte…>`
   (`tools/system.py`, en `goldenglass-plasma`) o desde los módulos de Ajustes,
-  que lo llaman. Partes: `sounds`, `chime` y `plymouth` ✅; `login` llega en
-  F9. `status --json` es lo que leen los módulos.
+  que lo llaman. Partes: `sounds`, `chime`, `plymouth` y `login` ✅. `status --json` es lo que leen los módulos.
 - Lo que es del usuario (sonidos, chime) se escribe en su `~/.config` sin root,
   con `kwriteconfig6 --notify`.
   Lo del sistema (Plymouth, login) necesita root: con `sudo` se hace en el
@@ -495,29 +494,63 @@ dentro de «Vidrio».
   la medida de la más pequeña: en las otras el conjunto no queda centrado.
 - Paquete `goldenglass-plymouth`.
 
-### 4.12 Inicio de sesión — SDDM y Plasma Login Manager (F9)
+### 4.12 Inicio de sesión — SDDM y Plasma Login Manager (F9) ✅
 - **Plasma Login Manager** (PLM, el sucesor de SDDM de KDE, el que usa CachyOS
   con Plasma 6.7) **no admite temas**: su interfaz va compilada en el binario
-  (`qrc:/qt/qml/org/kde/plasma/login/Main.qml`). Por eso hay dos caminos:
-- **SDDM: tema propio `GoldenGlass`** (`login/sddm/`, QML Qt 6,
-  `QtVersion=6`), con el **diseño de nuestra pantalla de bloqueo**: reloj
-  grande arriba, fondo difuminado, avatar y contraseña abajo; con varios
-  usuarios, fila de avatares. Reposo / Reiniciar / Apagar, sesión y teclado,
-  discretos. Solo Qt Quick (sin módulos de Plasma: corre como el usuario
-  `sddm`); blur con `MultiEffect`. Colores, radios y fuentes en un
-  `theme.conf` generado desde los tokens; traducciones `.qm` desde `po/`.
-- **Claro/oscuro según la hora:** fondo de día o de noche (franja horaria en
-  `[login]` de los tokens); los controles son siempre vidrio oscuro con texto
-  claro, como el login de macOS.
-- **PLM:** lo que permite: el fondo GoldenGlass y la sincronización de los
-  ajustes de Plasma del usuario (colores, Plasma Style, fuentes, cursor,
-  iconos) al usuario `plasmalogin`. La disposición sigue siendo la de KDE.
+  (`qrc:/qt/qml/org/kde/plasma/login/Main.qml`). Por eso hay dos caminos.
+- **SDDM: tema propio `GoldenGlass`** (`login/sddm/Main.qml`, QML Qt 6,
+  `QtVersion=6`), con el **diseño de nuestra pantalla de bloqueo**: fecha y
+  hora grandes arriba, fondo difuminado (`MultiEffect`) y un poco oscurecido,
+  avatar redondo, nombre y contraseña abajo. Con varios usuarios, primero una
+  fila de avatares (como macOS); al elegir uno, su contraseña y un botón para
+  volver (también Escape). Reposo / Reiniciar / Apagar como botones de vidrio
+  redondos con texto; sesión (abajo a la izquierda) y teclado (abajo a la
+  derecha) solo si hay más de una. Contraseña en un campo de vidrio con la
+  flecha para entrar dentro; aviso de Bloq Mayús; si falla, el campo tiembla y
+  sale «Error de inicio de sesión».
+  - Solo Qt Quick (sin módulos de Plasma ni temas de iconos: corre como el
+    usuario `sddm`); iconos SVG propios en `login/sddm/icons/`.
+  - Valores en `theme.conf`, que genera `tools/login.py` desde `[login]` de los
+    tokens (medidas a 1080 líneas, escaladas con la altura), con la fuente
+    `GoldenGlass Sans` y el fondo de GoldenGlass instalado (`images/` o
+    `images_dark/`, 16:9 o 16:10 según la pantalla).
+  - Textos de `SddmComponents` (`TextConstants`), que SDDM ya trae traducidos
+    a todos sus idiomas. `login/sddm/translations/<idioma>.po` (compilado con
+    `msgfmt --qt`) solo corrige lo que SDDM no traduce o cambia por el término
+    de macOS (en español, «Suspend» → «Reposo»).
+  - El avatar es el que da SDDM (`~/.face.icon`, `FacesDir`, AccountsService);
+    su silueta genérica se sustituye por la nuestra de vidrio.
+  - Con varias pantallas, la interfaz solo en la principal; las demás, fondo y
+    reloj.
+- **Claro/oscuro según la hora:** fondo de día o de noche (`day_start`,
+  `night_start` en `[login]`); los controles son siempre vidrio oscuro con
+  texto claro, como el login de macOS.
+- **PLM: fondo y ajustes**, lo mismo que hace su módulo de KDE:
+  - `/etc/plasmalogin.conf`: `[Greeter] WallpaperPluginId=org.kde.image` e
+    `Image=file:///usr/share/wallpapers/GoldenGlass/` en
+    `[Greeter][Wallpaper][org.kde.image][General]` (el greeter lo lee de
+    `/usr`, no hace falta copiarlo).
+  - «Aplicar ajustes de Plasma»: `kdeglobals`, `plasmarc`, `kcminputrc`,
+    `kxkbrc` y `fontconfig/fonts.conf` del usuario que lo pide (`PKEXEC_UID` o
+    `SUDO_UID`) a `/var/lib/plasmalogin/.config/`, y se vacía su `.cache`.
+    Se lee **como ese usuario** y se escribe **como `plasmalogin`** (procesos
+    hijo sin privilegios, `_as_user`): root no sigue enlaces del usuario ni
+    escribe con privilegios en un home ajeno. Un archivo que el usuario no
+    puede leer se omite con un aviso.
+  - Se guardan una vez los valores y archivos previos; `disable` los
+    restaura (si el administrador cambió el fondo después, el fondo no se toca).
 - `goldenglass-system enable login` detecta el gestor activo
-  (`display-manager.service`): con SDDM escribe
-  `/etc/sddm.conf.d/goldenglass.conf`; con PLM aplica lo anterior. **Nunca
-  cambia de gestor.**
-- Vista previa sin cerrar sesión: `sddm-greeter-qt6 --test-mode --theme
-  build/login/sddm/GoldenGlass`.
+  (`/etc/systemd/system/display-manager.service`): con SDDM escribe
+  `/etc/sddm.conf.d/99-goldenglass.conf` (tema y, si está instalado, el
+  cursor de GoldenGlass; `99-` para ir después de `kde_settings.conf`), que
+  `disable` borra. Avisa si `/etc/sddm.conf` fija el tema, porque manda sobre
+  `sddm.conf.d`. Otro gestor: error claro. **Nunca cambia de gestor.**
+- **Vista previa sin cerrar sesión ni root:** `tools/preview_login.sh
+  [ANCHOxALTO]` ejecuta el greeter real (`sddm-greeter-qt6 --test-mode`) en un
+  contenedor podman sobre un Xvfb, con usuarios de prueba (uno con foto) y la
+  hora fijada con `TZ`. Deja en `build/login-preview/` día, noche, contraseña
+  escrita, fila de usuarios y usuario elegido. En modo prueba SDDM dice que no
+  se puede apagar: la copia de la vista previa muestra los botones igualmente.
 - Paquete `goldenglass-login` (SDDM como dependencia opcional).
 
 ### 4.13 Dock con ampliación — `org.goldenglass.dock` (F10)
@@ -603,7 +636,7 @@ dentro de «Vidrio».
   | `goldenglass-gtk` | temas GTK, CSS de libadwaita y `goldenglass-gtk-sync` (autostart) |
   | `goldenglass-sounds` ✅ | tema de sonidos (se activa con `goldenglass-system` o en Efectos de sonido) |
   | `goldenglass-plymouth` ✅ | temas de Plymouth negro y gris (se activan con `goldenglass-system` o en Arranque e inicio de sesión) |
-  | `goldenglass-login` (F9) | tema de SDDM y fondo para Plasma Login Manager |
+  | `goldenglass-login` ✅ | tema de SDDM (se activa con `goldenglass-system` o en Arranque e inicio de sesión; en Plasma Login Manager bastan el fondo y `goldenglass-plasma`) |
   | `goldenglass` | metapaquete (sonidos, Plymouth y login como dependencias opcionales) |
 
   `goldenglass-system` y su acción de polkit van en `goldenglass-plasma`, del
@@ -646,7 +679,7 @@ dentro de «Vidrio».
 | F6 | GTK, PKGBUILD, CI en GitHub | ✅ |
 | F7 | Sonidos sintetizados, chime, `goldenglass-system`, módulo Efectos de sonido | ✅ |
 | F8 | Plymouth negro y gris con contraseña LUKS, módulo Arranque e inicio de sesión | ✅ |
-| F9 | Tema de SDDM + fondo y sincronización en Plasma Login Manager | |
+| F9 | Tema de SDDM + fondo y sincronización en Plasma Login Manager | ✅ |
 | F10 | Spike del panel → dock unificado con ampliación → sección Dock | |
 | F11 | Spike del fork de Blur → efecto `goldenglass_glass` con refracción → interruptor en Vidrio | |
 
@@ -670,7 +703,8 @@ Refracción en las ventanas de las apps.
 | libadwaita ignora temas | Solo colores; documentado |
 | Los plasmoids usan módulos QML privados de Plasma (sin API estable) | Mínimo Plasma 6.7; probar en el sandbox tras cada actualización de Plasma |
 | Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` (barra y dock comparten SVG) | `radius.dock ≤ menubar_height / 2` (14 px); el generador lo valida |
-| Plasma Login Manager no admite temas: el diseño propio solo se ve con SDDM | En PLM se aplica fondo y sincronización; si KDE añade temas, se porta el QML de SDDM |
+| Plasma Login Manager no admite temas: el diseño propio solo se ve con SDDM | En PLM se aplica fondo y sincronización (el módulo lo explica); si KDE añade temas, se porta el QML de SDDM |
+| Copiar ajustes de un usuario al home de `plasmalogin` como root | Lectura como el usuario y escritura como `plasmalogin` en procesos hijo sin privilegios; probado con un enlace a `/etc/shadow` |
 | La especificación de sonidos recurre a `freedesktop` para lo que falta | Los nombres no cubiertos llevan un `<nombre>.disabled` |
 | Activar Plymouth regenera el initramfs con root | Comando explícito o «Aplicar» con pkexec; avisos de `splash` y del hook; si falla el initramfs se mantiene el tema anterior |
 | La fuente del tema entra en cada initramfs | Inter Variable (0,9 MB) en vez de `Inter.ttc` (13 MB) |

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+[SddmGreeterTheme]
+Name=GoldenGlass
+Description=Login screen like the GoldenGlass lock screen: blurred wallpaper, large clock, avatar and password
+Description[es]=Pantalla de inicio de sesión como la de bloqueo de GoldenGlass: fondo difuminado, reloj grande, avatar y contraseña
+Author=GoldenGlass contributors
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=0.1.0
+Website=https://github.com/brayanAP/kde-golden-glass
+MainScript=Main.qml
+ConfigFile=theme.conf
+QtVersion=6
+Theme-Id=GoldenGlass
+Theme-API=2.0
+TranslationsDirectory=translations

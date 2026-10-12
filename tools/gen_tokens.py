@@ -16,6 +16,7 @@ Salidas (en build/, no versionado):
   build/gtk/GoldenGlass/ y libadwaita.css (GTK3/GTK4 sobre adw-gtk3)
   build/sounds/GoldenGlass/               (tema de sonidos; se cachea)
   build/plymouth/goldenglass{,-light}/    (temas de Plymouth; se cachea)
+  build/login/sddm/GoldenGlass/           (tema de SDDM)
 
 Uso:
   python3 tools/gen_tokens.py [--tokens RUTA] [--out DIR]
@@ -37,6 +38,7 @@ import cursors  # noqa: E402
 import cxx_tokens  # noqa: E402
 import gtk  # noqa: E402
 import icons  # noqa: E402
+import login  # noqa: E402
 import lookandfeel  # noqa: E402
 import plasma_theme  # noqa: E402
 import plasmoids  # noqa: E402
@@ -233,6 +235,7 @@ def main(argv: list[str] | None = None) -> int:
     written += gtk.build(tokens, args.out)
     written += sounds.build(tokens, args.out)
     written += plymouth.build(tokens, args.out)
+    written += login.build(tokens, args.out)
 
     for p in written:
         print(f"  {p.relative_to(ROOT) if p.is_relative_to(ROOT) else p}")

@@ -48,7 +48,7 @@ as_builder() { runuser -u "$BUILDER" -- env HOME="/home/$BUILDER" QT_QPA_PLATFOR
 
 step "Comprobaciones rápidas"
 as_builder bash -c "cd '$WORK/goldenglass' && python -m py_compile tools/*.py && for f in tools/*.sh; do bash -n \"\$f\"; done \
-  && find plasma po -name '*.po' -print0 | xargs -0 -n1 msgfmt --check -o /dev/null"
+  && find plasma po login -name '*.po' -print0 | xargs -0 -n1 msgfmt --check -o /dev/null"
 
 step "Generadores (tools/gen_tokens.py)"
 as_builder bash -c "cd '$WORK/goldenglass' && python tools/gen_tokens.py >/dev/null"

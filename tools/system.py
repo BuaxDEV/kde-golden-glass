@@ -18,6 +18,11 @@ Partes del usuario (sin root; no se pueden activar con sudo):
 Partes del sistema (root: con sudo, o pkexec + polkit si se llama sin él):
   plymouth tema de arranque goldenglass (--variant dark, el de fábrica) o
            goldenglass-light; regenera el initramfs
+  login    pantalla de inicio de sesión según el gestor activo: con SDDM, el
+           tema GoldenGlass; con Plasma Login Manager (no admite temas), el
+           fondo de GoldenGlass y los ajustes de Plasma del usuario que lo
+           pide (colores, estilo, fuentes, cursor, teclado). Nunca cambia de
+           gestor
 
 Estado guardado: ~/.local/state/goldenglass/system.json (usuario) y
 /var/lib/goldenglass/system.json (sistema).
@@ -72,7 +77,17 @@ PARTS: dict[str, tuple[Entry, ...]] = {
         Entry("plasma_workspace.notifyrc", "Event/startkde", "Action", "Sound"),
     ),
 }
-SYSTEM_PARTS = ("plymouth",)
+SYSTEM_PARTS = ("plymouth", "login")
+
+SDDM_THEME = Path("/usr/share/sddm/themes/GoldenGlass")
+SDDM_CONF = Path("/etc/sddm.conf.d/99-goldenglass.conf")
+SDDM_MARK = "# goldenglass-system"
+CURSORS = Path("/usr/share/icons/GoldenGlass-cursors")
+PLM_CONF = Path("/etc/plasmalogin.conf")
+PLM_IMAGE = "file:///usr/share/wallpapers/GoldenGlass/"
+WALLPAPER = Path("/usr/share/wallpapers/GoldenGlass")
+# lo que copia «Aplicar ajustes de Plasma» del módulo de KDE (kcm_plasmalogin)
+PLM_FILES = ("kdeglobals", "plasmarc", "kcminputrc", "kxkbrc", "fontconfig/fonts.conf")
 
 
 def _tool(name: str, package: str = "kconfig") -> str:
@@ -166,6 +181,8 @@ def plymouth_warnings() -> list[str]:
 WARNING_TEXT = {
     "no-splash": "falta «splash» en la línea de comandos del kernel: Plymouth no se mostrará",
     "no-hook": "falta el hook «plymouth» en HOOKS de mkinitcpio: Plymouth no se mostrará",
+    "sddm-overridden": "/etc/sddm.conf fija [Theme] Current: el tema de GoldenGlass no se verá",
+    "unsupported-manager": "el gestor de inicio de sesión no es SDDM ni Plasma Login Manager",
 }
 
 
@@ -224,14 +241,203 @@ def disable_plymouth(state: dict) -> None:
     _set_plymouth(previous if previous and plymouth_installed(previous) else None)
 
 
+# --- inicio de sesión (root) --------------------------------------------------
+
+def display_manager() -> str | None:
+    """Servicio del gestor activo sin «.service» (sddm, plasmalogin…)."""
+    try:
+        target = os.readlink("/etc/systemd/system/display-manager.service")
+    except OSError:
+        return None
+    return Path(target).name.removesuffix(".service")
+
+
+def _sddm_overridden() -> bool:
+    """/etc/sddm.conf manda sobre sddm.conf.d: si fija el tema, el nuestro no se ve."""
+    try:
+        text = Path("/etc/sddm.conf").read_text(errors="replace")
+    except OSError:
+        return False
+    return re.search(r"^\s*\[Theme\][^\[]*^\s*Current\s*=", text, re.M | re.S) is not None
+
+
+def _plm_entry(key: str) -> list[str]:
+    if key == "WallpaperPluginId":
+        return ["--group", "Greeter", "--key", key]
+    return ["--group", "Greeter", "--group", "Wallpaper", "--group", "org.kde.image",
+            "--group", "General", "--key", key]
+
+
+def _plm_read(key: str) -> str | None:
+    if not PLM_CONF.exists():
+        return None
+    out = subprocess.run([_tool("kreadconfig6"), "--file", str(PLM_CONF), *_plm_entry(key),
+                          "--default", UNSET], check=True, capture_output=True, text=True).stdout.rstrip("\n")
+    return None if out == UNSET else out
+
+
+def _plm_write(key: str, value: str | None) -> None:
+    args = [_tool("kwriteconfig6"), "--file", str(PLM_CONF), *_plm_entry(key)]
+    subprocess.run(args + (["--delete"] if value is None else [value]), check=True)
+
+
+def login_status() -> dict:
+    manager = display_manager()
+    warnings = []
+    if manager == "sddm":
+        enabled = SDDM_CONF.is_file()
+        installed = SDDM_THEME.is_dir()
+        if enabled and _sddm_overridden():
+            warnings.append("sddm-overridden")
+    elif manager == "plasmalogin":
+        try:
+            enabled = _plm_read("Image") == PLM_IMAGE
+        except (OSError, subprocess.CalledProcessError):
+            enabled = False
+        installed = WALLPAPER.is_dir()
+    else:
+        enabled, installed = False, False
+        warnings.append("unsupported-manager")
+    return {"manager": manager, "enabled": enabled, "installed": installed, "warnings": warnings}
+
+
+def _invoking_user():
+    """Quien pidió el cambio (pkexec o sudo); sus ajustes de Plasma se copian."""
+    import pwd
+    uid = os.environ.get("PKEXEC_UID") or os.environ.get("SUDO_UID")
+    return pwd.getpwuid(int(uid)) if uid and uid != "0" else None
+
+
+def _as_user(pw, fn):
+    """Ejecuta fn() en un proceso hijo con la identidad de pw (sin privilegios de
+    root) y devuelve su resultado (JSON). Así root nunca sigue enlaces del
+    usuario ni escribe en un home ajeno con privilegios."""
+    read_fd, write_fd = os.pipe()
+    pid = os.fork()
+    if pid == 0:
+        code = 1
+        try:
+            os.close(read_fd)
+            os.setgroups([])
+            os.setgid(pw.pw_gid)
+            os.setuid(pw.pw_uid)
+            os.chdir(pw.pw_dir)
+            payload = json.dumps(fn()).encode()
+            with os.fdopen(write_fd, "wb") as out:
+                out.write(payload)
+            code = 0
+        except BaseException as error:  # noqa: BLE001 — se informa por stderr y código
+            print(f"goldenglass-system: {error}", file=sys.stderr)
+        finally:
+            os._exit(code)
+    os.close(write_fd)
+    with os.fdopen(read_fd, "rb") as data:
+        payload = data.read()
+    _, status = os.waitpid(pid, 0)
+    if os.waitstatus_to_exitcode(status) != 0:
+        raise SystemExit(f"goldenglass-system: falló una operación como {pw.pw_name}")
+    return json.loads(payload)
+
+
+def _read_files(base: Path) -> dict:
+    """Contenido de PLM_FILES bajo base (None si no existe). Se lee con la
+    identidad del dueño (_as_user): seguir sus enlaces (stow, chezmoi…) no da
+    acceso a nada que no pueda leer ya."""
+    files = {}
+    for name in PLM_FILES:
+        try:
+            files[name] = (base / name).read_text(encoding="utf-8", errors="replace")
+        except (FileNotFoundError, NotADirectoryError):
+            files[name] = None
+        except OSError as error:  # p. ej. un enlace a algo que no puede leer
+            print(f"goldenglass-system: aviso: se omite {base / name}: {error.strerror}", file=sys.stderr)
+            files[name] = None
+    return files
+
+
+def _write_files(base: Path, files: dict) -> None:
+    """Escribe (o borra si es None) PLM_FILES bajo base y vacía la caché."""
+    shutil.rmtree(base.parent / ".cache", ignore_errors=True)
+    for name, content in files.items():
+        path = base / name
+        if content is None:
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                pass
+            continue
+        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(content)
+
+
+def enable_login(state: dict) -> None:
+    manager = display_manager()
+    saved = state.setdefault("login", {})
+    if manager == "sddm":
+        if not SDDM_THEME.is_dir():
+            raise SystemExit("goldenglass-system: el tema de SDDM GoldenGlass no está instalado "
+                             "(paquete goldenglass-login)")
+        lines = [f"{SDDM_MARK}: se borra con «goldenglass-system disable login»",
+                 "[Theme]", "Current=GoldenGlass"]
+        if CURSORS.is_dir():
+            lines.append("CursorTheme=GoldenGlass-cursors")
+        SDDM_CONF.parent.mkdir(parents=True, exist_ok=True)
+        SDDM_CONF.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        if _sddm_overridden():
+            print("goldenglass-system: aviso: /etc/sddm.conf fija [Theme] Current y manda sobre "
+                  f"{SDDM_CONF.name}", file=sys.stderr)
+    elif manager == "plasmalogin":
+        import pwd
+        if not WALLPAPER.is_dir():
+            raise SystemExit("goldenglass-system: el fondo GoldenGlass no está instalado "
+                             "(paquete goldenglass-wallpapers)")
+        plm = saved.setdefault("plasmalogin", {})
+        # valores previos: una sola vez, como en las demás partes
+        if "conf" not in plm:
+            plm["conf"] = {key: _plm_read(key) for key in ("WallpaperPluginId", "Image")}
+        _plm_write("WallpaperPluginId", "org.kde.image")
+        _plm_write("Image", PLM_IMAGE)
+        user = _invoking_user()
+        if user is None:
+            print("goldenglass-system: aviso: sin usuario que lo pida (sudo o pkexec), "
+                  "no se copian ajustes de Plasma", file=sys.stderr)
+            return
+        greeter = pwd.getpwnam("plasmalogin")
+        config = Path(greeter.pw_dir) / ".config"
+        files = _as_user(user, lambda: _read_files(Path(user.pw_dir) / ".config"))
+        previous = _as_user(greeter, lambda: _read_files(config))
+        plm.setdefault("files", previous)
+        _as_user(greeter, lambda: _write_files(config, files))
+    else:
+        raise SystemExit(f"goldenglass-system: gestor de inicio de sesión no admitido: {manager or 'ninguno'} "
+                         "(solo SDDM y Plasma Login Manager)")
+
+
+def disable_login(state: dict) -> None:
+    saved = state.pop("login", {})
+    if SDDM_CONF.is_file() and SDDM_CONF.read_text(errors="replace").startswith(SDDM_MARK):
+        SDDM_CONF.unlink()
+    plm = saved.get("plasmalogin")
+    if plm and PLM_CONF.exists():
+        import pwd
+        if _plm_read("Image") == PLM_IMAGE:  # si lo cambió el administrador, se respeta
+            for key, value in plm.get("conf", {}).items():
+                _plm_write(key, value)
+        if "files" in plm:
+            greeter = pwd.getpwnam("plasmalogin")
+            _as_user(greeter, lambda: _write_files(Path(greeter.pw_dir) / ".config", plm["files"]))
+
+
 def run_system(command: str, parts: list[str], variant: str) -> None:
     state = load_state(ROOT_STATE)
     try:
-        for part in parts:  # solo plymouth por ahora
-            if command == "enable":
-                enable_plymouth(variant, state)
+        for part in parts:
+            if part == "plymouth":
+                (enable_plymouth(variant, state) if command == "enable" else disable_plymouth(state))
             else:
-                disable_plymouth(state)
+                (enable_login(state) if command == "enable" else disable_login(state))
     finally:
         save_state(state, ROOT_STATE)
 
@@ -270,7 +476,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "status":
         status: dict = {}
         for part in args.parts or known:
-            status[part] = plymouth_status() if part == "plymouth" else is_enabled(part)
+            if part == "plymouth":
+                status[part] = plymouth_status()
+            elif part == "login":
+                status[part] = login_status()
+            else:
+                status[part] = is_enabled(part)
         if args.json:
             print(json.dumps(status))
         else:
@@ -278,6 +489,10 @@ def main(argv: list[str] | None = None) -> int:
                 if part == "plymouth":
                     state = f"enabled ({value['variant']})" if value["enabled"] else f"disabled ({value['theme']})"
                     print(f"plymouth: {state}")
+                    for code in value["warnings"]:
+                        print(f"  aviso: {WARNING_TEXT[code]}")
+                elif part == "login":
+                    print(f"login: {'enabled' if value['enabled'] else 'disabled'} ({value['manager']})")
                     for code in value["warnings"]:
                         print(f"  aviso: {WARNING_TEXT[code]}")
                 else:
