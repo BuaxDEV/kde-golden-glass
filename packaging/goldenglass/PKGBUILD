@@ -36,6 +36,8 @@ makedepends=(
   cmake extra-cmake-modules git ninja
   # Qt/KDE para goldenglass-kstyle
   frameworkintegration kcmutils kcolorscheme kconfig kconfigwidgets kcoreaddons kdecoration kwin libxcb
+  # KWinConfig.cmake pide Vulkan, y vulkan-headers no viene con kwin (es solo de compilación)
+  vulkan-headers
   kguiaddons ki18n kiconthemes kirigami kwindowsystem qt6-base qt6-declarative
   # generadores (tools/gen_tokens.py)
   python python-numpy python-pillow python-pyqt6 python-soundfile qt6-svg fontconfig gettext
