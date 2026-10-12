@@ -1,0 +1,6 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Partes del sistema de goldenglass-system (Plymouth, login), como root: lo
+# ejecuta pkexec con la acción de polkit org.goldenglass.system. system.py
+# solo acepta partes y variantes conocidas.
+exec /usr/bin/python3 -I /usr/share/goldenglass/tools/system.py "$@"

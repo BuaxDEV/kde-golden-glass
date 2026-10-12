@@ -10,6 +10,7 @@ target_link_libraries(kcm_goldenglass PRIVATE
 )
 
 add_subdirectory(sounds)
+add_subdirectory(boot)
 
 # Prueba de integración (necesita una sesión Plasma; ver el comentario del
 # archivo). No se instala ni se registra en ctest.

@@ -1,0 +1,247 @@
+// SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// Tema de Plymouth de GoldenGlass: logo centrado y barra de progreso fina,
+// como el arranque de Mac; contraseña del disco en un campo de vidrio con
+// puntos, como FileVault. Al apagar o reiniciar, solo el logo.
+//
+// Plantilla: tools/plymouth.py sustituye los marcadores entre arrobas desde
+// [boot] de los tokens. Las medidas son para una pantalla de 1080 líneas y se
+// escalan con la altura; las imágenes vienen dibujadas a varias escalas.
+
+Window.SetBackgroundTopColor(@BG@);
+Window.SetBackgroundBottomColor(@BG@);
+
+global.scale = Window.GetHeight() / 1080;
+if (global.scale < 0.5) {
+    global.scale = 0.5;
+}
+
+// Juego de imágenes más cercano por encima de la escala (tools/plymouth.py
+// dibuja 1x, 2x y 3x).
+fun asset(name) {
+    suffix = "3";
+    if (global.scale <= 2) {
+        suffix = "2";
+    }
+    if (global.scale <= 1) {
+        suffix = "1";
+    }
+    return Image(name + "@" + suffix + "x.png");
+}
+
+fun px(value) {
+    return Math.Int(value * global.scale + 0.5);
+}
+
+fun centerX(width) {
+    return Window.GetX() + Math.Int((Window.GetWidth() - width) / 2);
+}
+
+global.mode = Plymouth.GetMode();
+global.showBar = (global.mode == "boot" || global.mode == "resume"
+                  || global.mode == "updates" || global.mode == "system-upgrade"
+                  || global.mode == "firmware-upgrade");
+global.font = "@FONT@ " + px(@FONT_SIZE@);
+
+// --- logo -------------------------------------------------------------------
+
+logo.size = px(@LOGO_SIZE@);
+logo.image = asset("logo").Scale(logo.size, logo.size);
+logo.sprite = Sprite(logo.image);
+logo.x = centerX(logo.size);
+logo.y = Window.GetY() + Math.Int(Window.GetHeight() / 2 + px(@LOGO_OFFSET@) - logo.size / 2);
+logo.sprite.SetPosition(logo.x, logo.y, 10);
+logo.sprite.SetOpacity(0);
+logo.bottom = logo.y + logo.size;
+
+// --- barra de progreso --------------------------------------------------------
+
+bar.width = px(@BAR_WIDTH@);
+bar.height = Math.Max(px(@BAR_HEIGHT@), 2);
+bar.cap = Math.Int(bar.height / 2);
+bar.x = centerX(bar.width);
+bar.y = logo.bottom + px(@BAR_GAP@);
+bar.fill = asset("fill").Scale(bar.width, bar.height);
+bar.track = Sprite(asset("track").Scale(bar.width, bar.height));
+bar.track.SetPosition(bar.x, bar.y, 10);
+// relleno = tramo izquierdo recortado + extremo redondeado aparte, para que el
+// extremo no se deforme al crecer
+bar.left = Sprite();
+bar.left.SetPosition(bar.x, bar.y, 11);
+bar.end = Sprite(bar.fill.Crop(bar.width - bar.cap, 0, bar.cap, bar.height));
+bar.end.SetPosition(bar.x, bar.y, 11);
+bar.shown = 0;       // progreso dibujado (se acerca suave al real)
+bar.target = 0;
+bar.drawnWidth = -1;
+
+fun setBarOpacity(value) {
+    bar.track.SetOpacity(value);
+    bar.left.SetOpacity(value);
+    bar.end.SetOpacity(value);
+}
+
+fun drawBar() {
+    width = Math.Int(bar.cap * 2 + (bar.width - bar.cap * 2) * bar.shown);
+    if (width == bar.drawnWidth) {
+        return;
+    }
+    bar.drawnWidth = width;
+    bar.left.SetImage(bar.fill.Crop(0, 0, width - bar.cap, bar.height));
+    bar.end.SetX(bar.x + width - bar.cap);
+}
+
+// --- campo de contraseña ------------------------------------------------------
+
+field.width = px(@FIELD_WIDTH@);
+field.height = px(@FIELD_HEIGHT@);
+field.x = centerX(field.width);
+field.y = logo.bottom + px(@FIELD_GAP@);
+field.sprite = Sprite(asset("field").Scale(field.width, field.height));
+field.sprite.SetPosition(field.x, field.y, 10);
+field.dot = asset("dot").Scale(px(@DOT_SIZE@), px(@DOT_SIZE@));
+field.dotStep = px(@DOT_SIZE@) * 2;
+field.maxDots = Math.Int((field.width - field.height) / field.dotStep);
+field.caps = Sprite(asset("capslock").Scale(px(14), px(14)));
+field.caps.SetPosition(field.x + field.width - Math.Int(field.height / 2) - px(7),
+                       field.y + Math.Int((field.height - px(14)) / 2), 12);
+field.entry = Sprite();       // texto de una pregunta (no contraseña)
+field.prompt = Sprite();      // texto de la petición, bajo el campo
+for (i = 0; i < field.maxDots; i++) {
+    field.dots[i] = Sprite(field.dot);
+    field.dots[i].SetZ(12);
+}
+global.asking = 0;
+global.question = 0;
+
+fun hideField() {
+    field.sprite.SetOpacity(0);
+    field.caps.SetOpacity(0);
+    field.entry.SetOpacity(0);
+    field.prompt.SetOpacity(0);
+    for (i = 0; i < field.maxDots; i++) {
+        field.dots[i].SetOpacity(0);
+    }
+}
+
+fun showPrompt(prompt) {
+    field.sprite.SetOpacity(1);
+    image = Image.Text(prompt, @FG@, @TEXT_ALPHA@, global.font);
+    field.prompt.SetImage(image);
+    field.prompt.SetPosition(centerX(image.GetWidth()), field.y + field.height + px(14), 12);
+    field.prompt.SetOpacity(1);
+}
+
+fun showDots(count) {
+    shown = Math.Min(count, field.maxDots);
+    left = centerX(shown * field.dotStep - (field.dotStep - px(@DOT_SIZE@)));
+    for (i = 0; i < field.maxDots; i++) {
+        if (i < shown) {
+            field.dots[i].SetPosition(left + i * field.dotStep,
+                                      field.y + Math.Int((field.height - px(@DOT_SIZE@)) / 2), 12);
+            field.dots[i].SetOpacity(1);
+        } else {
+            field.dots[i].SetOpacity(0);
+        }
+    }
+}
+
+fun passwordCallback(prompt, bullets) {
+    global.asking = 1;
+    global.question = 0;
+    setBarOpacity(0);
+    field.entry.SetOpacity(0);
+    showPrompt(prompt);
+    showDots(bullets);
+}
+
+fun questionCallback(prompt, entry) {
+    global.asking = 1;
+    global.question = 1;
+    field.caps.SetOpacity(0);
+    setBarOpacity(0);
+    showDots(0);
+    showPrompt(prompt);
+    image = Image.Text(entry, @FG@, 1, global.font);
+    field.entry.SetImage(image);
+    field.entry.SetPosition(field.x + Math.Int(field.height / 2),
+                            field.y + Math.Int((field.height - image.GetHeight()) / 2), 12);
+    field.entry.SetOpacity(1);
+}
+
+fun normalCallback() {
+    global.asking = 0;
+    hideField();
+    if (global.showBar) {
+        setBarOpacity(1);
+    }
+}
+
+hideField();
+if (!global.showBar) {
+    setBarOpacity(0);
+}
+
+Plymouth.SetDisplayPasswordFunction(passwordCallback);
+Plymouth.SetDisplayQuestionFunction(questionCallback);
+Plymouth.SetDisplayNormalFunction(normalCallback);
+
+// --- mensajes (fsck, actualizaciones…) ---------------------------------------
+
+message.sprite = Sprite();
+message.sprite.SetZ(12);
+
+fun messageCallback(text) {
+    image = Image.Text(text, @FG@, @TEXT_ALPHA@, global.font);
+    message.sprite.SetImage(image);
+    message.sprite.SetPosition(centerX(image.GetWidth()),
+                               Window.GetY() + Window.GetHeight() - px(64) - image.GetHeight(), 12);
+    message.sprite.SetOpacity(1);
+}
+
+fun hideMessageCallback(text) {
+    message.sprite.SetOpacity(0);
+}
+
+Plymouth.SetDisplayMessageFunction(messageCallback);
+Plymouth.SetHideMessageFunction(hideMessageCallback);
+
+// --- progreso y animación ---------------------------------------------------
+
+fun progressCallback(duration, progress) {
+    if (progress > bar.target) bar.target = progress;
+}
+
+fun systemUpdateCallback(progress) {
+    bar.target = progress / 100;
+}
+
+Plymouth.SetBootProgressFunction(progressCallback);
+Plymouth.SetSystemUpdateFunction(systemUpdateCallback);
+
+global.frame = 0;
+global.fadeFrames = Math.Max(1, Math.Int(@FADE_MS@ / 20));   // refresco a 50 Hz
+
+fun refreshCallback() {
+    global.frame++;
+    if (global.frame <= global.fadeFrames) {
+        opacity = global.frame / global.fadeFrames;
+        logo.sprite.SetOpacity(opacity);
+        if (global.showBar && !global.asking) {
+            setBarOpacity(opacity);
+        }
+    }
+    if (global.showBar) {
+        bar.shown = bar.shown + (bar.target - bar.shown) * 0.08;
+        drawBar();
+    }
+    if (global.asking && !global.question) {
+        if (Plymouth.GetCapslockState()) {
+            field.caps.SetOpacity(1);
+        } else {
+            field.caps.SetOpacity(0);
+        }
+    }
+}
+
+Plymouth.SetRefreshFunction(refreshCallback);

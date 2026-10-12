@@ -23,6 +23,7 @@ pkgname=(
   goldenglass-wallpapers
   goldenglass-gtk
   goldenglass-sounds
+  goldenglass-plymouth
 )
 pkgver=0.1.0
 pkgrel=1
@@ -102,7 +103,8 @@ package_goldenglass() {
   depends=(goldenglass-kstyle goldenglass-plasma goldenglass-icons goldenglass-cursors
            goldenglass-wallpapers goldenglass-gtk)
   # Partes del sistema: se activan con goldenglass-system o en Preferencias.
-  optdepends=('goldenglass-sounds: glass sound effects and the sound on login')
+  optdepends=('goldenglass-sounds: glass sound effects and the sound on login'
+              'goldenglass-plymouth: boot screen with the logo and a thin progress bar')
 }
 
 package_goldenglass-kstyle() {
@@ -122,7 +124,7 @@ package_goldenglass-plasma() {
   pkgdesc="GoldenGlass Plasma style, global themes, lock screen, plasmoids and color schemes"
   arch=(any)
   depends=(plasma-workspace plasma-desktop kscreenlocker plasma5support plasma-nm plasma-pa bluez-qt
-           powerdevil kcmutils fontconfig inter-font kdialog glib2 kio kconfig python)
+           powerdevil kcmutils fontconfig inter-font kdialog glib2 kio kconfig python polkit)
   optdepends=('goldenglass-kstyle: widget style and window decoration used by the global themes'
               'goldenglass-icons: icon theme used by the global themes'
               'goldenglass-cursors: cursor theme used by the global themes'
@@ -142,9 +144,12 @@ package_goldenglass-plasma() {
   install -dm755 "$data/kwin/scripts"
   cp -r goldenglass/plasma/kwin/scripts/org.goldenglass.shortcuts "$data/kwin/scripts/"
   install -Dm644 goldenglass/assets/logo/goldenglass{,-symbolic}.svg -t "$data/icons/hicolor/scalable/apps/"
-  # goldenglass-system: activa por usuario lo que no aplica el Global Theme
+  # goldenglass-system: activa lo que no aplica el Global Theme; las partes del
+  # sistema (Plymouth) pasan por pkexec con este ayudante y su acción de polkit
   install -Dm644 goldenglass/tools/system.py -t "$pkgdir$_share/tools/"
   _launcher goldenglass-system system.py
+  install -Dm755 goldenglass/tools/goldenglass-system-helper "$pkgdir/usr/lib/goldenglass/system-helper"
+  install -Dm644 goldenglass/tools/org.goldenglass.system.policy -t "$data/polkit-1/actions/"
   _docs
 }
 
@@ -211,5 +216,16 @@ package_goldenglass-sounds() {
   install -dm755 "$pkgdir/usr/share/sounds"
   cp -a gen/sounds/GoldenGlass "$pkgdir/usr/share/sounds/"
   rm -f "$pkgdir/usr/share/sounds/GoldenGlass/.stamp"
+  _docs
+}
+
+package_goldenglass-plymouth() {
+  pkgdesc="GoldenGlass boot screens for Plymouth, black and light gray (enable with goldenglass-system or in System Settings)"
+  arch=(any)
+  license=(GPL-3.0-or-later CC-BY-SA-4.0)
+  depends=(plymouth inter-font goldenglass-plasma)  # Inter Variable en el initramfs; goldenglass-system
+
+  install -dm755 "$pkgdir/usr/share/plymouth/themes"
+  cp -a gen/plymouth/goldenglass gen/plymouth/goldenglass-light "$pkgdir/usr/share/plymouth/themes/"
   _docs
 }
