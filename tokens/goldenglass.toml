@@ -162,6 +162,26 @@ zoom_border = "#1AAB29"
 zoom_glyph = "#006500"
 
 # ---------------------------------------------------------------------------
+# Dock (plasmoid org.goldenglass.dock): ampliación, rebote, apps recientes y
+# vistas previas, como el Dock de macOS. Tamaño de icono y relleno de la placa
+# en [plasma] (dock_icon_size, dock_padding). Los valores de fábrica de los
+# ajustes del módulo «Dock» salen de aquí.
+# ---------------------------------------------------------------------------
+[dock]
+magnification = true     # de fábrica activada (macOS la trae apagada)
+magnification_size = 96  # px del icono bajo el cursor
+spread = 2.6             # iconos a cada lado que crecen con él
+magnification_ms = 110   # suavizado al entrar y salir el cursor
+gap = 6                  # px entre iconos
+bounce = 0.55            # altura del rebote (× tamaño del icono)
+bounce_ms = 360          # duración de un rebote
+attention_bounces = 8    # rebotes al pedir atención (luego queda quieto)
+show_recent = true       # apps recientes no fijadas, tras un separador
+recent_count = 3
+preview_width = 220      # px de las miniaturas de ventanas en el tooltip
+label_delay_ms = 400     # espera antes del nombre de la app al pasar el ratón
+
+# ---------------------------------------------------------------------------
 # Arranque (Plymouth, tools/plymouth.py): logo y barra fina como el arranque de
 # Mac, con las proporciones del splash de Plasma. Medidas en px para una
 # pantalla de 1080 líneas; el script las escala con la altura de la pantalla.

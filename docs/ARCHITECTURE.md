@@ -25,7 +25,7 @@ Tema completo para KDE Plasma en CachyOS inspirado en macOS 27 "Golden Gate"
 | Barra de menús | Desbordamiento de iconos tras un chevron «»; fondo translúcido opcional | `plasma/desktoptheme`, layout |
 | Iconos de app | Squircle con capas y más detalle | `icons/` |
 | Liquid Glass | El fondo se curva como una lente en los bordes del vidrio, con dispersión, filo de luz y tinte que se adapta al fondo | `kwin-effect/` (F11) |
-| Dock | Ampliación de los iconos bajo el cursor | `plasma/plasmoids/org.goldenglass.dock` (F10) |
+| Dock | Ampliación de los iconos bajo el cursor, rebote al abrir, apps recientes | `plasma/plasmoids/org.goldenglass.dock` (F10) |
 | Arranque y sesión | Logo con barra de progreso, pantalla de inicio de sesión como la de bloqueo, sonidos del sistema | `plymouth/`, `login/`, `tools/sounds.py` (F7–F9) |
 
 Fuentes: Six Colors (review), 9to5Mac (slider de Liquid Glass), Digital Trends,
@@ -57,7 +57,7 @@ sombras, tipografía, semáforos) viven en **`tokens/goldenglass.toml`**.
 | `build/sounds/GoldenGlass/` (numpy + python-soundfile, se cachea) | Tema de sonidos freedesktop | ✅ F7 |
 | `build/plymouth/goldenglass{,-light}/` (piezas dibujadas con QtSvg/QPainter, se cachea) | Temas de Plymouth negro y gris | ✅ F8 |
 | `build/login/sddm/GoldenGlass/` (desde `login/sddm/`, `theme.conf` y `.qm` generados) | Tema de SDDM | ✅ F9 |
-| `contents/ui/tokens.js` del dock (lo genera `tools/plasmoids.py`) | Plasmoid `org.goldenglass.dock` | F10 |
+| `contents/ui/tokens.js` y `contents/config/main.xml` (plantilla `.in`) del dock | Plasmoid `org.goldenglass.dock` | ✅ F10 |
 | `goldenglass_tokens.h` (secciones `[dock]` y `[glass.refraction]`) | Valores de fábrica del dock y del efecto de KWin | F10, F11 |
 
 **Regla:** los archivos generados no se editan a mano ni se versionan. Se cambia
@@ -189,7 +189,7 @@ dentro de «Vidrio».
 | Vidrio (`kcm_goldenglass`) | Colores y temas | slider actual + interruptor **Refracción** (efecto `goldenglass_glass`) | ✅ / F11 |
 | Efectos de sonido (`kcm_goldenglass_sounds`) | Multimedia | sonidos de GoldenGlass y sonido al iniciar sesión, con botón para escucharlos (`pw-play`); llama a `goldenglass-system` (4.9) | ✅ F7 |
 | Arranque e inicio de sesión (`kcm_goldenglass_boot`) | Colores y temas, junto a «Pantalla de bienvenida» | Pantalla de arranque: del sistema, GoldenGlass o GoldenGlass gris, con miniaturas dibujadas con las piezas del tema y los avisos de `goldenglass-system`. Pantalla de inicio de sesión: interruptor según el gestor activo (con SDDM, el tema; con Plasma Login Manager, fondo y ajustes, con la explicación). Se aplica con «Aplicar»: pide la contraseña (una vez para los dos cambios) y, si cambia Plymouth, regenera el initramfs | ✅ F8 / F9 |
-| Dock | Escritorio y ventanas (a confirmar en F10) | **Ampliación** (interruptor, activada de fábrica) y su tamaño máximo, tamaño del dock | F10 |
+| Dock (`kcm_goldenglass_dock`) | Espacio de trabajo (como «Escritorio y Dock») | Tamaño, **ampliación** (activada de fábrica) y su tamaño, apps recientes. En vivo con `goldenglass-dock` | ✅ F10 |
 
 ### 4.5 Escritorio Plasma — `plasma/`
 - **Plasma Style** `GoldenGlass`: lo genera `tools/plasma_theme.py` dibujando
@@ -203,8 +203,8 @@ dentro de «Vidrio».
 - **Global Themes** (`look-and-feel/`): `org.goldenglass.light.desktop` y
   `org.goldenglass.dark.desktop`. Incluyen:
   - Script de layout: panel superior (menú de sistema, menú global, bandeja,
-    reloj) + **dock** = panel nativo flotante centrado con gestor de tareas solo
-    iconos (sin magnificación hasta F10, ver 4.13), **autoocultable** como en
+    reloj) + **dock** = panel nativo flotante centrado con el plasmoid
+    `org.goldenglass.dock` (ver 4.13), **autoocultable** como en
     macOS («Ocultar y mostrar automáticamente», token `plasma.dock_hiding`): aparece al llevar el
     cursor al borde inferior y las ventanas maximizadas usan toda la pantalla.
     Plasma lo anima con el efecto *Sliding Popups* de KWin (entra decelerando y
@@ -553,41 +553,74 @@ dentro de «Vidrio».
   se puede apagar: la copia de la vista previa muestra los botones igualmente.
 - Paquete `goldenglass-login` (SDDM como dependencia opcional).
 
-### 4.13 Dock con ampliación — `org.goldenglass.dock` (F10)
-- Hoy el dock son cuatro plasmoids en un panel (Apps, `icontasks`,
-  separador, Papelera). Un panel recorta su contenido a su grosor y cada
-  plasmoid es independiente, así que la ampliación no puede cruzar de uno a
-  otro. Se sustituyen por **un plasmoid de dock unificado**:
-  - Apps (el diálogo actual de `org.goldenglass.launchpad`, que hereda la
-    declaración `org.kde.plasma.launchermenu`: Meta lo abre), apps fijadas y
-    abiertas (`TasksModel` de libtaskmanager, el mismo modelo que usa
-    `icontasks`), separador y Papelera. El código de Apps y Papelera se
-    comparte en tiempo de generación (`tools/plasmoids.py`); los plasmoids
-    sueltos siguen disponibles para otros paneles.
-  - **Ampliación como macOS:** el icono bajo el cursor crece hasta el tamaño
-    máximo y los vecinos con una caída suave; los iconos crecen hacia arriba y
-    la placa de vidrio se ensancha sin crecer en altura. Activada de fábrica.
-    Tokens `[dock]`: `magnification`, `magnification_size`, `spread`,
-    duraciones.
-  - El panel se hace más alto (margen transparente para los iconos ampliados)
-    y **sin fondo propio**: el plasmoid dibuja la placa de vidrio. Un módulo
-    QML en C++ (`org.goldenglass.private.dock`) fija en la ventana del panel la
-    **región de blur** (`KWindowEffects`) y la **región de entrada** (solo la
-    placa y los iconos: el margen transparente deja pasar los clics).
-  - Configuración en `goldenglassrc [Dock]` (sección Dock del módulo de
-    Ajustes); el plasmoid la sigue en vivo con KConfigWatcher desde el módulo
-    C++.
-  - Va en `goldenglass-kstyle` (necesita la parte compilada). El script de
-    layout usa el dock nuevo si está instalado (`knownWidgetTypes`); si no,
-    monta el dock actual.
-- **Spike al empezar la fase:** quitar el fondo del panel sin tocar el de la
-  barra de menús (comparten SVG), y comprobar que PanelView no pisa la región
-  de blur ni la de entrada, también con autoocultación. Si no es viable, el
-  plan B es un dock como app propia con layer-shell (lo que hacía Latte Dock).
-- Paridad con el dock actual: clic, menú contextual (fijar, salir, acciones de
-  la app), arrastrar para reordenar, soltar archivos sobre una app, punto de app
-  abierta y autoocultación. Las vistas previas de ventanas en el tooltip se
-  deciden en la fase.
+### 4.13 Dock con ampliación — `org.goldenglass.dock` (F10) ✅
+- Antes el dock eran cuatro plasmoids en un panel (Apps, `icontasks`,
+  separador, Papelera): un panel recorta su contenido a su grosor y cada
+  plasmoid es independiente, así que la ampliación no podía cruzar de uno a
+  otro. Ahora es **un solo plasmoid**, todo QML (sin C++):
+  - Apps · apps fijadas y abiertas · [| recientes] · | · Papelera.
+  - **Apps** usa `AppsLauncher.qml` (modelos de Kicker + panel) y la
+    **Papelera** `TrashButton.qml`: salen de los plasmoids Apps y Papelera, y
+    `tools/plasmoids.py` los copia al dock (`SHARED`) y une sus traducciones a
+    las del dock. Los plasmoids sueltos siguen disponibles para otros paneles.
+    El dock declara `org.kde.plasma.launchermenu`: Meta abre Apps.
+  - Apps fijadas y abiertas: `TasksModel` de libtaskmanager (el de
+    `icontasks`), agrupado por app, orden manual, todas las apps de todos los
+    escritorios; las fijadas en la configuración del plasmoid (`launchers`).
+- **Ampliación** (`DockView.qml`): cada icono crece según su distancia al
+  cursor medida sobre la fila *sin ampliar* (así la posición del cursor no
+  depende de la ampliación y no hay realimentación), con una curva de coseno
+  que llega a 0 a `dock.spread` iconos; la fila se ensancha alrededor de su
+  centro y entra y sale suavizada (`magnification_ms`). El plasmoid reserva el
+  ancho máximo, así el panel no cambia de tamaño al ampliar.
+- **Placa de vidrio y panel** (resultado del spike):
+  - El fondo del panel lo dibuja `views/Panel.qml` del paquete de shell, y
+    PanelView usa su `panelMask` como región de blur. El shell GoldenGlass
+    trae su copia (ver `UPSTREAM.md`) con `goldenglassDockSlab`: el dock le
+    pasa la geometría de la placa y el fondo, la máscara de blur y la sombra la
+    siguen; el resto del panel queda transparente. La contención se queda en su
+    sitio normal (si siguiera al fondo, el dock movería su placa en bucle).
+  - El dock fija el grosor del panel (`goldenglassSetThickness`): placa (icono
+    + `dock_padding`, con el punto de app abierta dentro del relleno) más el
+    hueco para el icono más ampliado o el rebote. El layout pone el mismo valor
+    al inicio (`_dock_height`).
+  - **Límite aceptado (región de entrada):** PanelView toma como entrada todo
+    el ancho de la ventana desde el borde superior de la placa. La parte de un
+    icono ampliado por encima de la placa no recibe el ratón (al subir el
+    cursor la ampliación se recoge y un clic ahí va a la ventana de detrás), y
+    los márgenes reservados a los lados sí capturan clics a la altura de la
+    placa mientras el dock está visible.
+  - Con «Evitar ventanas» o siempre visible, el hueco de la ampliación también
+    se reserva (las ventanas maximizadas quedan por encima); con la
+    autoocultación de fábrica no se reserva nada.
+- **Cada icono** (`DockIcon.qml`): punto debajo si la app está abierta;
+  **rebote** al arrancar (sin parar mientras dura el aviso de arranque,
+  `IsStartup`) y al pedir atención (`attention_bounces` veces); más oscuro al
+  pulsar; nombre encima al pasar el ratón (tooltip de Plasma) y, si tiene
+  ventanas, **vistas previas** en vivo (`WindowPreviews.qml`:
+  `ScreencastingRequest` + `PipeWireSourceItem`, como el gestor de tareas de
+  Plasma; clic activa esa ventana).
+- **Clics:** izquierdo abre la app o trae su ventana más reciente (si ya está
+  delante, la siguiente); central, nueva instancia; derecho, menú
+  (`TaskMenu.qml`): acciones de la app (las del `.desktop`, de Kicker
+  `SimpleFavoritesModel`, leídas al abrir el menú), Nueva ventana / Abrir,
+  Mantener en el Dock, Salir. Arrastrar una app fijada la reordena; soltar
+  archivos sobre una app los abre con ella. Publica la geometría de cada icono
+  para la animación de minimizar de KWin.
+- **Recientes:** `RecentUsageModel` de Kicker, las `recent_count` más
+  recientes que no están ya en el dock, tras un separador (como macOS).
+- **Ajustes:** `goldenglass-dock` (`tools/dock.py`) escribe la configuración
+  del plasmoid con el script de plasmashell (`iconSize`, `magnification`,
+  `magnificationSize`, `showRecent`); el dock la aplica al momento y ajusta el
+  grosor. Valores de fábrica en `[dock]` y `[plasma]` de los tokens (el
+  `main.xml` del plasmoid es una plantilla). El módulo «Dock» lo llama.
+- **Pruebas:** en el sandbox, el dock real con una app abierta y el panel de
+  Apps abierto desde el dock; `goldenglass-dock` y el ajuste de grosor. El
+  KWin virtual no tiene entrada: la ampliación con el ratón, el menú, las
+  vistas previas, el arrastre y el rebote se prueban en una sesión real.
+- **Pendiente de revisar en sesión real:** la sombra de la placa se reenvía a
+  KWin en cada fotograma de la ampliación; en el sandbox dejó un rastro. Si se
+  nota, el dock dibujará su propia sombra.
 
 ### 4.14 Refracción — efecto de KWin `goldenglass_glass` (F11)
 - **Fork del efecto Blur de KWin 6.7** (`kwin-effect/`, C++, en el mismo
@@ -629,7 +662,7 @@ dentro de «Vidrio».
   | Paquete | Contenido |
   |---|---|
   | `goldenglass-kstyle` (x86_64) | estilo, decoración, KCM, `goldenglass-glass` (C++: recompilar tras actualizar Qt/KDE) |
-  | `goldenglass-plasma` | Plasma Style, Global Themes, shell y pantalla de bloqueo, plasmoids, esquemas de color, fontconfig (activado en `/etc/fonts/conf.d`) |
+  | `goldenglass-plasma` | Plasma Style, Global Themes, shell (pantalla de bloqueo y `Panel.qml` del dock), plasmoids (dock incluido), esquemas de color, fontconfig (activado en `/etc/fonts/conf.d`), `goldenglass-system` y `goldenglass-dock` |
   | `goldenglass-icons` | temas de iconos claro/oscuro y `goldenglass-wrap-icons` (autostart con `--if-changed`: cada usuario encierra sus apps de terceros al iniciar sesión si cambiaron) |
   | `goldenglass-cursors` | tema de cursores |
   | `goldenglass-wallpapers` | fondo día/noche |
@@ -640,9 +673,10 @@ dentro de «Vidrio».
   | `goldenglass` | metapaquete (sonidos, Plymouth y login como dependencias opcionales) |
 
   `goldenglass-system` y su acción de polkit van en `goldenglass-plasma`, del
-  que dependen los tres paquetes de sistema. Lo compilado de F10 y F11 (dock
-  con su módulo QML y el efecto `goldenglass_glass`) va en
-  `goldenglass-kstyle`, que ya se recompila con cada actualización de KDE.
+  que dependen los tres paquetes de sistema. El dock (F10) es solo QML: va en
+  `goldenglass-plasma` con `goldenglass-dock`; su módulo de Ajustes, en
+  `goldenglass-kstyle` con los demás. El efecto `goldenglass_glass` (F11) irá
+  en `goldenglass-kstyle`, que ya se recompila con cada actualización de KDE.
 
   Se genera con `GOLDENGLASS_SYSTEM=1`: los enlaces de protección de los
   iconos y el import de adw-gtk3 solo apuntan a `/usr`, nunca al `/home` de
@@ -680,7 +714,7 @@ dentro de «Vidrio».
 | F7 | Sonidos sintetizados, chime, `goldenglass-system`, módulo Efectos de sonido | ✅ |
 | F8 | Plymouth negro y gris con contraseña LUKS, módulo Arranque e inicio de sesión | ✅ |
 | F9 | Tema de SDDM + fondo y sincronización en Plasma Login Manager | ✅ |
-| F10 | Spike del panel → dock unificado con ampliación → sección Dock | |
+| F10 | Dock unificado: ampliación, rebote, vistas previas, recientes; módulo Dock | ✅ |
 | F11 | Spike del fork de Blur → efecto `goldenglass_glass` con refracción → interruptor en Vidrio | |
 
 Orden de menor a mayor riesgo: lo independiente primero; lo que depende de la
@@ -708,7 +742,8 @@ Refracción en las ventanas de las apps.
 | La especificación de sonidos recurre a `freedesktop` para lo que falta | Los nombres no cubiertos llevan un `<nombre>.disabled` |
 | Activar Plymouth regenera el initramfs con root | Comando explícito o «Aplicar» con pkexec; avisos de `splash` y del hook; si falla el initramfs se mantiene el tema anterior |
 | La fuente del tema entra en cada initramfs | Inter Variable (0,9 MB) en vez de `Inter.ttc` (13 MB) |
-| Quitar el fondo del panel y fijar sus regiones de blur y entrada no tiene API en Plasma | Spike al inicio de F10; plan B: dock como app con layer-shell; si no está el dock nuevo, el layout monta el actual |
-| El dock unificado pierde funciones de `icontasks` | Lista de paridad en 4.13; mismo `TasksModel` |
+| El dock depende de `views/Panel.qml` copiado de Plasma | Cambio mínimo y documentado en `UPSTREAM.md`; se compara con cada versión de Plasma |
+| PanelView fija la región de entrada desde el borde superior de la placa | Aceptado: la ampliación se recoge al salir de la placa (4.13) |
+| El dock unificado pierde funciones de `icontasks` | Mismo `TasksModel`; menú, vistas previas, arrastre y soltar archivos reimplementados (4.13) |
 | La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle`; comprobación al iniciar sesión que reactiva Blur si el efecto no carga |
 | Coste de GPU de la refracción | Solo superficies de Plasma; interruptor en el módulo de Ajustes |

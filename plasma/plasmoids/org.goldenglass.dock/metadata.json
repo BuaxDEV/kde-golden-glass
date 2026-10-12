@@ -1,0 +1,17 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [{ "Name": "GoldenGlass contributors" }],
+        "Category": "Windows and Tasks",
+        "Description": "Dock like macOS: Apps, pinned and open apps with magnification, bounce on launch, window previews, recent apps and the Trash",
+        "Description[es]": "Dock como el de macOS: Apps, apps fijadas y abiertas con ampliación, rebote al abrir, vistas previas de ventanas, apps recientes y la Papelera",
+        "Icon": "user-desktop",
+        "Id": "org.goldenglass.dock",
+        "License": "GPL-3.0-or-later",
+        "Name": "GoldenGlass Dock",
+        "Name[es]": "Dock GoldenGlass",
+        "Website": "https://github.com/brayanAP/kde-golden-glass"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-Provides": ["org.kde.plasma.launchermenu"]
+}

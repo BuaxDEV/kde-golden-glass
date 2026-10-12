@@ -123,7 +123,7 @@ package_goldenglass-kstyle() {
 }
 
 package_goldenglass-plasma() {
-  pkgdesc="GoldenGlass Plasma style, global themes, lock screen, plasmoids and color schemes"
+  pkgdesc="GoldenGlass Plasma style, global themes, dock, lock screen, plasmoids and color schemes"
   arch=(any)
   depends=(plasma-workspace plasma-desktop kscreenlocker plasma5support plasma-nm plasma-pa bluez-qt
            powerdevil kcmutils fontconfig inter-font kdialog glib2 kio kconfig python polkit)
@@ -150,6 +150,9 @@ package_goldenglass-plasma() {
   # sistema (Plymouth) pasan por pkexec con este ayudante y su acción de polkit
   install -Dm644 goldenglass/tools/system.py -t "$pkgdir$_share/tools/"
   _launcher goldenglass-system system.py
+  # goldenglass-dock: ajustes del dock en vivo (lo usa el módulo «Dock»)
+  install -Dm644 goldenglass/tools/dock.py -t "$pkgdir$_share/tools/"
+  _launcher goldenglass-dock dock.py
   install -Dm755 goldenglass/tools/goldenglass-system-helper "$pkgdir/usr/lib/goldenglass/system-helper"
   install -Dm644 goldenglass/tools/org.goldenglass.system.policy -t "$data/polkit-1/actions/"
   _docs

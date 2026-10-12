@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Description": "Size, magnification and recent apps of the GoldenGlass dock",
+        "Description[es]": "Tamaño, ampliación y apps recientes del dock de GoldenGlass",
+        "FormFactors": ["desktop"],
+        "Icon": "goldenglass",
+        "Name": "Dock",
+        "Name[es]": "Dock"
+    },
+    "X-KDE-Keywords": "dock,magnification,zoom,icons,size,recent apps,goldenglass",
+    "X-KDE-Keywords[es]": "dock,ampliación,lupa,iconos,tamaño,apps recientes,goldenglass",
+    "X-KDE-System-Settings-Parent-Category": "workspace",
+    "X-KDE-Weight": 40
+}

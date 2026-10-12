@@ -52,6 +52,14 @@ goldenglass-glass --level 0.8   # 0 = más transparente, 1 = más opaco
 goldenglass-glass --get
 ```
 
+Dock (ampliación, tamaño, apps recientes): Preferencias del Sistema › Espacio de trabajo ›
+Dock, o desde la terminal:
+
+```sh
+goldenglass-dock --magnification on --magnification-size 96 --icon-size 48
+goldenglass-dock --get
+```
+
 Sonidos de cristal y sonido al iniciar sesión (requieren `goldenglass-sounds`; no
 se activan al instalar): Preferencias del Sistema › Multimedia › Efectos de
 sonido, o desde la terminal:
