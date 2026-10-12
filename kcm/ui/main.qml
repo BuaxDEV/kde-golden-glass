@@ -147,6 +147,27 @@ KCM.SimpleKCM {
                     text: i18nc("@info:status", "Applying…")
                 }
             }
+
+            Item {
+                Kirigami.FormData.isSection: true
+            }
+
+            QQC2.Switch {
+                Kirigami.FormData.label: i18nc("@label", "Refraction:")
+                text: i18nc("@option:check", "Bend the background at the edges of the glass")
+                enabled: kcm.refractionAvailable
+                checked: kcm.refraction
+                onToggled: kcm.refraction = checked
+            }
+            QQC2.Label {
+                Layout.maximumWidth: Kirigami.Units.gridUnit * 20
+                wrapMode: Text.WordWrap
+                font: Kirigami.Theme.smallFont
+                color: Kirigami.Theme.disabledTextColor
+                text: kcm.refractionAvailable
+                    ? i18nc("@info", "Like Liquid Glass: the dock, menu bar and popups bend what is behind them, more with clearer glass. Turn it off if the graphics card struggles.")
+                    : i18nc("@info", "Not available: KWin did not load the GoldenGlass effect. Rebuild goldenglass-kstyle after updating KWin.")
+            }
         }
 
         QQC2.Label {

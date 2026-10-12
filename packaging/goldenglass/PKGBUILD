@@ -35,7 +35,7 @@ license=(GPL-3.0-or-later CC-BY-SA-4.0)
 makedepends=(
   cmake extra-cmake-modules git ninja
   # Qt/KDE para goldenglass-kstyle
-  frameworkintegration kcmutils kcolorscheme kconfig kconfigwidgets kcoreaddons kdecoration
+  frameworkintegration kcmutils kcolorscheme kconfig kconfigwidgets kcoreaddons kdecoration kwin libxcb
   kguiaddons ki18n kiconthemes kirigami kwindowsystem qt6-base qt6-declarative
   # generadores (tools/gen_tokens.py)
   python python-numpy python-pillow python-pyqt6 python-soundfile qt6-svg fontconfig gettext
@@ -110,10 +110,11 @@ package_goldenglass() {
 }
 
 package_goldenglass-kstyle() {
-  pkgdesc="GoldenGlass widget style, window decoration and settings module"
+  pkgdesc="GoldenGlass widget style, window decoration, glass effect for KWin and settings modules"
   license=(GPL-3.0-or-later)
   depends=(frameworkintegration kcmutils kcolorscheme kconfig kconfigwidgets kcoreaddons kdecoration
-           kguiaddons ki18n kiconthemes kirigami kwindowsystem qt6-base qt6-declarative python)
+           kguiaddons ki18n kiconthemes kirigami kwindowsystem qt6-base qt6-declarative python
+           kwin libxcb)  # efecto goldenglass_glass: solo carga con el KWin con el que se compiló
   optdepends=('pipewire: listen to the sounds in the Sound Effects settings module')
 
   DESTDIR="$pkgdir" cmake --install build

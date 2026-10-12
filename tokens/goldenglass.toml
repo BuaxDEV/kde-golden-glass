@@ -59,6 +59,18 @@ contrast = 1.0
 intensity = 1.0
 saturation = 1.8     # calibrar
 
+# Refracción de Liquid Glass (efecto de KWin goldenglass_glass, solo superficies
+# de Plasma). Medidas en px lógicos. Con el nivel de vidrio más claro se aplica
+# entera; con el más opaco, por opaque_factor (macOS 27 hace lo mismo).
+[glass.refraction]
+edge = 18            # ancho de la zona del borde que se curva — calibrar
+strength = 10        # desplazamiento del fondo en el mismo borde — calibrar
+opaque_factor = 0.25 # fracción de la refracción con el vidrio más opaco
+dispersion = 0.35    # separación de colores (fracción de strength)
+clarity = 0.5        # en el borde, cuánto se ve el fondo nítido (no difuminado)
+specular = 0.12      # brillo del filo (más arriba que abajo)
+tint = 0.10          # acerca la luminancia del fondo a la media (legibilidad)
+
 # ---------------------------------------------------------------------------
 # Escritorio Plasma (px lógicos)
 # ---------------------------------------------------------------------------

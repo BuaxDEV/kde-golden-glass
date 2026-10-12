@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=GoldenGlass glass check
+Comment=Uses the GoldenGlass refraction effect if KWin loaded it, or KWin's blur otherwise
+Exec=goldenglass-glass --check
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=1
+NoDisplay=true

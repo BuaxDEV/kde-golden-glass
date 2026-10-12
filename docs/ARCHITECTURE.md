@@ -58,7 +58,7 @@ sombras, tipografía, semáforos) viven en **`tokens/goldenglass.toml`**.
 | `build/plymouth/goldenglass{,-light}/` (piezas dibujadas con QtSvg/QPainter, se cachea) | Temas de Plymouth negro y gris | ✅ F8 |
 | `build/login/sddm/GoldenGlass/` (desde `login/sddm/`, `theme.conf` y `.qm` generados) | Tema de SDDM | ✅ F9 |
 | `contents/ui/tokens.js` y `contents/config/main.xml` (plantilla `.in`) del dock | Plasmoid `org.goldenglass.dock` | ✅ F10 |
-| `goldenglass_tokens.h` (secciones `[dock]` y `[glass.refraction]`) | Valores de fábrica del dock y del efecto de KWin | F10, F11 |
+| `goldenglass_tokens.h` (secciones `[dock]` y `[glass.refraction]`) | Valores de fábrica del dock y del efecto de KWin | ✅ F10, F11 |
 
 **Regla:** los archivos generados no se editan a mano ni se versionan. Se cambia
 el token y se regenera (`install.sh` y el PKGBUILD lo hacen solos).
@@ -147,7 +147,8 @@ goldenglass/
   ve sin el efecto propio (o si no carga) y lo que siguen usando las ventanas
   de las apps.
 - La opacidad de cada superficie sale del nivel de vidrio activo.
-- **Refracción (F11):** efecto propio `goldenglass_glass`, ver 4.14.
+- **Refracción (F11):** efecto propio `goldenglass_glass` (activado de fábrica
+  si KWin lo carga), ver 4.14.
 
 ### 4.4 Nivel de vidrio — `goldenglass-glass` y módulo de Ajustes (`kcm/`)
 
@@ -186,7 +187,7 @@ dentro de «Vidrio».
 
 | Módulo | Dónde | Contenido | Fase |
 |---|---|---|---|
-| Vidrio (`kcm_goldenglass`) | Colores y temas | slider actual + interruptor **Refracción** (efecto `goldenglass_glass`) | ✅ / F11 |
+| Vidrio (`kcm_goldenglass`) | Colores y temas | slider + interruptor **Refracción** (`goldenglass-glass --refraction`; apagado y explicado si KWin no cargó el efecto) | ✅ |
 | Efectos de sonido (`kcm_goldenglass_sounds`) | Multimedia | sonidos de GoldenGlass y sonido al iniciar sesión, con botón para escucharlos (`pw-play`); llama a `goldenglass-system` (4.9) | ✅ F7 |
 | Arranque e inicio de sesión (`kcm_goldenglass_boot`) | Colores y temas, junto a «Pantalla de bienvenida» | Pantalla de arranque: del sistema, GoldenGlass o GoldenGlass gris, con miniaturas dibujadas con las piezas del tema y los avisos de `goldenglass-system`. Pantalla de inicio de sesión: interruptor según el gestor activo (con SDDM, el tema; con Plasma Login Manager, fondo y ajustes, con la explicación). Se aplica con «Aplicar»: pide la contraseña (una vez para los dos cambios) y, si cambia Plymouth, regenera el initramfs | ✅ F8 / F9 |
 | Dock (`kcm_goldenglass_dock`) | Espacio de trabajo (como «Escritorio y Dock») | Tamaño, **ampliación** (activada de fábrica) y su tamaño, apps recientes. En vivo con `goldenglass-dock` | ✅ F10 |
@@ -631,37 +632,55 @@ dentro de «Vidrio».
   KWin en cada fotograma de la ampliación; en el sandbox dejó un rastro. Si se
   nota, el dock dibujará su propia sombra.
 
-### 4.14 Refracción — efecto de KWin `goldenglass_glass` (F11)
-- **Fork del efecto Blur de KWin 6.7** (`kwin-effect/`, C++, en el mismo
-  árbol CMake que `kstyle/`; GPL-2.0-or-later como el original). Mismo
-  difuminado y, en el mismo shader, la refracción. **Sustituye a Blur:** solo
-  uno de los dos puede atender el protocolo de blur de Wayland, así que al
-  activarlo se desactiva Blur en `kwinrc` y al desactivarlo vuelve.
-- **Solo las superficies de Plasma** llevan refracción: dock, barra de menús,
-  popups, Centro de control, Apps, tooltips y Spotlight (se reconocen por app
-  id y tipo de ventana: plasmashell, krunner). Las ventanas de las apps
-  reciben el blur normal, como en macOS.
-- **Rasgos:**
-  - **Refracción en los bordes:** el fondo se curva como una lente cerca del
-    borde redondeado; el centro queda plano.
-  - **Dispersión cromática** leve en la zona refractada.
-  - **Brillo especular** fijo en el borde superior (como los semáforos).
-  - **Tinte adaptativo:** aclara u oscurece el fondo según su luminancia media
-    para mantener la legibilidad.
-- **Sigue al slider de vidrio:** más claro = más refracción, más opaco = casi
-  ninguna (`[glass.refraction]` de los tokens da los extremos). Interruptor
-  «Refracción» en el módulo de Ajustes para apagarlo. `goldenglass-glass` ya
-  llama a `KWin.reconfigure`, que relee `goldenglassrc`.
-- **Forma:** el protocolo de blur solo da una región (rectángulos). La lente
-  necesita la forma redondeada: se toma el rectángulo de cada componente de la
-  región y el radio del tipo de superficie desde los tokens (dock, popup…).
-  Se valida en el spike.
-- **Red de seguridad:** al iniciar sesión, si el efecto está activado pero
-  KWin no lo ha cargado (p. ej. tras actualizar KWin sin recompilar), se
-  reactiva Blur para no quedarse sin difuminado.
-- **Spike al empezar la fase:** compilar el fork fuera del árbol de KWin con
-  las cabeceras de `/usr/include/kwin`, sustituir a Blur en caliente y
-  obtener la forma de las superficies.
+### 4.14 Refracción — efecto de KWin `goldenglass_glass` (F11) ✅
+- **Fork del efecto Blur de KWin 6.7.5** (`kwin-effect/`, C++, GPL-2.0-or-later
+  como el original; ver `UPSTREAM.md`), compilado fuera del árbol de KWin con
+  sus cabeceras instaladas (`find_package(KWin)`, `KWin::kwin`) y cargado como
+  plugin externo (`kwin/effects/plugins/goldenglass_glass.so`). Va en el árbol
+  CMake de `kstyle/` (opción `WITH_KWIN_EFFECT`) y en `goldenglass-kstyle`.
+  Mismo difuminado (dual Kawase, mismos ajustes `Effect-blur`) y, en el paso
+  final en pantalla, la refracción.
+- **Sustituye a Blur:** en KWin 6.7 la región de blur la guarda el núcleo
+  (`surface->blurRegion()`), no el efecto; los dos a la vez difuminarían dos
+  veces, así que activar uno descarga y desactiva el otro (en vivo, D-Bus
+  `/Effects`, y en `kwinrc [Plugins]`).
+- **Solo las superficies de Plasma** (clase de ventana `plasmashell` o
+  `krunner`: dock, barra de menús, popups, Centro de control, Apps,
+  tooltips, Spotlight). Las ventanas de las apps reciben el blur normal, como
+  en macOS.
+- **Forma:** el rectángulo que envuelve la región de blur, y el radio de cada
+  esquina medido en la propia región (Plasma la manda con la forma redondeada
+  de su SVG, en franjas: una esquina mide lo que tardan en tocar el lateral).
+  Así sirve para cualquier superficie sin saber de qué tipo es. Distancia con
+  signo `sdfRoundedBox` (la de KWin, copiada en el shader).
+- **Shader** (`shaders/glass.frag`):
+  - **Lente en el borde:** en una banda de `edge` px (como mucho el 30 % del
+    lado corto, para el dock), el fondo se toma de más adentro a lo largo de
+    la normal, más cuanto más cerca del borde (`strength`), y se mezcla con el
+    fondo **sin difuminar** (`clarity`): con solo el difuminado la curvatura no
+    se vería. El centro queda esmerilado, como Liquid Glass.
+  - **Dispersión:** rojo y azul se desplazan algo más y algo menos que el verde.
+  - **Filo de luz:** brillo en el borde, más fuerte arriba (`specular`).
+  - **Tinte adaptativo:** la luminancia del fondo se acerca a la media (`tint`).
+- **Sigue al slider de vidrio:** con el nivel más claro, la refracción entera;
+  con el más opaco, por `opaque_factor` (desplazamiento, brillo y nitidez).
+  `goldenglass-glass --level` ya llama a `KWin.reconfigure`, que relee
+  `goldenglassrc`. Valores en `[glass.refraction]` de los tokens
+  (`goldenglass_tokens.h`), calibrados con el nivel por defecto para que sea
+  sutil.
+- **Activación:** `goldenglass-glass --refraction on|off` (y
+  `--get-refraction`: on, off o unavailable), que usa el interruptor del
+  módulo Vidrio.
+- **Red de seguridad** (`goldenglass-glass --check`, autostart de
+  `goldenglass-kstyle`): la primera vez lo activa (es el valor de fábrica); si
+  está pedido pero KWin no lo cargó (el plugin solo carga con la versión de
+  KWin con la que se compiló: KWin actualizado sin recompilar) vuelve a cargar
+  el Blur; si sí lo cargó, se asegura de que el Blur no esté cargado. Nunca
+  quedan los dos ni ninguno.
+- **Pruebas:** en el sandbox (KWin virtual con OpenGL real): el fork sin
+  cambios idéntico al Blur; con valores exagerados sobre un fondo de rayas, la
+  lente, la dispersión y el centro esmerilado; calibrado con el nivel por
+  defecto; y todos los casos de `--check` y del interruptor.
 
 ## 5. Distribución
 
@@ -684,8 +703,9 @@ dentro de «Vidrio».
   `goldenglass-system` y su acción de polkit van en `goldenglass-plasma`, del
   que dependen los tres paquetes de sistema. El dock (F10) es solo QML: va en
   `goldenglass-plasma` con `goldenglass-dock`; su módulo de Ajustes, en
-  `goldenglass-kstyle` con los demás. El efecto `goldenglass_glass` (F11) irá
-  en `goldenglass-kstyle`, que ya se recompila con cada actualización de KDE.
+  `goldenglass-kstyle` con los demás. El efecto `goldenglass_glass` (F11) va
+  en `goldenglass-kstyle`, que ya se recompila con cada actualización de KDE
+  (depende de `kwin`: el plugin solo carga con esa versión).
 
   Se genera con `GOLDENGLASS_SYSTEM=1`: los enlaces de protección de los
   iconos y el import de adw-gtk3 solo apuntan a `/usr`, nunca al `/home` de
@@ -724,7 +744,7 @@ dentro de «Vidrio».
 | F8 | Plymouth negro y gris con contraseña LUKS, módulo Arranque e inicio de sesión | ✅ |
 | F9 | Tema de SDDM + fondo y sincronización en Plasma Login Manager | ✅ |
 | F10 | Dock unificado: ampliación, rebote, vistas previas, recientes; módulo Dock | ✅ |
-| F11 | Spike del fork de Blur → efecto `goldenglass_glass` con refracción → interruptor en Vidrio | |
+| F11 | Efecto de KWin `goldenglass_glass` (fork de Blur) con refracción; interruptor en Vidrio | ✅ |
 
 Orden de menor a mayor riesgo: lo independiente primero; lo que depende de la
 API interna de KWin y de Plasma, al final.
@@ -754,5 +774,5 @@ Refracción en las ventanas de las apps.
 | El dock depende de `views/Panel.qml` copiado de Plasma | Cambio mínimo y documentado en `UPSTREAM.md`; se compara con cada versión de Plasma |
 | PanelView fija la región de entrada desde el borde superior de la placa | Aceptado: la ampliación se recoge al salir de la placa (4.13) |
 | El dock unificado pierde funciones de `icontasks` | Mismo `TasksModel`; menú, vistas previas, arrastre y soltar archivos reimplementados (4.13) |
-| La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle`; comprobación al iniciar sesión que reactiva Blur si el efecto no carga |
-| Coste de GPU de la refracción | Solo superficies de Plasma; interruptor en el módulo de Ajustes |
+| La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle`; `goldenglass-glass --check` al iniciar sesión reactiva Blur si el efecto no carga; fork documentado en `UPSTREAM.md` |
+| Coste de GPU de la refracción | Solo superficies de Plasma; dos muestras más por píxel solo en la banda del borde; interruptor en el módulo Vidrio |

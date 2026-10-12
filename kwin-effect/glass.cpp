@@ -9,6 +9,8 @@
 #include "glass.h"
 // KConfigSkeleton
 #include "glassconfig.h"
+// valores de fábrica de GoldenGlass (generado desde los tokens)
+#include "goldenglass_tokens.h"
 
 #include "core/rendertarget.h"
 #include "core/renderviewport.h"
@@ -118,6 +120,31 @@ GlassEffect::GlassEffect()
         m_roundedOnscreenPass.boxLocation = m_roundedOnscreenPass.shader->uniformLocation("box");
         m_roundedOnscreenPass.cornerRadiusLocation = m_roundedOnscreenPass.shader->uniformLocation("cornerRadius");
         m_roundedOnscreenPass.opacityLocation = m_roundedOnscreenPass.shader->uniformLocation("opacity");
+    }
+
+    // GoldenGlass: paso final con refracción para las superficies de Plasma
+    m_glassPass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
+                                                                           QStringLiteral(":/effects/goldenglass_glass/shaders/glass.vert"),
+                                                                           QStringLiteral(":/effects/goldenglass_glass/shaders/glass.frag"));
+    if (!m_glassPass.shader) {
+        qCWarning(KWIN_BLUR) << "Failed to load glass pass shader";
+        return;
+    } else {
+        m_glassPass.mvpMatrixLocation = m_glassPass.shader->uniformLocation("modelViewProjectionMatrix");
+        m_glassPass.colorMatrixLocation = m_glassPass.shader->uniformLocation("colorMatrix");
+        m_glassPass.offsetLocation = m_glassPass.shader->uniformLocation("offset");
+        m_glassPass.halfpixelLocation = m_glassPass.shader->uniformLocation("halfpixel");
+        m_glassPass.boxLocation = m_glassPass.shader->uniformLocation("box");
+        m_glassPass.cornerRadiusLocation = m_glassPass.shader->uniformLocation("cornerRadius");
+        m_glassPass.opacityLocation = m_glassPass.shader->uniformLocation("opacity");
+        m_glassPass.backgroundSizeLocation = m_glassPass.shader->uniformLocation("backgroundSize");
+        m_glassPass.edgeLocation = m_glassPass.shader->uniformLocation("edge");
+        m_glassPass.strengthLocation = m_glassPass.shader->uniformLocation("strength");
+        m_glassPass.dispersionLocation = m_glassPass.shader->uniformLocation("dispersion");
+        m_glassPass.specularLocation = m_glassPass.shader->uniformLocation("specular");
+        m_glassPass.tintLocation = m_glassPass.shader->uniformLocation("tint");
+        m_glassPass.clarityLocation = m_glassPass.shader->uniformLocation("clarity");
+        m_glassPass.sharpTextureLocation = m_glassPass.shader->uniformLocation("sharpTexture");
     }
 
     m_downsamplePass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
@@ -258,6 +285,19 @@ void GlassEffect::reconfigure(ReconfigureFlags flags)
     m_expandSize = blurOffsets[m_iterationCount - 1].expandSize;
     m_noiseStrength = GlassConfig::noiseStrength();
     m_colorMatrix = colorTransformMatrix(GlassConfig::saturation() / 100.0, 1.0);
+
+    // GoldenGlass: la refracción sigue al nivel de vidrio (0 = más claro: entera;
+    // 1 = más opaco: por RefractionOpaqueFactor). goldenglass-glass llama a
+    // KWin.reconfigure al cambiar el nivel.
+    const KConfigGroup glass(KSharedConfig::openConfig(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig), QStringLiteral("Glass"));
+    const double level = std::clamp(glass.readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel), 0.0, 1.0);
+    const double factor = 1.0 + (GoldenGlass::Tokens::RefractionOpaqueFactor - 1.0) * level;
+    m_refractionEdge = GoldenGlass::Tokens::RefractionEdge;
+    m_refractionStrength = GoldenGlass::Tokens::RefractionStrength * factor;
+    m_refractionDispersion = GoldenGlass::Tokens::RefractionDispersion;
+    m_refractionSpecular = GoldenGlass::Tokens::RefractionSpecular * factor;
+    m_refractionTint = GoldenGlass::Tokens::RefractionTint;
+    m_refractionClarity = GoldenGlass::Tokens::RefractionClarity * factor;
     for (auto &[window, data] : m_windows) {
         data.blurItem->setPixelsToExpandRepaintsBelowOpaqueRegions(m_expandSize);
     }
@@ -798,7 +838,10 @@ void GlassEffect::blur(const RenderTarget &renderTarget, const RenderViewport &v
 
     const float modulation = opacity * opacity;
 
-    if (const BorderRadius cornerRadius = w->window()->borderRadius(); !cornerRadius.isNull()) {
+    if (isGlassSurface(w) && m_glassPass.shader) {
+        GLFramebuffer::popFramebuffer();
+        drawGlass(viewport, blurShape, backgroundRect, scaledBackgroundRect, renderInfo.framebuffers[1].get(), renderInfo.textures[0].get(), vertexCount, modulation);
+    } else if (const BorderRadius cornerRadius = w->window()->borderRadius(); !cornerRadius.isNull()) {
         ShaderManager::instance()->pushShader(m_roundedOnscreenPass.shader.get());
 
         QMatrix4x4 projectionMatrix = viewport.projectionMatrix();
@@ -905,6 +948,89 @@ void GlassEffect::blur(const RenderTarget &renderTarget, const RenderViewport &v
     }
 
     vbo->unbindArrays();
+}
+
+// --- GoldenGlass ----------------------------------------------------------------
+
+bool GlassEffect::isGlassSurface(const EffectWindow *w) const
+{
+    // Solo el vidrio de Plasma (dock, barra de menús, popups, Spotlight): las
+    // ventanas de las apps reciben el blur normal, como en macOS.
+    const QString windowClass = w->windowClass();
+    return windowClass.contains(QLatin1String("plasmashell")) || windowClass.contains(QLatin1String("krunner"));
+}
+
+// Radio de cada esquina medido en la región de blur: Plasma la manda con la
+// forma redondeada de su SVG, en franjas; una esquina mide lo que tardan las
+// franjas en tocar el lateral. (arriba-izq., arriba-der., abajo-izq., abajo-der.)
+static QVector4D cornerRadii(const RegionF &region, const RectF &box)
+{
+    const float maxRadius = std::min(box.width(), box.height()) / 2;
+    float topLeft = maxRadius, topRight = maxRadius, bottomLeft = maxRadius, bottomRight = maxRadius;
+    constexpr float epsilon = 0.5;
+    for (const RectF &rect : region.rects()) {
+        if (std::abs(rect.left() - box.left()) < epsilon) {
+            topLeft = std::min(topLeft, float(rect.top() - box.top()));
+            bottomLeft = std::min(bottomLeft, float(box.bottom() - rect.bottom()));
+        }
+        if (std::abs(rect.right() - box.right()) < epsilon) {
+            topRight = std::min(topRight, float(rect.top() - box.top()));
+            bottomRight = std::min(bottomRight, float(box.bottom() - rect.bottom()));
+        }
+    }
+    return QVector4D(topLeft, topRight, bottomLeft, bottomRight);
+}
+
+void GlassEffect::drawGlass(const RenderViewport &viewport, const RegionF &blurShape, const Rect &backgroundRect,
+                            const Rect &scaledBackgroundRect, GLFramebuffer *read, GLTexture *sharp, int vertexCount, float modulation)
+{
+    const qreal scale = viewport.scale();
+    const RectF bounds = blurShape.boundingRect();
+    const QVector4D radii = cornerRadii(blurShape, bounds) * scale;
+    const RectF box = bounds.translated(-backgroundRect.topLeft()).scaled(scale);
+
+    ShaderManager::instance()->pushShader(m_glassPass.shader.get());
+
+    QMatrix4x4 projectionMatrix = viewport.projectionMatrix();
+    projectionMatrix.translate(scaledBackgroundRect.x(), scaledBackgroundRect.y());
+
+    const QVector2D halfpixel(0.5 / read->colorAttachment()->width(), 0.5 / read->colorAttachment()->height());
+    GLShader *shader = m_glassPass.shader.get();
+    shader->setUniform(m_glassPass.mvpMatrixLocation, projectionMatrix);
+    shader->setUniform(m_glassPass.colorMatrixLocation, m_colorMatrix);
+    shader->setUniform(m_glassPass.halfpixelLocation, halfpixel);
+    shader->setUniform(m_glassPass.offsetLocation, float(m_offset));
+    shader->setUniform(m_glassPass.boxLocation, QVector4D(box.center().x(), box.center().y(), box.width() * 0.5, box.height() * 0.5));
+    shader->setUniform(m_glassPass.cornerRadiusLocation, radii);
+    shader->setUniform(m_glassPass.opacityLocation, modulation);
+    shader->setUniform(m_glassPass.backgroundSizeLocation, QVector2D(scaledBackgroundRect.width(), scaledBackgroundRect.height()));
+    // en superficies bajas (el dock) la banda curvada no ocupa toda la placa
+    const float edge = std::min(float(m_refractionEdge * scale), float(std::min(box.width(), box.height()) * 0.3));
+    shader->setUniform(m_glassPass.edgeLocation, edge);
+    shader->setUniform(m_glassPass.strengthLocation, float(m_refractionStrength * scale));
+    shader->setUniform(m_glassPass.dispersionLocation, m_refractionDispersion);
+    shader->setUniform(m_glassPass.specularLocation, m_refractionSpecular);
+    shader->setUniform(m_glassPass.tintLocation, m_refractionTint);
+    shader->setUniform(m_glassPass.clarityLocation, m_refractionClarity);
+    shader->setUniform(m_glassPass.sharpTextureLocation, 1);
+
+    // unidad 1: el fondo sin difuminar (la primera textura del Blur, en caché)
+    glActiveTexture(GL_TEXTURE1);
+    sharp->bind();
+    glActiveTexture(GL_TEXTURE0);
+    read->colorAttachment()->bind();
+
+    // premultiplicado: el borde suave de la forma se mezcla con lo de detrás
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    GLVertexBuffer::streamingBuffer()->draw(GL_TRIANGLES, 6, vertexCount);
+    glDisable(GL_BLEND);
+
+    glActiveTexture(GL_TEXTURE1);
+    sharp->unbind();
+    glActiveTexture(GL_TEXTURE0);
+
+    ShaderManager::instance()->popShader();
 }
 
 bool GlassEffect::isActive() const

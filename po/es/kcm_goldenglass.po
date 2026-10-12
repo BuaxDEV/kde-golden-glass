@@ -57,3 +57,23 @@ msgstr ""
 "Cambia el vidrio de la barra de menús, el dock, los popups, las barras de "
 "título, las toolbars, las barras laterales y los menús. Un vidrio más claro "
 "deja ver más lo que hay detrás; uno más opaco se lee mejor."
+
+msgctxt "@info:status"
+msgid "Refraction could not be changed: %1"
+msgstr "No se pudo cambiar la refracción: %1"
+
+msgctxt "@label"
+msgid "Refraction:"
+msgstr "Refracción:"
+
+msgctxt "@option:check"
+msgid "Bend the background at the edges of the glass"
+msgstr "Curvar el fondo en los bordes del vidrio"
+
+msgctxt "@info"
+msgid "Like Liquid Glass: the dock, menu bar and popups bend what is behind them, more with clearer glass. Turn it off if the graphics card struggles."
+msgstr "Como Liquid Glass: el dock, la barra de menús y los menús emergentes curvan lo que tienen detrás, más cuanto más claro es el vidrio. Desactívala si la tarjeta gráfica va justa."
+
+msgctxt "@info"
+msgid "Not available: KWin did not load the GoldenGlass effect. Rebuild goldenglass-kstyle after updating KWin."
+msgstr "No disponible: KWin no cargó el efecto de GoldenGlass. Vuelve a compilar goldenglass-kstyle tras actualizar KWin."

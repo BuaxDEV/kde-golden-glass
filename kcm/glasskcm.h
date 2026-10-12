@@ -20,6 +20,10 @@ class GlassKcm : public KQuickConfigModule
     Q_PROPERTY(QVariantList notches READ notches CONSTANT)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY errorTextChanged)
+    //* refracción de Liquid Glass (efecto de KWin goldenglass_glass)
+    Q_PROPERTY(bool refraction READ refraction WRITE setRefraction NOTIFY refractionChanged)
+    //* KWin tiene el efecto (si no: goldenglass-kstyle no compilado para esta versión de KWin)
+    Q_PROPERTY(bool refractionAvailable READ refractionAvailable NOTIFY refractionChanged)
 
 public:
     GlassKcm(QObject *parent, const KPluginMetaData &data);
@@ -29,6 +33,9 @@ public:
     QVariantList notches() const;
     bool busy() const;
     QString errorText() const;
+    bool refraction() const;
+    void setRefraction(bool value);
+    bool refractionAvailable() const;
 
     //* aplica un nivel (0 = más transparente, 1 = más opaco); si ya hay uno
     //* aplicándose, se aplica el último pedido al terminar
@@ -41,9 +48,11 @@ Q_SIGNALS:
     void levelChanged();
     void busyChanged();
     void errorTextChanged();
+    void refractionChanged();
 
 private:
     void startProcess(double level);
+    void loadRefraction();
     void setLevel(double level);
     void setErrorText(const QString &text);
 
@@ -51,4 +60,7 @@ private:
     double m_level;
     double m_pending = -1;
     QString m_errorText;
+    QProcess *m_refractionProcess = nullptr;
+    bool m_refraction = false;
+    bool m_refractionAvailable = false;
 };

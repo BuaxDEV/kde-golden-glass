@@ -5,6 +5,9 @@
 
   goldenglass-glass --level 0.8     # 0 = más transparente, 1 = más opaco
   goldenglass-glass --get           # nivel actual
+  goldenglass-glass --refraction on|off   # efecto de KWin goldenglass_glass
+  goldenglass-glass --get-refraction      # on | off | unavailable
+  goldenglass-glass --check         # al iniciar sesión (autostart), ver abajo
 
 Lo que hace con un nivel:
   1. Escribe goldenglassrc: [Glass] Level y la opacidad de menús, toolbars y
@@ -14,7 +17,14 @@ Lo que hace con un nivel:
      Si GoldenGlass o GoldenGlassTuned está activo, cambia a la variante
      correcta (Plasma no relee un tema que cambia en disco; ver
      docs/ARCHITECTURE.md §4.4). El tema del paquete nunca se sobrescribe.
-  3. Avisa a las apps (D-Bus org.goldenglass.Style) y reconfigura KWin.
+  3. Avisa a las apps (D-Bus org.goldenglass.Style) y reconfigura KWin (el
+     efecto de refracción relee el nivel).
+
+Refracción: el efecto goldenglass_glass sustituye al Blur de KWin (los dos a la
+vez difuminarían dos veces). --check, al iniciar sesión: la primera vez lo
+activa (es el valor de fábrica); si está pedido pero KWin no lo cargó (KWin
+actualizado sin recompilar goldenglass-kstyle) vuelve a cargar el Blur; si sí
+lo cargó, se asegura de que el Blur no esté cargado.
 """
 
 from __future__ import annotations
@@ -147,6 +157,74 @@ def set_level(level: float, reload_plasma: bool = True) -> None:
     dbus("--type=method_call", "--dest=org.kde.KWin", "/KWin", "org.kde.KWin.reconfigure")
 
 
+# --- refracción (efecto de KWin goldenglass_glass) -----------------------------
+
+EFFECT = "goldenglass_glass"
+
+
+def effects_call(method: str, *args: str) -> str:
+    r = subprocess.run(["dbus-send", "--session", "--print-reply", "--dest=org.kde.KWin", "/Effects",
+                        f"org.kde.kwin.Effects.{method}", *args], capture_output=True, text=True)
+    return r.stdout if r.returncode == 0 else ""
+
+
+def effect_available() -> bool:
+    # listOfEffects es una propiedad, no un método
+    r = subprocess.run(["dbus-send", "--session", "--print-reply", "--dest=org.kde.KWin", "/Effects",
+                        "org.freedesktop.DBus.Properties.Get", "string:org.kde.kwin.Effects", "string:listOfEffects"],
+                       capture_output=True, text=True)
+    return f'"{EFFECT}"' in r.stdout
+
+
+def effect_loaded(name: str) -> bool:
+    return "boolean true" in effects_call("isEffectLoaded", f"string:{name}")
+
+
+def use_glass_effect(on: bool) -> None:
+    """Uno u otro: goldenglass_glass o el Blur de KWin, en kwinrc y en vivo."""
+    kwrite("kwinrc", "Plugins", f"{EFFECT}Enabled", "true" if on else "false")
+    kwrite("kwinrc", "Plugins", "blurEnabled", "false" if on else "true")
+    if on:
+        effects_call("unloadEffect", "string:blur")
+        effects_call("loadEffect", f"string:{EFFECT}")
+    else:
+        effects_call("unloadEffect", f"string:{EFFECT}")
+        effects_call("loadEffect", "string:blur")
+
+
+def get_refraction() -> str:
+    if not effect_available():
+        return "unavailable"
+    return "on" if kread("kwinrc", "Plugins", f"{EFFECT}Enabled", "false") == "true" else "off"
+
+
+def set_refraction(on: bool) -> None:
+    if on and not effect_available():
+        raise SystemExit(f"goldenglass-glass: KWin no encuentra el efecto {EFFECT} "
+                         "(¿goldenglass-kstyle compilado para esta versión de KWin?)")
+    use_glass_effect(on)
+
+
+def check() -> None:
+    wanted = kread("kwinrc", "Plugins", f"{EFFECT}Enabled", "")
+    if wanted == "":
+        # primera vez: de fábrica activada, si KWin la tiene
+        if effect_available():
+            use_glass_effect(True)
+        return
+    if wanted != "true":
+        return
+    if effect_loaded(EFFECT):
+        if effect_loaded("blur"):
+            effects_call("unloadEffect", "string:blur")
+        kwrite("kwinrc", "Plugins", "blurEnabled", "false")
+    elif not effect_loaded("blur"):
+        # pedido pero no cargó: que al menos haya blur (se deja pedido para
+        # cuando vuelva a cargar, tras recompilar)
+        kwrite("kwinrc", "Plugins", "blurEnabled", "true")
+        effects_call("loadEffect", "string:blur")
+
+
 def get_level() -> float:
     default = str(load_tokens()["glass"]["default_level"])
     return float(kread(RC, "Glass", "Level", default))
@@ -157,12 +235,24 @@ def main(argv: list[str] | None = None) -> int:
     group = ap.add_mutually_exclusive_group(required=True)
     group.add_argument("--level", type=float, metavar="0..1", help="0 = más transparente, 1 = más opaco")
     group.add_argument("--get", action="store_true", help="muestra el nivel actual")
+    group.add_argument("--refraction", choices=["on", "off"], help="efecto de refracción de KWin")
+    group.add_argument("--get-refraction", action="store_true", help="on, off o unavailable")
+    group.add_argument("--check", action="store_true", help="al iniciar sesión: Blur o refracción, nunca ninguno")
     ap.add_argument("--no-plasma-reload", action="store_true",
                     help="no cambiar el Plasma Style activo (solo generar y configurar)")
     args = ap.parse_args(argv)
 
     if args.get:
         print(f"{get_level():.3f}")
+        return 0
+    if args.get_refraction:
+        print(get_refraction())
+        return 0
+    if args.refraction:
+        set_refraction(args.refraction == "on")
+        return 0
+    if args.check:
+        check()
         return 0
     set_level(args.level, reload_plasma=not args.no_plasma_reload)
     return 0

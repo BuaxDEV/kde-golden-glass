@@ -95,6 +95,11 @@ private:
     void blur(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data);
     GLTexture *ensureNoiseTexture();
 
+    // GoldenGlass: refracción en las superficies de Plasma
+    bool isGlassSurface(const EffectWindow *w) const;
+    void drawGlass(const RenderViewport &viewport, const RegionF &blurShape, const Rect &backgroundRect,
+                   const Rect &scaledBackgroundRect, GLFramebuffer *read, GLTexture *sharp, int vertexCount, float modulation);
+
 private:
     struct
     {
@@ -116,6 +121,33 @@ private:
         int cornerRadiusLocation;
         int opacityLocation;
     } m_roundedOnscreenPass;
+
+    struct
+    {
+        std::unique_ptr<GLShader> shader;
+        int mvpMatrixLocation;
+        int colorMatrixLocation;
+        int offsetLocation;
+        int halfpixelLocation;
+        int boxLocation;
+        int cornerRadiusLocation;
+        int opacityLocation;
+        int backgroundSizeLocation;
+        int edgeLocation;
+        int strengthLocation;
+        int dispersionLocation;
+        int specularLocation;
+        int tintLocation;
+        int clarityLocation;
+        int sharpTextureLocation;
+    } m_glassPass;
+    // refracción, ya con el nivel de vidrio aplicado (px lógicos)
+    float m_refractionEdge = 0;
+    float m_refractionStrength = 0;
+    float m_refractionDispersion = 0;
+    float m_refractionSpecular = 0;
+    float m_refractionTint = 0;
+    float m_refractionClarity = 0;
 
     struct
     {

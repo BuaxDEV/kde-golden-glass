@@ -70,3 +70,23 @@ place) and `goldenglassSetThickness()`. Every other panel behaves as upstream.
 
 When Plasma updates its panel view, diff the new upstream file against the
 installed one and port the changes by hand.
+
+## KWin glass effect (`kwin-effect/`)
+
+`kwin-effect/` is a fork of the **Blur** effect of **KWin 6.7.5**
+(`src/plugins/blur`, GPL-2.0-or-later, original headers kept), built out of
+tree as the plugin `goldenglass_glass` against the installed KWin headers.
+The first commit is the upstream copy with only mechanical changes (the
+`GoldenGlass` namespace and `Glass*` names so it does not clash with the
+built-in blur in `libkwin`, its own resource prefix and logging category,
+linking xcb); `git log -- kwin-effect` shows the GoldenGlass changes on top:
+the refraction pass (`shaders/glass.frag`, `drawGlass()`, `isGlassSurface()`,
+corner radii from the blur region) and reading the glass level from
+`goldenglassrc`. `sdfRoundedBox` is copied from KWin's `src/opengl/sdf.glsl`.
+It reads the same `Effect-blur` settings as KWin's Blur.
+
+The plugin only loads with the KWin version it was built against
+(`KWIN_PLUGIN_VERSION_STRING`). When KWin updates, rebuild
+`goldenglass-kstyle`; when KWin changes its blur, diff the new upstream
+`src/plugins/blur` against the base commit and port the changes by hand.
+
