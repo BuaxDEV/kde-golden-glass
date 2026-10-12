@@ -585,7 +585,8 @@ dentro de «Vidrio».
     sitio normal (si siguiera al fondo, el dock movería su placa en bucle).
   - El dock fija el grosor del panel (`goldenglassSetThickness`): placa (icono
     + `dock_padding`, con el punto de app abierta dentro del relleno) más el
-    hueco para el icono más ampliado o el rebote. El layout pone el mismo valor
+    hueco para el icono más ampliado rebotando (al hacer clic está ampliado y
+    salta desde ese tamaño: `máx × (1 + bounce)`). El layout pone el mismo valor
     al inicio (`_dock_height`).
   - **Límite aceptado (región de entrada):** PanelView toma como entrada todo
     el ancho de la ventana desde el borde superior de la placa. La parte de un

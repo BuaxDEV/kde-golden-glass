@@ -50,11 +50,12 @@ def _flatten(fg: str, bg: str) -> str:
 def _dock_height(tokens: dict) -> int:
     """Grosor inicial del panel del dock: la placa (icono + relleno; el punto de
     app abierta va en el relleno) y encima el hueco para el icono más ampliado
-    o el rebote. Después lo mantiene el propio dock (DockView.panelThickness)."""
+    rebotando (al hacer clic está ampliado y salta desde ese tamaño). Después
+    lo mantiene el propio dock (DockView.panelThickness)."""
     p, d = tokens["plasma"], tokens["dock"]
     icon = p["dock_icon_size"]
     biggest = d["magnification_size"] if d["magnification"] else icon
-    headroom = max(biggest - icon, math.ceil(icon * d["bounce"]))
+    headroom = math.ceil(biggest * (1 + d["bounce"])) - icon
     h = icon + 2 * p["dock_padding"] + headroom
     return h + h % 2                          # Plasma solo muestra alturas pares
 

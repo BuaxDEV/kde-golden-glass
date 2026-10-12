@@ -88,11 +88,12 @@ Item {
         return iconSize + (maxSize - iconSize) * f * amount;
     }
 
-    // grosor del panel: placa + hueco para el icono más ampliado o el rebote
+    // grosor del panel: placa + hueco para el icono más ampliado rebotando (al
+    // hacer clic está ampliado y salta desde ese tamaño)
     // (lo aplica el Panel.qml de GoldenGlass; igual que _dock_height de
     // tools/lookandfeel.py, que da el valor inicial)
     readonly property int panelThickness: {
-        const headroom = Math.max(maxSize - iconSize, Math.ceil(iconSize * T.tokens.dock.bounce));
+        const headroom = Math.ceil(maxSize * (1 + T.tokens.dock.bounce)) - iconSize;
         const h = Math.ceil(iconSize + 2 * pad + headroom);
         return h + h % 2;
     }
