@@ -1,0 +1,26 @@
+# Traducción al español del dock de GoldenGlass. Los textos del panel de Apps
+# y de la Papelera vienen de sus plasmoids (tools/plasmoids.py los une).
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma_applet_org.goldenglass.dock\n"
+"PO-Revision-Date: 2026-10-12 18:00+0000\n"
+"Last-Translator: GoldenGlass contributors\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgid "Apps"
+msgstr "Apps"
+
+msgid "New Window"
+msgstr "Nueva ventana"
+
+msgid "Keep in Dock"
+msgstr "Mantener en el Dock"
+
+msgid "Quit"
+msgstr "Salir"

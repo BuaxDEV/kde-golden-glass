@@ -30,6 +30,7 @@ declare -A TARGETS=(
   [build/plasma/plasmoids/org.goldenglass.controlcenter]="$DATA/plasma/plasmoids/org.goldenglass.controlcenter"
   [build/plasma/plasmoids/org.goldenglass.launchpad]="$DATA/plasma/plasmoids/org.goldenglass.launchpad"
   [build/plasma/plasmoids/org.goldenglass.trash]="$DATA/plasma/plasmoids/org.goldenglass.trash"
+  [build/plasma/plasmoids/org.goldenglass.dock]="$DATA/plasma/plasmoids/org.goldenglass.dock"
   [plasma/kwin/scripts/org.goldenglass.shortcuts]="$DATA/kwin/scripts/org.goldenglass.shortcuts"
   [build/wallpapers/GoldenGlass]="$DATA/wallpapers/GoldenGlass"
   [build/cursors/GoldenGlass-cursors]="$DATA/icons/GoldenGlass-cursors"
@@ -58,6 +59,7 @@ refresh_caches() {
 
 AUTOSTART="$CONF/autostart/goldenglass-gtk-sync.desktop"
 SYSTEM_BIN="$HOME/.local/bin/goldenglass-system"
+DOCK_BIN="$HOME/.local/bin/goldenglass-dock"
 
 if [[ $mode == uninstall ]]; then
   pkill -u "$USER" -f "$ROOT/tools/gtk_sync.py" 2>/dev/null || true
@@ -65,7 +67,7 @@ if [[ $mode == uninstall ]]; then
   rm -fv -- "$AUTOSTART"
   # deja la configuración del usuario como estaba antes de goldenglass-system
   python3 "$ROOT/tools/system.py" disable sounds chime || true
-  rm -fv -- "$SYSTEM_BIN"
+  rm -fv -- "$SYSTEM_BIN" "$DOCK_BIN"
   for dst in "${TARGETS[@]}"; do
     [[ -e $dst || -L $dst ]] && rm -rfv -- "$dst"
   done
@@ -113,6 +115,12 @@ cat >"$SYSTEM_BIN" <<EOF
 exec python3 "$ROOT/tools/system.py" "\$@"
 EOF
 chmod 755 "$SYSTEM_BIN"
+# goldenglass-dock (ajustes del dock en vivo): lo usa el módulo «Dock».
+cat >"$DOCK_BIN" <<EOF
+#!/bin/sh
+exec python3 "$ROOT/tools/dock.py" "\$@"
+EOF
+chmod 755 "$DOCK_BIN"
 
 # Apps de terceros encerradas en squircle a partir de sus iconos instalados.
 # (Volver a ejecutar tools/wrap_icons.py al instalar apps nuevas.)

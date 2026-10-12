@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Plantilla: tools/plasmoids.py sustituye @sección.clave@ por los tokens. -->
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+  <group name="General">
+    <!-- apps fijadas (URL de lanzador de TasksModel) -->
+    <entry name="launchers" type="StringList"><default></default></entry>
+    <!-- lo cambia el módulo «Dock» (goldenglass-dock) -->
+    <entry name="iconSize" type="Int"><default>@plasma.dock_icon_size@</default></entry>
+    <entry name="magnification" type="Bool"><default>@dock.magnification@</default></entry>
+    <entry name="magnificationSize" type="Int"><default>@dock.magnification_size@</default></entry>
+    <entry name="showRecent" type="Bool"><default>@dock.show_recent@</default></entry>
+    <!-- panel Apps (AppsPanel.qml): grid | list, category | name -->
+    <entry name="viewMode" type="String"><default>grid</default></entry>
+    <entry name="sortMode" type="String"><default>category</default></entry>
+  </group>
+</kcfg>

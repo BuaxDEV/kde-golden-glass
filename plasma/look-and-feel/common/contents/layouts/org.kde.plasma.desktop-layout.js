@@ -67,23 +67,18 @@ slide.writeEntry("SlideOutTime", @SLIDE_OUT_MS@);
 dock.opacity = "translucent";
 dock.height = DOCK_HEIGHT;
 
-// Launchpad primero (como en macOS); la tecla Meta también lo abre.
-dock.addWidget("org.goldenglass.launchpad");
-
-const tasks = dock.addWidget("org.kde.plasma.icontasks");
-tasks.currentConfigGroup = ["General"];
-tasks.writeConfig("launchers", [
+// Un solo plasmoid: Apps (la tecla Meta lo abre), apps fijadas y abiertas con
+// ampliación, recientes y Papelera. El panel es más alto que la placa de
+// vidrio (hueco para los iconos ampliados); la placa la dibuja el Panel.qml
+// del shell GoldenGlass y el dock ajusta el grosor si cambian sus ajustes.
+const dockWidget = dock.addWidget("org.goldenglass.dock");
+dockWidget.currentConfigGroup = ["General"];
+dockWidget.writeConfig("launchers", [
     "preferred://filemanager",
     "preferred://browser",
     "applications:org.kde.konsole.desktop",
     "applications:systemsettings.desktop",
 ]);
-tasks.writeConfig("showOnlyCurrentDesktop", false);
-tasks.writeConfig("taskHoverEffect", false);
-tasks.writeConfig("iconSpacing", 1);
-
-dock.addWidget("org.kde.plasma.marginsseparator");
-dock.addWidget("org.goldenglass.trash");
 
 // --- Modo oscuro: el interruptor del Centro de control (DarkModeControl de
 // Plasma) y el cambio automático día/noche alternan entre estos dos temas.

@@ -1,0 +1,69 @@
+# Traducción al español del módulo de Ajustes «Dock» de GoldenGlass.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kcm_goldenglass_dock\n"
+"Language: es\n"
+"PO-Revision-Date: 2026-10-12 18:00+0000\n"
+"Last-Translator: GoldenGlass contributors\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgctxt "@info:status"
+msgid "The dock settings could not be applied: %1"
+msgstr "No se pudieron aplicar los ajustes del dock: %1"
+
+msgctxt "@info:status"
+msgid "goldenglass-dock could not be started: %1"
+msgstr "No se pudo iniciar goldenglass-dock: %1"
+
+msgctxt "@info:status"
+msgid "goldenglass-dock was not found. Is the goldenglass-plasma package installed?"
+msgstr "No se encontró goldenglass-dock. ¿Está instalado el paquete goldenglass-plasma?"
+
+msgctxt "@info"
+msgid "There is no GoldenGlass dock in the panels. Apply a GoldenGlass global theme with “Desktop and window layout” checked to add it."
+msgstr "No hay ningún dock de GoldenGlass en los paneles. Para añadirlo, aplica un tema global de GoldenGlass con «Disposición del escritorio y ventanas» marcada."
+
+msgctxt "@label:slider"
+msgid "Size:"
+msgstr "Tamaño:"
+
+msgctxt "@label:slider"
+msgid "Size"
+msgstr "Tamaño"
+
+msgctxt "@item:inrange dock size"
+msgid "Small"
+msgstr "Pequeño"
+
+msgctxt "@item:inrange dock size"
+msgid "Large"
+msgstr "Grande"
+
+msgctxt "@label"
+msgid "Magnification:"
+msgstr "Ampliación:"
+
+msgctxt "@option:check"
+msgid "Enlarge icons under the pointer"
+msgstr "Agrandar los iconos bajo el puntero"
+
+msgctxt "@label:slider"
+msgid "Magnification size"
+msgstr "Tamaño de la ampliación"
+
+msgctxt "@item:inrange magnification"
+msgid "Small"
+msgstr "Mínima"
+
+msgctxt "@item:inrange magnification"
+msgid "Large"
+msgstr "Máxima"
+
+msgctxt "@option:check"
+msgid "Show recent apps in the Dock"
+msgstr "Mostrar apps recientes en el Dock"

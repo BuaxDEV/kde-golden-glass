@@ -56,3 +56,17 @@ it (`git diff e3a0932 -- plasma/shell`). `GgClock.qml` is new.
 
 When Plasma updates its lock screen, diff the new upstream files against the
 installed ones and port the changes by hand.
+
+## Panel view (`views/Panel.qml`)
+
+`plasma/shell/org.goldenglass.desktop/contents/views/Panel.qml` started as an
+unmodified copy of `/usr/share/plasma/shells/org.kde.plasma.desktop/contents/views/Panel.qml`
+from **plasma-desktop 6.7.5** (GPL-2.0-or-later, original header kept). The
+copy is its own commit; GoldenGlass changes are on top of it
+(`git log -- plasma/shell/org.goldenglass.desktop/contents/views/Panel.qml`):
+the dock slab (`goldenglassDockSlab`: background, blur mask and shadow follow
+the glass slab of `org.goldenglass.dock`; the containment keeps its normal
+place) and `goldenglassSetThickness()`. Every other panel behaves as upstream.
+
+When Plasma updates its panel view, diff the new upstream file against the
+installed one and port the changes by hand.

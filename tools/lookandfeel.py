@@ -10,6 +10,7 @@ propios de cada variante.
 from __future__ import annotations
 
 import json
+import math
 import re
 import shutil
 from pathlib import Path
@@ -47,11 +48,14 @@ def _flatten(fg: str, bg: str) -> str:
 
 
 def _dock_height(tokens: dict) -> int:
-    """Grosor del dock: icono + bordes de tasks.svg (punto) + relleno del panel."""
-    p = tokens["plasma"]
-    dot_border = p["task_dot_size"] + 2      # ver plasma_theme.tasks_svg
-    corner = 2
-    h = p["dock_icon_size"] + dot_border + corner + 2 * p["dock_padding"]
+    """Grosor inicial del panel del dock: la placa (icono + relleno; el punto de
+    app abierta va en el relleno) y encima el hueco para el icono más ampliado
+    o el rebote. Después lo mantiene el propio dock (DockView.panelThickness)."""
+    p, d = tokens["plasma"], tokens["dock"]
+    icon = p["dock_icon_size"]
+    biggest = d["magnification_size"] if d["magnification"] else icon
+    headroom = max(biggest - icon, math.ceil(icon * d["bounce"]))
+    h = icon + 2 * p["dock_padding"] + headroom
     return h + h % 2                          # Plasma solo muestra alturas pares
 
 

@@ -23,6 +23,28 @@ Item {
 
     property Item containment
 
+    // GoldenGlass: placa de vidrio del dock (org.goldenglass.dock), en
+    // coordenadas de este panel. El dock la fija al cambiar de tamaño (la
+    // ampliación la ensancha); el fondo, la región de blur (panelMask) y la
+    // sombra la siguen, y el resto del panel queda transparente para los
+    // iconos ampliados. Vacía = panel normal.
+    property rect goldenglassDockSlab: Qt.rect(0, 0, 0, 0)
+    readonly property bool goldenglassDock: goldenglassDockSlab.width > 0 && goldenglassDockSlab.height > 0
+    // Sitio normal del fondo (el de Plasma). Con el dock, la contención se queda
+    // aquí aunque el fondo se mueva a la placa: si siguiera al fondo, el dock
+    // movería su propia placa en bucle.
+    readonly property real panelItemX: rightEdge ? fixedLeftFloatingPadding + fixedRightFloatingPadding * (1 - floatingness) : leftFloatingPadding
+    readonly property real panelItemY: bottomEdge ? fixedTopFloatingPadding + fixedBottomFloatingPadding * (1 - floatingness) : topFloatingPadding
+    readonly property real panelItemWidth: verticalPanel ? panel.thickness : width - leftFloatingPadding - rightFloatingPadding
+    readonly property real panelItemHeight: verticalPanel ? height - topFloatingPadding - bottomFloatingPadding : panel.thickness
+    // El dock fija el grosor del panel: placa + hueco para los iconos ampliados
+    // y el rebote (PanelView lo guarda en la configuración del panel).
+    function goldenglassSetThickness(value) {
+        if (value > 0 && panel.thickness !== value) {
+            panel.thickness = value;
+        }
+    }
+
     property bool floatingPrefix: floatingPanelSvg.usedPrefix === "floating"
     readonly property bool verticalPanel: containment?.plasmoid?.formFactor === PlasmaCore.Types.Vertical
 
@@ -155,10 +177,10 @@ Item {
     KSvg.FrameSvgItem {
         id: floatingTranslucentItem
         visible: root.floatingness !== 0 && root.panelOpacity !== 1
-        x: root.rightEdge ? root.fixedLeftFloatingPadding + root.fixedRightFloatingPadding * (1 - root.floatingness) : root.leftFloatingPadding
-        y: root.bottomEdge ? root.fixedTopFloatingPadding + root.fixedBottomFloatingPadding * (1 - root.floatingness) : root.topFloatingPadding
-        width: root.verticalPanel ? panel.thickness : parent.width - root.leftFloatingPadding - root.rightFloatingPadding
-        height: root.verticalPanel ? parent.height - root.topFloatingPadding - root.bottomFloatingPadding : panel.thickness
+        x: root.goldenglassDock ? root.goldenglassDockSlab.x : root.panelItemX
+        y: root.goldenglassDock ? root.goldenglassDockSlab.y : root.panelItemY
+        width: root.goldenglassDock ? root.goldenglassDockSlab.width : root.panelItemWidth
+        height: root.goldenglassDock ? root.goldenglassDockSlab.height : root.panelItemHeight
 
         imagePath: containment?.plasmoid?.backgroundHints === PlasmaCore.Types.NoBackground ? "" : "widgets/panel-background"
     }
@@ -367,7 +389,9 @@ Item {
     }
     Item {
         id: containmentParent
-        anchors.centerIn: root.isOpaque ? floatingOpaqueItem : floatingTranslucentItem
+        anchors.centerIn: root.goldenglassDock ? undefined : (root.isOpaque ? floatingOpaqueItem : floatingTranslucentItem)
+        x: root.panelItemX + (root.panelItemWidth - width) / 2
+        y: root.panelItemY + (root.panelItemHeight - height) / 2
         width: root.verticalPanel ? panel.thickness : root.width - root.fixedLeftFloatingPadding - root.fixedRightFloatingPadding
         height: root.verticalPanel ? root.height - root.fixedBottomFloatingPadding - root.fixedTopFloatingPadding : panel.thickness
     }
