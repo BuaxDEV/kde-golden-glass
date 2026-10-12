@@ -73,12 +73,15 @@ dock.height = DOCK_HEIGHT;
 // del shell GoldenGlass y el dock ajusta el grosor si cambian sus ajustes.
 const dockWidget = dock.addWidget("org.goldenglass.dock");
 dockWidget.currentConfigGroup = ["General"];
-dockWidget.writeConfig("launchers", [
-    "preferred://filemanager",
-    "preferred://browser",
-    "applications:org.kde.konsole.desktop",
-    "applications:systemsettings.desktop",
-]);
+// Konsole y Preferencias del Sistema no son dependencias: solo si están (si no,
+// el dock mostraría un icono genérico que no abre nada).
+const launchers = ["preferred://filemanager", "preferred://browser"];
+for (const app of ["org.kde.konsole.desktop", "systemsettings.desktop"]) {
+    if (applicationExists(app)) {
+        launchers.push("applications:" + app);
+    }
+}
+dockWidget.writeConfig("launchers", launchers);
 
 // --- Modo oscuro: el interruptor del Centro de control (DarkModeControl de
 // Plasma) y el cambio automático día/noche alternan entre estos dos temas.
