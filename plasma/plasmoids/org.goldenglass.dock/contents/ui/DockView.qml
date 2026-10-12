@@ -58,7 +58,10 @@ Item {
 
     // --- ampliación ----------------------------------------------------------------
     property real cursor: -1                 // posición del cursor en la fila sin ampliar
-    property bool dragging: false
+    // icono que se arrastra: un Item vuelve solo a null si el delegado se
+    // destruye a medio arrastre (p. ej. se cierra la app), y no queda «arrastrando»
+    property Item dragItem: null
+    readonly property bool dragging: dragItem !== null
     property real amount: hover.hovered && magnification && !dragging ? 1 : 0
     Behavior on amount {
         NumberAnimation {
@@ -299,7 +302,7 @@ Item {
                 Component {
                     id: previewsComponent
                     WindowPreviews {
-                        tasksModel: tasksModel
+                        tasks: tasksModel
                         appName: task.label
                         appIcon: task.iconSource
                         windows: dock.windowsOf(task.modelIndex, task.model)
@@ -325,13 +328,14 @@ Item {
                         }
                         if (!moved && Math.abs(mouse.x - pressX) > Kirigami.Units.gridUnit) {
                             moved = true;
-                            dock.dragging = true;
+                            dock.dragItem = task;
                         }
                         if (moved) {
                             // al arrastrar no hay ampliación: todos los iconos miden lo mismo
-                            // (el primero de la fila es Apps)
+                            // (el primero de la fila es Apps). No vale launcherCount: solo
+                            // cuenta las fijadas que no están abiertas.
                             const p = mapToItem(row, mouse.x, mouse.y);
-                            const target = Math.max(0, Math.min(tasksModel.launcherCount - 1,
+                            const target = Math.max(0, Math.min(tasksRepeater.count - 1,
                                 Math.floor(p.x / (dock.iconSize + dock.gap)) - 1));
                             if (target !== task.index) {
                                 tasksModel.move(task.index, target);
@@ -340,17 +344,18 @@ Item {
                     }
                     onReleased: {
                         if (moved) {
+                            // antes de syncLaunchers: puede recrear este delegado
+                            dock.dragItem = null;
                             tasksModel.syncLaunchers();
-                            dock.dragging = false;
                         }
                     }
-                    onCanceled: dock.dragging = false
+                    onCanceled: dock.dragItem = null
                     onClicked: mouse => {
                         if (moved) {
                             return;
                         }
                         if (mouse.button === Qt.RightButton) {
-                            taskMenu.popup();
+                            taskMenu.open(mouse.x, mouse.y);
                         } else if (mouse.button === Qt.MiddleButton) {
                             tasksModel.requestNewInstance(task.modelIndex);
                         } else {
@@ -372,7 +377,7 @@ Item {
 
                 TaskMenu {
                     id: taskMenu
-                    tasksModel: tasksModel
+                    tasks: tasksModel
                     modelIndex: task.modelIndex
                     model: task.model
                     desktopId: dock.desktopId(task.model.LauncherUrlWithoutIcon)
@@ -390,7 +395,15 @@ Item {
                     interval: 300
                     onTriggered: if (dock.amount === 0) task.publishGeometry()
                 }
+                // también con una ventana más en el grupo (misma x) o al recentrarse la fila
+                readonly property int childCount: model.ChildCount || 0
+                onChildCountChanged: publishTimer.restart()
                 onXChanged: publishTimer.restart()
+                onWidthChanged: publishTimer.restart()
+                Connections {
+                    target: row
+                    function onXChanged() { publishTimer.restart(); }
+                }
                 Component.onCompleted: publishTimer.restart()
             }
         }

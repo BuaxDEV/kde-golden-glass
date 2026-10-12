@@ -21,7 +21,7 @@ import "tokens.js" as T
 ColumnLayout {
     id: previews
 
-    required property var tasksModel
+    required property var tasks             // TasksModel (ver TaskMenu.qml)
     required property string appName
     required property var appIcon
     // [{ index (QModelIndex persistente), title, winId, active }]
@@ -80,7 +80,7 @@ ColumnLayout {
                     }
                     TapHandler {
                         onTapped: {
-                            previews.tasksModel.requestActivate(entry.modelData.index);
+                            previews.tasks.requestActivate(entry.modelData.index);
                             previews.activated();
                         }
                     }

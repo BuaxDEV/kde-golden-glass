@@ -16,11 +16,10 @@
 
 import QtCore
 import QtQuick
-import QtQuick.Controls as QQC2
 import Qt.labs.folderlistmodel
 
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.components as PlasmaComponents3
+import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasma5support as P5Support
 
 MouseArea {
@@ -41,7 +40,7 @@ MouseArea {
     acceptedButtons: Qt.LeftButton | Qt.RightButton
     onClicked: mouse => {
         if (mouse.button === Qt.RightButton) {
-            menu.popup();
+            menu.open(mouse.x, mouse.y);
         } else {
             open();
         }
@@ -112,20 +111,23 @@ MouseArea {
         }
     }
 
-    PlasmaComponents3.Menu {
+    // QMenu (PlasmaExtras.Menu) y no un Menu de Qt Quick: como ventana propia,
+    // el de Qt Quick no tiene blur de KWin detrás y su vidrio es ilegible; el
+    // QMenu lo dibuja el kstyle GoldenGlass, que sí lo pide.
+    PlasmaExtras.Menu {
         id: menu
-        popupType: QQC2.Popup.Window
+        visualParent: button
 
-        PlasmaComponents3.MenuItem {
+        PlasmaExtras.MenuItem {
             text: i18n("Open")
-            icon.name: "document-open-folder"
-            onTriggered: button.open()
+            icon: "document-open-folder"
+            onClicked: button.open()
         }
-        PlasmaComponents3.MenuItem {
+        PlasmaExtras.MenuItem {
             text: i18n("Empty Trash…")
-            icon.name: "trash-empty"
+            icon: "trash-empty"
             enabled: button.hasContents
-            onTriggered: button.emptyTrash()
+            onClicked: button.emptyTrash()
         }
     }
 }

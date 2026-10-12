@@ -57,7 +57,7 @@ PlasmaCore.Dialog {
     location: PlasmaCore.Types.Floating
     flags: Qt.WindowStaysOnTopHint
     // un menú abierto es otra ventana: que no cierre el panel al tomar el foco
-    hideOnWindowDeactivate: !contextMenu.opened && !sortMenu.opened
+    hideOnWindowDeactivate: contextMenu.status === PlasmaExtras.Menu.Closed && sortMenu.status === PlasmaExtras.Menu.Closed
 
     // --- datos ----------------------------------------------------------------
 
@@ -230,7 +230,7 @@ PlasmaCore.Dialog {
     }
 
     function close() {
-        contextMenu.dismiss();
+        contextMenu.close();
         visible = false;
     }
 
@@ -248,41 +248,44 @@ PlasmaCore.Dialog {
             onNewData: source => disconnectSource(source)
         }
 
-        // Menús como ventanas emergentes propias (Qt ≥ 6.8): dentro de la
-        // ventana del panel quedarían recortados por sus bordes y sin el blur
-        // de KWin detrás (el vidrio del menú sería ilegible).
-        PlasmaComponents3.Menu {
+        // Menús como QMenu (PlasmaExtras.Menu): un Menu de Qt Quick dentro de
+        // la ventana del panel queda recortado por sus bordes y, como ventana
+        // propia, sin blur de KWin detrás (vidrio ilegible). El QMenu es una
+        // ventana emergente que dibuja el kstyle GoldenGlass, que sí pide el blur.
+        PlasmaExtras.Menu {
             id: contextMenu
-            popupType: QQC2.Popup.Window
-            margins: Kirigami.Units.smallSpacing // si Qt lo dibuja dentro del panel, que no se salga
             property var entry: null
 
-            function show(entry, item) {
+            function show(entry, item, x, y) {
                 contextMenu.entry = entry;
-                popup(); // donde está el cursor, como en macOS
+                visualParent = item;
+                open(x, y); // donde está el cursor, como en macOS
             }
 
-            PlasmaComponents3.MenuItem {
+            PlasmaExtras.MenuItem {
                 text: i18n("Open")
-                icon.name: "system-run"
-                onTriggered: panel.launch(contextMenu.entry)
+                icon: "system-run"
+                onClicked: panel.launch(contextMenu.entry)
             }
-            PlasmaComponents3.MenuSeparator {}
-            Instantiator {
-                model: contextMenu.entry ? contextMenu.entry.actions().filter(a => a.actionId && a.text) : []
-                delegate: PlasmaComponents3.MenuItem {
-                    required property var modelData
-                    text: modelData.text
-                    icon.name: typeof modelData.icon === "string" ? modelData.icon : ""
-                    onTriggered: {
-                        const e = contextMenu.entry;
-                        e.model.trigger(e.row, modelData.actionId, modelData.actionArgument);
-                        panel.close();
-                    }
+            PlasmaExtras.MenuItem {
+                separator: true
+            }
+        }
+        // acciones de la app, tras «Abrir» y el separador
+        Instantiator {
+            model: contextMenu.entry ? contextMenu.entry.actions().filter(a => a.actionId && a.text) : []
+            delegate: PlasmaExtras.MenuItem {
+                required property var modelData
+                text: modelData.text
+                icon: typeof modelData.icon === "string" ? modelData.icon : ""
+                onClicked: {
+                    const e = contextMenu.entry;
+                    e.model.trigger(e.row, modelData.actionId, modelData.actionArgument);
+                    panel.close();
                 }
-                onObjectAdded: (index, object) => contextMenu.insertItem(2 + index, object)
-                onObjectRemoved: (index, object) => contextMenu.removeItem(object)
             }
+            onObjectAdded: (index, object) => contextMenu.addMenuItem(object)
+            onObjectRemoved: (index, object) => contextMenu.removeMenuItem(object)
         }
 
 
@@ -349,23 +352,28 @@ PlasmaCore.Dialog {
                     icon.name: "overflow-menu"
                     display: QQC2.AbstractButton.IconOnly
                     text: i18n("Sort")
-                    onClicked: sortMenu.popup(sortButton, 0, sortButton.height)
+                    onClicked: {
+                        // al pulsar, QAction cambia la marca sola: se rehace al abrir
+                        byCategoryItem.checked = !panel.byName;
+                        byNameItem.checked = panel.byName;
+                        sortMenu.openRelative();
+                    }
 
-                    PlasmaComponents3.Menu {
+                    PlasmaExtras.Menu {
                         id: sortMenu
-                        popupType: QQC2.Popup.Window
-                        margins: Kirigami.Units.smallSpacing // si Qt lo dibuja dentro del panel, que no se salga
-                        PlasmaComponents3.MenuItem {
+                        visualParent: sortButton
+                        placement: PlasmaExtras.Menu.BottomPosedLeftAlignedPopup
+                        PlasmaExtras.MenuItem {
+                            id: byCategoryItem
                             text: i18n("By Category")
                             checkable: true
-                            checked: !panel.byName
-                            onTriggered: Plasmoid.configuration.sortMode = "category"
+                            onClicked: Plasmoid.configuration.sortMode = "category"
                         }
-                        PlasmaComponents3.MenuItem {
+                        PlasmaExtras.MenuItem {
+                            id: byNameItem
                             text: i18n("By Name")
                             checkable: true
-                            checked: panel.byName
-                            onTriggered: Plasmoid.configuration.sortMode = "name"
+                            onClicked: Plasmoid.configuration.sortMode = "name"
                         }
                     }
                 }
@@ -456,8 +464,8 @@ PlasmaCore.Dialog {
         }
     }
 
-    function showContextMenu(entry, item) {
-        contextMenu.show(entry, item);
+    function showContextMenu(entry, item, x, y) {
+        contextMenu.show(entry, item, x, y);
     }
 
     // --- componentes ----------------------------------------------------------
@@ -520,7 +528,7 @@ PlasmaCore.Dialog {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onClicked: mouse => {
             if (mouse.button === Qt.RightButton && !entry.bridge) {
-                owner.showContextMenu(entry, item);
+                owner.showContextMenu(entry, item, mouse.x, mouse.y);
             } else {
                 owner.launch(entry);
             }
