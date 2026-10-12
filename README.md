@@ -6,7 +6,23 @@ dock, semáforos, variantes clara/oscura/automática.
 
 > Proyecto independiente. No contiene assets, fuentes ni marcas de Apple.
 
-**Estado:** F0–F6 completas (tema, iconos, cursores, GTK, paquetes y CI). Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+**Estado:** 0.2.0 — F0–F11 completas: tema, iconos, cursores, GTK, paquetes y
+CI; sonidos, arranque, inicio de sesión, dock con ampliación y refracción de
+Liquid Glass. Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) y
+[CHANGELOG.md](CHANGELOG.md).
+
+## Capturas
+
+| | |
+|---|---|
+| ![Escritorio oscuro con el módulo Vidrio](docs/screenshots/desktop-dark.webp) | ![Escritorio claro con el módulo Vidrio](docs/screenshots/desktop-light.webp) |
+| ![Spotlight](docs/screenshots/spotlight.webp) | ![Apps](docs/screenshots/apps.webp) |
+| ![Inicio de sesión (SDDM), como la pantalla de bloqueo](docs/screenshots/login.webp) | ![Arranque (Plymouth): negro y gris con contraseña de disco](docs/screenshots/boot.webp) |
+
+![Dock con ampliación, oscuro y claro](docs/screenshots/dock.webp)
+
+Capturas del sandbox (`tools/sandbox.sh`) y de las vistas previas de Plymouth y
+SDDM (`tools/preview_plymouth.sh`, `tools/preview_login.sh`).
 
 ## Requisitos
 
