@@ -199,6 +199,34 @@ field_border_alpha = 0.22
 text_alpha = 0.60
 
 # ---------------------------------------------------------------------------
+# Pantalla de inicio de sesión (tema de SDDM, tools/login.py): como la de
+# bloqueo de GoldenGlass. Fondo de día o de noche según la hora; los controles
+# son siempre vidrio oscuro con texto claro, como el login de macOS.
+# Medidas en px para una pantalla de 1080 líneas (el tema escala con la altura).
+# ---------------------------------------------------------------------------
+[login]
+day_start = 7            # hora (0-23) desde la que se usa el fondo de día
+night_start = 19         # hora desde la que se usa el fondo de noche
+blur = 64                # radio del difuminado del fondo
+dim = 0.18               # oscurecido sobre el fondo difuminado
+clock_size = 96          # hora grande (px)
+date_size = 26           # fecha encima de la hora
+clock_top = 72           # del borde superior a la fecha
+avatar_size = 112        # avatar del usuario elegido
+avatar_small = 64        # avatares de la fila con varios usuarios
+name_size = 20
+field_width = 240        # campo de contraseña
+field_height = 32
+action_size = 30         # iconos de Reposo / Reiniciar / Apagar
+bottom_margin = 48
+text = "#FFFFFF"
+text_alpha = 0.9
+glass = "#FFFFFF"        # relleno de campo y botones (con glass_alpha)
+glass_alpha = 0.16
+glass_border_alpha = 0.28
+error = "#FF6961"
+
+# ---------------------------------------------------------------------------
 # Sonidos (tools/sounds.py): sintetizados, timbre de cristal
 # ---------------------------------------------------------------------------
 # Cada evento es una lista de capas que suenan desde `at` (s):

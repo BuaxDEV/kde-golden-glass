@@ -24,6 +24,7 @@ pkgname=(
   goldenglass-gtk
   goldenglass-sounds
   goldenglass-plymouth
+  goldenglass-login
 )
 pkgver=0.1.0
 pkgrel=1
@@ -104,7 +105,8 @@ package_goldenglass() {
            goldenglass-wallpapers goldenglass-gtk)
   # Partes del sistema: se activan con goldenglass-system o en Preferencias.
   optdepends=('goldenglass-sounds: glass sound effects and the sound on login'
-              'goldenglass-plymouth: boot screen with the logo and a thin progress bar')
+              'goldenglass-plymouth: boot screen with the logo and a thin progress bar'
+              'goldenglass-login: login screen like the lock screen (SDDM theme)')
 }
 
 package_goldenglass-kstyle() {
@@ -227,5 +229,19 @@ package_goldenglass-plymouth() {
 
   install -dm755 "$pkgdir/usr/share/plymouth/themes"
   cp -a gen/plymouth/goldenglass gen/plymouth/goldenglass-light "$pkgdir/usr/share/plymouth/themes/"
+  _docs
+}
+
+package_goldenglass-login() {
+  pkgdesc="GoldenGlass login screen: SDDM theme like the lock screen (enable with goldenglass-system or in System Settings)"
+  arch=(any)
+  license=(GPL-3.0-or-later CC-BY-SA-4.0)
+  # fondo de día y de noche; SVG de los iconos; QtQuick.Effects para el difuminado
+  depends=(goldenglass-plasma goldenglass-wallpapers qt6-svg qt6-declarative)
+  optdepends=('sddm: to show the GoldenGlass login screen (Plasma Login Manager only gets the wallpaper and settings)'
+              'goldenglass-cursors: cursor of the login screen')
+
+  install -dm755 "$pkgdir/usr/share/sddm/themes"
+  cp -a gen/login/sddm/GoldenGlass "$pkgdir/usr/share/sddm/themes/"
   _docs
 }

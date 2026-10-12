@@ -139,6 +139,13 @@ KCM.SimpleKCM {
                 : i18nc("@info", "The “plymouth” hook is missing from the mkinitcpio HOOKS: no boot screen will be shown.")).join("\n")
         }
 
+        Kirigami.InlineMessage {
+            Layout.fillWidth: true
+            type: Kirigami.MessageType.Warning
+            visible: kcm.loginWarnings.indexOf("sddm-overridden") >= 0
+            text: i18nc("@info", "/etc/sddm.conf sets its own theme and takes precedence: the GoldenGlass login screen will not be shown.")
+        }
+
         Kirigami.FormLayout {
             Layout.fillWidth: true
 
@@ -166,6 +173,50 @@ KCM.SimpleKCM {
                 }
             }
 
+            QQC2.Label {
+                Layout.maximumWidth: Kirigami.Units.gridUnit * 31
+                wrapMode: Text.WordWrap
+                font: Kirigami.Theme.smallFont
+                color: Kirigami.Theme.disabledTextColor
+                text: i18nc("@info", "The logo and a thin progress bar while the computer starts, and the disk password, if it is encrypted, in a glass field. Applying rebuilds the initramfs, which takes a moment.")
+            }
+
+            Item {
+                Kirigami.FormData.isSection: true
+            }
+
+            QQC2.Switch {
+                id: loginSwitch
+                Kirigami.FormData.label: i18nc("@label", "Login screen:")
+                visible: kcm.loginManager === "sddm" || kcm.loginManager === "plasmalogin"
+                enabled: !kcm.busy && kcm.loginInstalled
+                text: kcm.loginManager === "sddm"
+                    ? i18nc("@option:check", "Use the GoldenGlass login screen")
+                    : i18nc("@option:check", "Use the GoldenGlass wallpaper and my Plasma settings")
+                checked: kcm.login
+                onToggled: kcm.login = checked
+            }
+
+            QQC2.Label {
+                Layout.maximumWidth: Kirigami.Units.gridUnit * 31
+                wrapMode: Text.WordWrap
+                font: Kirigami.Theme.smallFont
+                color: Kirigami.Theme.disabledTextColor
+                text: {
+                    if (kcm.loginManager === "sddm") {
+                        return kcm.loginInstalled
+                            ? i18nc("@info", "Like the lock screen: blurred day or night wallpaper, large clock, avatar and password.")
+                            : i18nc("@info", "The GoldenGlass SDDM theme is not installed (goldenglass-login package).");
+                    }
+                    if (kcm.loginManager === "plasmalogin") {
+                        return kcm.loginInstalled
+                            ? i18nc("@info", "Plasma Login Manager does not support themes: it gets the GoldenGlass wallpaper and copies your colors, Plasma style, fonts, cursor and keyboard layout. For the full GoldenGlass login screen, use SDDM.")
+                            : i18nc("@info", "The GoldenGlass wallpaper is not installed (goldenglass-wallpapers package).");
+                    }
+                    return i18nc("@info", "The login manager in use is not SDDM or Plasma Login Manager: GoldenGlass cannot change its screen.");
+                }
+            }
+
             RowLayout {
                 spacing: Kirigami.Units.smallSpacing
                 opacity: kcm.busy ? 1 : 0
@@ -180,7 +231,7 @@ KCM.SimpleKCM {
                     running: kcm.busy
                 }
                 QQC2.Label {
-                    text: i18nc("@info:status", "Applying and rebuilding the initramfs…")
+                    text: i18nc("@info:status", "Applying…")
                 }
             }
         }
@@ -191,7 +242,7 @@ KCM.SimpleKCM {
             Layout.alignment: Qt.AlignHCenter
             wrapMode: Text.WordWrap
             color: Kirigami.Theme.disabledTextColor
-            text: i18nc("@info", "The logo and a thin progress bar while the computer starts, and the disk password, if it is encrypted, in a glass field. Applying asks for the administrator password and takes a moment while the initramfs is rebuilt.")
+            text: i18nc("@info", "Applying asks for the administrator password.")
         }
     }
 }

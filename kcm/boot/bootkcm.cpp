@@ -25,6 +25,15 @@ QString themeId(const QString &variant)
 {
     return variant == QLatin1String("light") ? QStringLiteral("goldenglass-light") : QStringLiteral("goldenglass");
 }
+
+QStringList strings(const QJsonValue &array)
+{
+    QStringList out;
+    for (const QJsonValue &value : array.toArray()) {
+        out.append(value.toString());
+    }
+    return out;
+}
 }
 
 BootKcm::BootKcm(QObject *parent, const KPluginMetaData &data)
@@ -35,20 +44,26 @@ BootKcm::BootKcm(QObject *parent, const KPluginMetaData &data)
 
     m_process->setProcessChannelMode(QProcess::MergedChannels);
     connect(m_process, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus status) {
-        // 126/127: autenticación cancelada o denegada en pkexec
         if (status != QProcess::NormalExit || exitCode != 0) {
             const QString output = QString::fromLocal8Bit(m_process->readAll()).trimmed();
+            // 126/127: autenticación cancelada o denegada en pkexec
             if (exitCode == 126 || exitCode == 127) {
-                setErrorText(i18nc("@info:status", "The boot screen was not changed: authentication was canceled or denied."));
+                setErrorText(i18nc("@info:status", "Nothing was changed: authentication was canceled or denied."));
             } else {
-                setErrorText(i18nc("@info:status", "The boot screen could not be changed: %1", output));
+                setErrorText(i18nc("@info:status", "The change could not be applied: %1", output));
             }
+            m_queue.clear();
+        }
+        if (!m_queue.isEmpty()) {
+            startNext();
+            return;
         }
         load();
         Q_EMIT busyChanged();
     });
     connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError) {
         setErrorText(i18nc("@info:status", "goldenglass-system could not be started: %1", m_process->errorString()));
+        m_queue.clear();
         Q_EMIT busyChanged();
     });
 }
@@ -81,6 +96,36 @@ bool BootKcm::installed() const
 QStringList BootKcm::warnings() const
 {
     return m_warnings;
+}
+
+bool BootKcm::login() const
+{
+    return m_login;
+}
+
+void BootKcm::setLogin(bool value)
+{
+    if (m_login == value) {
+        return;
+    }
+    m_login = value;
+    Q_EMIT loginChanged();
+    updateState();
+}
+
+QString BootKcm::loginManager() const
+{
+    return m_loginManager;
+}
+
+bool BootKcm::loginInstalled() const
+{
+    return m_loginInstalled;
+}
+
+QStringList BootKcm::loginWarnings() const
+{
+    return m_loginWarnings;
 }
 
 bool BootKcm::busy() const
@@ -116,54 +161,77 @@ void BootKcm::load()
         return;
     }
     QProcess status;
-    status.start(path, {QStringLiteral("status"), QStringLiteral("--json"), QStringLiteral("plymouth")});
+    status.start(path, {QStringLiteral("status"), QStringLiteral("--json"), QStringLiteral("plymouth"), QStringLiteral("login")});
     if (!status.waitForFinished(5000) || status.exitCode() != 0) {
         setErrorText(i18nc("@info:status", "The current state could not be read: %1", QString::fromLocal8Bit(status.readAllStandardError()).trimmed()));
         return;
     }
-    const QJsonObject plymouth = QJsonDocument::fromJson(status.readAllStandardOutput()).object().value(QStringLiteral("plymouth")).toObject();
-    m_loaded = plymouth.value(QStringLiteral("enabled")).toBool() ? plymouth.value(QStringLiteral("variant")).toString() : kSystem;
+    const QJsonObject state = QJsonDocument::fromJson(status.readAllStandardOutput()).object();
+
+    const QJsonObject plymouth = state.value(QStringLiteral("plymouth")).toObject();
+    m_loadedPlymouth = plymouth.value(QStringLiteral("enabled")).toBool() ? plymouth.value(QStringLiteral("variant")).toString() : kSystem;
     m_systemTheme = plymouth.value(QStringLiteral("system_theme")).toString();
     m_installed = plymouth.value(QStringLiteral("installed")).toBool();
-    m_warnings.clear();
-    for (const QJsonValue &code : plymouth.value(QStringLiteral("warnings")).toArray()) {
-        m_warnings.append(code.toString());
-    }
+    m_warnings = strings(plymouth.value(QStringLiteral("warnings")));
+
+    const QJsonObject login = state.value(QStringLiteral("login")).toObject();
+    m_loadedLogin = login.value(QStringLiteral("enabled")).toBool();
+    m_loginManager = login.value(QStringLiteral("manager")).toString();
+    m_loginInstalled = login.value(QStringLiteral("installed")).toBool();
+    m_loginWarnings = strings(login.value(QStringLiteral("warnings")));
     Q_EMIT stateChanged();
 
-    m_plymouth = m_loaded;
+    m_plymouth = m_loadedPlymouth;
+    m_login = m_loadedLogin;
     Q_EMIT plymouthChanged();
+    Q_EMIT loginChanged();
     updateState();
 }
 
 void BootKcm::save()
 {
-    if (m_plymouth == m_loaded || busy()) {
+    if (busy()) {
         return;
     }
+    // goldenglass-system pide la contraseña con pkexec (polkit la recuerda un
+    // rato: los dos cambios seguidos solo la piden una vez)
+    if (m_plymouth != m_loadedPlymouth) {
+        if (m_plymouth == kSystem) {
+            m_queue.append({QStringLiteral("disable"), QStringLiteral("plymouth")});
+        } else {
+            m_queue.append({QStringLiteral("enable"), QStringLiteral("plymouth"), QStringLiteral("--variant"), m_plymouth});
+        }
+    }
+    if (m_login != m_loadedLogin) {
+        m_queue.append({m_login ? QStringLiteral("enable") : QStringLiteral("disable"), QStringLiteral("login")});
+    }
+    if (!m_queue.isEmpty()) {
+        setErrorText(QString());
+        startNext();
+    }
+}
+
+void BootKcm::startNext()
+{
     const QString path = program();
     if (path.isEmpty()) {
+        m_queue.clear();
         return;
     }
-    setErrorText(QString());
-    // goldenglass-system pide la contraseña con pkexec y regenera el initramfs
-    if (m_plymouth == kSystem) {
-        m_process->start(path, {QStringLiteral("disable"), QStringLiteral("plymouth")});
-    } else {
-        m_process->start(path, {QStringLiteral("enable"), QStringLiteral("plymouth"), QStringLiteral("--variant"), m_plymouth});
-    }
+    m_process->start(path, m_queue.takeFirst());
     Q_EMIT busyChanged();
 }
 
 void BootKcm::defaults()
 {
     setPlymouth(QStringLiteral("dark"));
+    setLogin(m_loginInstalled);
 }
 
 void BootKcm::updateState()
 {
-    setNeedsSave(m_plymouth != m_loaded);
-    setRepresentsDefaults(m_plymouth == QLatin1String("dark"));
+    setNeedsSave(m_plymouth != m_loadedPlymouth || m_login != m_loadedLogin);
+    setRepresentsDefaults(m_plymouth == QLatin1String("dark") && m_login == m_loginInstalled);
 }
 
 void BootKcm::setErrorText(const QString &text)
