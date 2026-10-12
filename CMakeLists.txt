@@ -50,6 +50,7 @@ include(KDEInstallDirs6)
 include(KDECMakeSettings)
 
 option(WITH_DECORATIONS "Build GoldenGlass window decorations for KWin" ON)
+option(WITH_KWIN_EFFECT "Build the GoldenGlass glass effect for KWin (blur with refraction)" ON)
 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED CONFIG COMPONENTS Widgets DBus)
 find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
@@ -110,6 +111,10 @@ endif()
 
 add_subdirectory(kcm)
 
+if(WITH_KWIN_EFFECT)
+    add_subdirectory(kwin-effect)
+endif()
+
 ki18n_install(po)
 
 # Comando goldenglass-glass (nivel de vidrio en vivo) y lo que usa en ejecución.
@@ -119,6 +124,10 @@ install(FILES tokens/goldenglass.toml DESTINATION "${KDE_INSTALL_DATADIR}/golden
 file(RELATIVE_PATH GOLDENGLASS_REL_DATA "${KDE_INSTALL_FULL_BINDIR}" "${KDE_INSTALL_FULL_DATADIR}/goldenglass")
 configure_file(tools/goldenglass-glass.in "${CMAKE_CURRENT_BINARY_DIR}/goldenglass-glass" @ONLY)
 install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/goldenglass-glass" DESTINATION ${KDE_INSTALL_BINDIR})
+# Al iniciar sesión: refracción si KWin cargó el efecto, Blur si no (ver glass.py)
+if(WITH_KWIN_EFFECT)
+    install(FILES tools/goldenglass-glass-check.desktop DESTINATION ${KDE_INSTALL_AUTOSTARTDIR})
+endif()
 
 # Cabecera de versión para el módulo de configuración del estilo.
 include(ECMSetupVersion)

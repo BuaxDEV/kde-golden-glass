@@ -50,6 +50,7 @@ Nivel de vidrio en vivo: Preferencias del Sistema › Colores y temas › Vidrio
 ```sh
 goldenglass-glass --level 0.8   # 0 = más transparente, 1 = más opaco
 goldenglass-glass --get
+goldenglass-glass --refraction off   # refracción de Liquid Glass (efecto de KWin), on/off
 ```
 
 Dock (ampliación, tamaño, apps recientes): Preferencias del Sistema › Espacio de trabajo ›

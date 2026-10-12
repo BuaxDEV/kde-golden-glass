@@ -43,6 +43,15 @@ GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
         }
         Q_EMIT busyChanged();
     });
+    m_refractionProcess = new QProcess(this);
+    m_refractionProcess->setProcessChannelMode(QProcess::MergedChannels);
+    connect(m_refractionProcess, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus status) {
+        if (status != QProcess::NormalExit || exitCode != 0) {
+            setErrorText(i18nc("@info:status", "Refraction could not be changed: %1", QString::fromLocal8Bit(m_refractionProcess->readAll()).trimmed()));
+        }
+        loadRefraction();
+    });
+
     connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError) {
         setErrorText(i18nc("@info:status", "goldenglass-glass could not be started: %1", m_process->errorString()));
         Q_EMIT busyChanged();
@@ -74,8 +83,46 @@ QString GlassKcm::errorText() const
     return m_errorText;
 }
 
+bool GlassKcm::refraction() const
+{
+    return m_refraction;
+}
+
+bool GlassKcm::refractionAvailable() const
+{
+    return m_refractionAvailable;
+}
+
+void GlassKcm::setRefraction(bool value)
+{
+    const QString program = QStandardPaths::findExecutable(QStringLiteral("goldenglass-glass"));
+    if (program.isEmpty() || m_refractionProcess->state() != QProcess::NotRunning) {
+        return;
+    }
+    m_refraction = value;
+    Q_EMIT refractionChanged();
+    setErrorText(QString());
+    m_refractionProcess->start(program, {QStringLiteral("--refraction"), value ? QStringLiteral("on") : QStringLiteral("off")});
+}
+
+void GlassKcm::loadRefraction()
+{
+    const QString program = QStandardPaths::findExecutable(QStringLiteral("goldenglass-glass"));
+    if (program.isEmpty()) {
+        return;
+    }
+    QProcess get;
+    get.start(program, {QStringLiteral("--get-refraction")});
+    get.waitForFinished(5000);
+    const QString state = QString::fromLocal8Bit(get.readAllStandardOutput()).trimmed();
+    m_refractionAvailable = state != QLatin1String("unavailable") && !state.isEmpty();
+    m_refraction = state == QLatin1String("on");
+    Q_EMIT refractionChanged();
+}
+
 void GlassKcm::load()
 {
+    loadRefraction();
     const KConfigGroup group(KSharedConfig::openConfig(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig), QStringLiteral("Glass"));
     setLevel(group.readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel));
 }

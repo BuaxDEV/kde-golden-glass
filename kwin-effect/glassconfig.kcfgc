@@ -1,0 +1,5 @@
+File=glass.kcfg
+ClassName=GlassConfig
+NameSpace=GoldenGlass
+Singleton=true
+Mutators=true
