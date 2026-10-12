@@ -14,6 +14,7 @@ Salidas (en build/, no versionado):
   build/cursors/GoldenGlass-cursors/      (tema de cursores; se cachea)
   build/icons/GoldenGlass{,-Dark}/        (tema de iconos)
   build/gtk/GoldenGlass/ y libadwaita.css (GTK3/GTK4 sobre adw-gtk3)
+  build/sounds/GoldenGlass/               (tema de sonidos; se cachea)
 
 Uso:
   python3 tools/gen_tokens.py [--tokens RUTA] [--out DIR]
@@ -38,6 +39,7 @@ import icons  # noqa: E402
 import lookandfeel  # noqa: E402
 import plasma_theme  # noqa: E402
 import plasmoids  # noqa: E402
+import sounds  # noqa: E402
 import wallpaper  # noqa: E402
 
 VARIANTS = {
@@ -227,6 +229,7 @@ def main(argv: list[str] | None = None) -> int:
     written += cursors.build(args.out)
     written += icons.build(tokens, args.out)
     written += gtk.build(tokens, args.out)
+    written += sounds.build(tokens, args.out)
 
     for p in written:
         print(f"  {p.relative_to(ROOT) if p.is_relative_to(ROOT) else p}")

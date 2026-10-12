@@ -20,6 +20,7 @@ dock, semáforos, variantes clara/oscura/automática.
 python3 tools/gen_tokens.py              # regenera build/ desde tokens/goldenglass.toml
 python3 tools/preview_plasma.py          # vista previa del Plasma Style (build/preview-*.png, requiere PyQt6)
 python3 tools/preview_style.py           # vista previa del estilo de apps compilado: menú y controles
+python3 tools/sounds.py --play alert     # escuchar un sonido tal como está en los tokens
 tools/sandbox.sh light                   # sesión Plasma aislada y sin ventana → capturas en build/sandbox/
 tools/install.sh --dev                   # instala en ~/.local con symlinks
 plasma-apply-lookandfeel -a org.goldenglass.light.desktop --resetLayout
@@ -38,7 +39,8 @@ sudo pacman -Rns goldenglass              # desinstalar
 ```
 
 Paquetes: `goldenglass-kstyle` (estilo, decoración, ajustes; C++), `goldenglass-plasma`,
-`goldenglass-icons`, `goldenglass-cursors`, `goldenglass-wallpapers`, `goldenglass-gtk`.
+`goldenglass-icons`, `goldenglass-cursors`, `goldenglass-wallpapers`, `goldenglass-gtk` y,
+opcional, `goldenglass-sounds`.
 Volver a ejecutar `makepkg -si` tras actualizar Qt o KDE.
 
 Nivel de vidrio en vivo: Preferencias del Sistema › Colores y temas › Vidrio, o desde la terminal (requiere `goldenglass-kstyle` instalado):
@@ -46,6 +48,15 @@ Nivel de vidrio en vivo: Preferencias del Sistema › Colores y temas › Vidrio
 ```sh
 goldenglass-glass --level 0.8   # 0 = más transparente, 1 = más opaco
 goldenglass-glass --get
+```
+
+Sonidos de cristal y sonido al iniciar sesión (requieren `goldenglass-sounds`; no
+se activan al instalar): Preferencias del Sistema › Multimedia › Efectos de
+sonido, o desde la terminal:
+
+```sh
+goldenglass-system enable sounds chime   # disable deja todo como estaba
+goldenglass-system status
 ```
 
 `--resetLayout` (o marcar "Disposición del escritorio y ventanas" al aplicar el

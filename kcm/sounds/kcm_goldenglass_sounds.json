@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Description": "GoldenGlass glass sound effects and the sound on login",
+        "Description[es]": "Efectos de sonido de cristal de GoldenGlass y sonido al iniciar sesión",
+        "FormFactors": ["desktop"],
+        "Icon": "goldenglass",
+        "Name": "Sound Effects",
+        "Name[es]": "Efectos de sonido"
+    },
+    "X-KDE-Keywords": "sound,sounds,alert,chime,startup sound,login sound,goldenglass",
+    "X-KDE-Keywords[es]": "sonido,sonidos,alerta,chime,sonido de arranque,sonido al iniciar sesión,goldenglass",
+    "X-KDE-System-Settings-Parent-Category": "audio-and-video",
+    "X-KDE-Weight": 60
+}

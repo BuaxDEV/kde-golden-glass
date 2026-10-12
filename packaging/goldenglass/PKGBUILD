@@ -22,6 +22,7 @@ pkgname=(
   goldenglass-cursors
   goldenglass-wallpapers
   goldenglass-gtk
+  goldenglass-sounds
 )
 pkgver=0.1.0
 pkgrel=1
@@ -35,7 +36,8 @@ makedepends=(
   frameworkintegration kcmutils kcolorscheme kconfig kconfigwidgets kcoreaddons kdecoration
   kguiaddons ki18n kiconthemes kirigami kwindowsystem qt6-base qt6-declarative
   # generadores (tools/gen_tokens.py)
-  python python-numpy python-pillow python-pyqt6 qt6-svg fontconfig gettext inter-font
+  python python-numpy python-pillow python-pyqt6 python-soundfile qt6-svg fontconfig gettext
+  inter-font
   # temas heredados: los enlaces de protección de los iconos y el import de
   # adw-gtk3 apuntan a ellos
   breeze-icons adw-gtk-theme
@@ -99,6 +101,8 @@ package_goldenglass() {
   arch=(any)
   depends=(goldenglass-kstyle goldenglass-plasma goldenglass-icons goldenglass-cursors
            goldenglass-wallpapers goldenglass-gtk)
+  # Partes del sistema: se activan con goldenglass-system o en Preferencias.
+  optdepends=('goldenglass-sounds: glass sound effects and the sound on login')
 }
 
 package_goldenglass-kstyle() {
@@ -106,6 +110,7 @@ package_goldenglass-kstyle() {
   license=(GPL-3.0-or-later)
   depends=(frameworkintegration kcmutils kcolorscheme kconfig kconfigwidgets kcoreaddons kdecoration
            kguiaddons ki18n kiconthemes kirigami kwindowsystem qt6-base qt6-declarative python)
+  optdepends=('pipewire: listen to the sounds in the Sound Effects settings module')
 
   DESTDIR="$pkgdir" cmake --install build
   install -Dm644 goldenglass/AUTHORS "$pkgdir/usr/share/doc/$pkgname/AUTHORS"
@@ -117,7 +122,7 @@ package_goldenglass-plasma() {
   pkgdesc="GoldenGlass Plasma style, global themes, lock screen, plasmoids and color schemes"
   arch=(any)
   depends=(plasma-workspace plasma-desktop kscreenlocker plasma5support plasma-nm plasma-pa bluez-qt
-           powerdevil kcmutils fontconfig inter-font kdialog glib2 kio)
+           powerdevil kcmutils fontconfig inter-font kdialog glib2 kio kconfig python)
   optdepends=('goldenglass-kstyle: widget style and window decoration used by the global themes'
               'goldenglass-icons: icon theme used by the global themes'
               'goldenglass-cursors: cursor theme used by the global themes'
@@ -137,6 +142,9 @@ package_goldenglass-plasma() {
   install -dm755 "$data/kwin/scripts"
   cp -r goldenglass/plasma/kwin/scripts/org.goldenglass.shortcuts "$data/kwin/scripts/"
   install -Dm644 goldenglass/assets/logo/goldenglass{,-symbolic}.svg -t "$data/icons/hicolor/scalable/apps/"
+  # goldenglass-system: activa por usuario lo que no aplica el Global Theme
+  install -Dm644 goldenglass/tools/system.py -t "$pkgdir$_share/tools/"
+  _launcher goldenglass-system system.py
   _docs
 }
 
@@ -191,5 +199,17 @@ package_goldenglass-gtk() {
   install -Dm644 goldenglass/tools/gtk_sync.py -t "$pkgdir$_share/tools/"
   _launcher goldenglass-gtk-sync gtk_sync.py
   _autostart goldenglass-gtk-sync "GoldenGlass GTK sync"
+  _docs
+}
+
+package_goldenglass-sounds() {
+  pkgdesc="GoldenGlass glass sound theme (enable it with goldenglass-system or in System Settings)"
+  arch=(any)
+  license=(CC-BY-SA-4.0)
+  depends=(goldenglass-plasma)  # goldenglass-system
+
+  install -dm755 "$pkgdir/usr/share/sounds"
+  cp -a gen/sounds/GoldenGlass "$pkgdir/usr/share/sounds/"
+  rm -f "$pkgdir/usr/share/sounds/GoldenGlass/.stamp"
   _docs
 }

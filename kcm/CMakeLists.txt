@@ -9,6 +9,8 @@ target_link_libraries(kcm_goldenglass PRIVATE
     KF6::I18n
 )
 
+add_subdirectory(sounds)
+
 # Prueba de integración (necesita una sesión Plasma; ver el comentario del
 # archivo). No se instala ni se registra en ctest.
 if(BUILD_TESTING)
