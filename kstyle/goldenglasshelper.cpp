@@ -953,122 +953,15 @@ void Helper::renderLineEdit(QPainter *painter,
                             const AnimationMode mode,
                             const qreal opacity) const
 {
+    Q_UNUSED(mouseOver)
     painter->setRenderHint(QPainter::Antialiasing);
 
     QRectF frameRect(rect.adjusted(Metrics::Frame_FrameWidth, Metrics::Frame_FrameWidth, -Metrics::Frame_FrameWidth, -Metrics::Frame_FrameWidth));
     qreal radius(frameRadius(PenWidth::NoPen, -1));
 
     painter->setPen(Qt::NoPen);
-    if (enabled) {
-        // draw shadow
-        if (hasFocus) {
-            frameRect.adjust(1, 1, -1, -1);
-            // focus in animation
-            if (mode == 2 && opacity > 0 && opacity < 1) {
-                // shadow opacity animation
-                // old shadow
-                // renderBoxShadow( painter, frameRect, 0, 1, 5, QColor(0,0,0,84*(1-opacity)), radius, windowActive );
-                // renderOutline(painter, frameRect, radius, 6*(1-opacity));
-                // painter->setPen( Qt::NoPen );
-                // new shadow
-                // renderBoxShadow( painter, frameRect, 0, 1, 6, alphaColor(outline.darker(120), opacity) , radius, windowActive );
-                // renderBoxShadow( painter, frameRect, 0, 1, 4, alphaColor(outline.darker(120), opacity) , radius, windowActive );
-
-                const qreal finalRadius((frameRect.width() + static_cast<qreal>(Metrics::Frame_FrameWidth)) * opacity);
-
-                QPixmap mask = QPixmap(rect.width(), rect.height());
-                mask.fill(Qt::transparent);
-
-                QPainter pmask(&mask);
-                pmask.setRenderHint(QPainter::Antialiasing);
-                pmask.fillRect(rect, Qt::black);
-                pmask.setPen(Qt::NoPen);
-                pmask.setBrush(Qt::black);
-                pmask.setCompositionMode(QPainter::CompositionMode_SourceOut);
-                pmask.drawEllipse(QPointF(frameRect.x(), frameRect.y() + frameRect.height() / 2), finalRadius, finalRadius);
-                pmask.end();
-
-                QPixmap pixmap = QPixmap(rect.width(), rect.height());
-                pixmap.fill(Qt::transparent);
-                QPainter p(&pixmap);
-                p.setOpacity(0.3 + 0.7 * opacity);
-                p.setRenderHint(QPainter::Antialiasing);
-                p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-                p.setPen(Qt::NoPen);
-                renderBoxShadow(&p, frameRect, 0, 1, 6, outline.darker(120), radius, windowActive); // comment this out for only the outline animation
-                p.setBrush(alphaColor(outline, 0.6));
-                QRectF focusFrame = frameRect.adjusted(-2, -2, 2, 2);
-                p.drawRoundedRect(focusFrame, radius + 1, radius + 1); // outline around lineedit
-
-                // mask
-                // p.setOpacity(1);  // uncomment this for only outline animation
-                p.setCompositionMode(QPainter::CompositionMode_DestinationOut);
-                p.drawPixmap(rect, mask);
-                p.end();
-
-                painter->drawPixmap(rect, pixmap);
-            }
-
-            // focus animation done
-            else {
-                renderBoxShadow(painter, frameRect, 0, 1, 7, outline.darker(120), radius, windowActive);
-                painter->setBrush(alphaColor(outline, 0.6));
-                QRectF focusFrame = frameRect.adjusted(-2, -2, 2, 2);
-                painter->drawRoundedRect(focusFrame, radius + 1, radius + 1);
-            }
-        }
-
-        // mouse over or normal state
-        else {
-            // focus out animation
-            if (mode == 2 && opacity > 0 && opacity < 1) {
-                const qreal finalRadius((frameRect.width() + static_cast<qreal>(Metrics::Frame_FrameWidth)) * opacity);
-
-                QPixmap mask = QPixmap(rect.width(), rect.height());
-                mask.fill(Qt::transparent);
-
-                QPainter pmask(&mask);
-                pmask.setOpacity(1);
-                pmask.setRenderHint(QPainter::Antialiasing);
-                pmask.fillRect(rect, Qt::black);
-                pmask.setPen(Qt::NoPen);
-                pmask.setBrush(Qt::black);
-                pmask.setCompositionMode(QPainter::CompositionMode_SourceOut);
-                pmask.drawEllipse(QPointF(frameRect.x(), frameRect.y() + frameRect.height() / 2), finalRadius, finalRadius);
-                pmask.end();
-
-                QPixmap pixmap = QPixmap(rect.width(), rect.height());
-                pixmap.fill(Qt::transparent);
-                QPainter p(&pixmap);
-                // p.setOpacity(0.3 + 0.6*opacity);
-                p.setRenderHint(QPainter::Antialiasing);
-                p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-                p.setPen(Qt::NoPen);
-                renderBoxShadow(&p, frameRect, 0, 1, 6, outline.darker(120), radius, windowActive);
-                p.setBrush(alphaColor(outline, 0.6));
-                QRectF focusFrame = frameRect.adjusted(-1, -1, 1, 1);
-                p.drawRoundedRect(focusFrame, radius + 1, radius + 1);
-
-                // mask
-                p.setCompositionMode(QPainter::CompositionMode_DestinationOut);
-                p.drawPixmap(rect, mask);
-                p.end();
-
-                painter->drawPixmap(rect, pixmap);
-
-                // unfocused lineedit shadow effect
-                renderBoxShadow(painter, frameRect, 0, 1, 5, QColor(0, 0, 0, 84 * (1 - opacity)), radius, windowActive);
-                renderOutline(painter, frameRect, radius, 6 * (1 - opacity));
-                painter->setPen(Qt::NoPen);
-
-            }
-
-            // normal
-            else {
-                renderBoxShadow(painter, frameRect, 0, 1, 5, QColor(0, 0, 0, 84), radius, windowActive);
-            }
-        }
-    }
+    if (enabled)
+        renderBoxShadow(painter, frameRect, 0, 1, 5, QColor(0, 0, 0, 84), radius, windowActive);
 
     // set brush
     if (background.isValid())
@@ -1076,11 +969,29 @@ void Helper::renderLineEdit(QPainter *painter,
     else
         painter->setBrush(Qt::NoBrush);
 
-    if (hasFocus)
-        radius--;
-
     // render
     painter->drawRoundedRect(frameRect, radius, radius);
+
+    // focus ring (macOS): translucent accent hugging the field edge, it covers
+    // the field's border and grows outwards only as far as the frame margin
+    qreal ringOpacity(hasFocus ? 1.0 : 0.0);
+    if (mode == AnimationFocus && opacity >= 0 && opacity < 1)
+        ringOpacity = opacity;
+
+    if (enabled && ringOpacity > 0) {
+        const qreal outside(qMin<qreal>(Tokens::FocusRingWidth, Metrics::Frame_FrameWidth));
+        const qreal inside(Tokens::FocusRingWidth - outside);
+        const QRectF outerRect(frameRect.adjusted(-outside, -outside, outside, outside));
+        const QRectF innerRect(frameRect.adjusted(inside, inside, -inside, -inside));
+
+        QPainterPath ring;
+        ring.setFillRule(Qt::OddEvenFill);
+        ring.addRoundedRect(outerRect, radius + outside, radius + outside);
+        ring.addRoundedRect(innerRect, qMax<qreal>(radius - inside, 0), qMax<qreal>(radius - inside, 0));
+
+        painter->setBrush(alphaColor(outline, Tokens::FocusRingAlpha * ringOpacity));
+        painter->drawPath(ring);
+    }
 }
 
 //______________________________________________________________________________

@@ -28,6 +28,12 @@ dock = 14            # ≤ plasma.menubar_height / 2: Plasma limita la altura de
                      # todo panel a la suma de sus esquinas (ver plasma_theme)
 tooltip = 6
 
+# Anillo de foco de los campos de texto, como en macOS: color de acento
+# translúcido pegado al borde del campo, sin halo difuminado.
+[focus_ring]
+width = 3            # ancho total del anillo
+alpha = 0.5          # opacidad del acento
+
 # ---------------------------------------------------------------------------
 # Vidrio — niveles del slider (0.0 = más claro, 1.0 = más opaco)
 # El slider es continuo; estos son los valores en las 3 muescas.

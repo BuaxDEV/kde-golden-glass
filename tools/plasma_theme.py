@@ -104,7 +104,7 @@ class Svg:
 
 def frame(svg: Svg, prefix: str, radius: float, fill: Paint,
           border: Paint | None = None, margins: tuple[float, float, float, float] | None = None,
-          edge: float = 8, stretch: bool = False) -> None:
+          edge: float = 8, stretch: bool = False, border_width: float = 1) -> None:
     """Marco de 9 teselas con esquinas redondeadas.
 
     `margins` = (top, right, bottom, left) → `hint-*-margin`.
@@ -124,7 +124,7 @@ def frame(svg: Svg, prefix: str, radius: float, fill: Paint,
             x, y, w, h = xs[col], ys[row], sizes[col], sizes[row]
             parts = [_tile_fill(name, x, y, w, h, c, radius, fill)]
             if border is not None and name != "center":
-                parts.append(_tile_border(name, x, y, w, h, c, radius, border))
+                parts.append(_tile_border(name, x, y, w, h, c, radius, border, border_width))
             svg.body.append(f'<g id="{prefix}{name}">{"".join(parts)}</g>')
 
     if margins is not None:
@@ -144,26 +144,26 @@ def _tile_fill(name: str, x, y, w, h, c, radius, paint: Paint) -> str:
     return f'<rect x="{_f(x)}" y="{_f(y)}" width="{_f(w)}" height="{_f(h)}"{paint.attrs()}/>'
 
 
-def _tile_border(name: str, x, y, w, h, c, radius, paint: Paint) -> str:
-    """Filo de 1 px en el lado exterior de la tesela."""
+def _tile_border(name: str, x, y, w, h, c, radius, paint: Paint, width: float = 1) -> str:
+    """Filo de `width` px en el lado exterior de la tesela."""
     if name in _CORNER_ARCS and radius > 0:
         # Anillo relleno (no trazo): QtSvg suma medio ancho de trazo a los
         # límites del elemento, lo que encoge la tesela y abre rendijas.
         cx, cy = _corner_center(name, x, y, c)
         (sx, sy), (ex, ey) = _CORNER_ARCS[name]
-        ri = c - 1
+        ri = max(c - width, 0)
         return (f'<path d="M {_f(cx + sx * c)},{_f(cy + sy * c)} A {_f(c)},{_f(c)} 0 0 1 '
                 f'{_f(cx + ex * c)},{_f(cy + ey * c)} L {_f(cx + ex * ri)},{_f(cy + ey * ri)} '
                 f'A {_f(ri)},{_f(ri)} 0 0 0 {_f(cx + sx * ri)},{_f(cy + sy * ri)} Z"{paint.attrs()}/>')
     lines = []
     if name.startswith("top"):
-        lines.append((x, y, w, 1))
+        lines.append((x, y, w, width))
     if name.startswith("bottom"):
-        lines.append((x, y + h - 1, w, 1))
+        lines.append((x, y + h - width, w, width))
     if name.endswith("left"):
-        lines.append((x, y, 1, h))
+        lines.append((x, y, width, h))
     if name.endswith("right"):
-        lines.append((x + w - 1, y, 1, h))
+        lines.append((x + w - width, y, width, h))
     return "".join(f'<rect x="{_f(lx)}" y="{_f(ly)}" width="{_f(lw)}" height="{_f(lh)}"{paint.attrs()}/>'
                    for lx, ly, lw, lh in lines)
 
@@ -340,9 +340,14 @@ def lineedit_svg(tokens: dict) -> str:
     clear = Paint(None, 0.0, "#000000")
     svg = Svg()
     frame(svg, "base-", r, Paint(TEXT, 0.08), Paint(TEXT, 0.14), margins=margins)
-    frame(svg, "hover-", r, clear, Paint(TEXT, 0.28), margins=margins)
-    frame(svg, "focus-", r, clear, Paint(HIGHLIGHT, 0.9), margins=margins)
-    frame(svg, "focusframe-", r, clear, Paint(HIGHLIGHT, 0.9), margins=margins)
+    # Plasma agranda hover/focus hacia fuera según sus márgenes: cada anillo
+    # cubre el filo de 1 px de base y sobresale solo lo que le queda de ancho.
+    frame(svg, "hover-", r + 1, clear, Paint(TEXT, 0.28), margins=(1, 1, 1, 1), border_width=2)
+    ring = tokens["focus_ring"]
+    out = ring["width"] - 1
+    for prefix in ("focus-", "focusframe-"):
+        frame(svg, prefix, r + out, clear, Paint(HIGHLIGHT, ring["alpha"]),
+              margins=(out, out, out, out), border_width=ring["width"])
     svg.hint("hint-focus-over-base", 1, 1)
     svg.hint("hint-tile-center", 1, 1)
     return svg.render()
