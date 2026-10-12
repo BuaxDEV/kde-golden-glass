@@ -269,9 +269,11 @@ dentro de «Vidrio».
     a KRunner. Medidas en `[apps]` de los tokens (`contents/ui/tokens.js`, que
     `tools/plasmoids.py` genera en cada plasmoid). Las acciones de Kicker
     (`actionList`) se leen solo al abrir el menú contextual: leerlas al cargar
-    tumba plasmashell. Los menús (contextual y ordenar) son ventanas emergentes
-    propias (`popupType: Popup.Window`): dentro del panel quedaban recortados
-    y sin blur. El icono del dock es `goldenglass-apps` del tema de iconos (claro u oscuro),
+    tumba plasmashell. Los menús (contextual y ordenar) son QMenu
+    (`PlasmaExtras.Menu`), como los de Kickoff: un `Menu` de Qt Quick quedaba
+    recortado dentro del panel y, como ventana propia (`Popup.Window`), sin
+    blur de KWin detrás; el QMenu lo dibuja el kstyle, que sí lo pide. Lo
+    mismo en los menús de la papelera y del dock. El icono del dock es `goldenglass-apps` del tema de iconos (claro u oscuro),
     con `view-app-grid` de respaldo. Se declara `org.kde.plasma.launchermenu`: Meta lo abre.
   - `org.goldenglass.trash` ✅ — papelera del dock como la de macOS: icono a
     color del tema (`user-trash`/`user-trash-full` según haya archivos en
@@ -600,7 +602,8 @@ dentro de «Vidrio».
   pulsar; nombre encima al pasar el ratón y, si tiene ventanas, **vistas
   previas** en vivo (`WindowPreviews.qml`: `ScreencastingRequest` +
   `PipeWireSourceItem`, como el gestor de tareas de Plasma; clic activa esa
-  ventana).
+  ventana). El contenido del tooltip solo existe mientras se ve: cada
+  miniatura es un stream de PipeWire y KWin renderiza la ventana mientras dure.
   - El tooltip es un `PlasmaCore.Dialog` de tipo `Tooltip` y no
     `ToolTipArea`: en un panel, libplasma (`PopupPlasmaWindow`) coloca los
     tooltips sobre el borde de la *máscara* de la ventana, que en el dock es la
@@ -613,7 +616,8 @@ dentro de «Vidrio».
 - **Clics:** izquierdo abre la app o trae su ventana más reciente (si ya está
   delante, la siguiente); central, nueva instancia; derecho, menú
   (`TaskMenu.qml`): acciones de la app (las del `.desktop`, de Kicker
-  `SimpleFavoritesModel`, leídas al abrir el menú), Nueva ventana / Abrir,
+  `SimpleFavoritesModel`, leídas al abrir el menú; solo
+  `_kicker_jumpListAction`, sin recientes ni Editar/Desinstalar), Nueva ventana / Abrir,
   Mantener en el Dock, Salir. Arrastrar una app fijada la reordena; soltar
   archivos sobre una app los abre con ella. Publica la geometría de cada icono
   para la animación de minimizar de KWin.

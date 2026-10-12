@@ -132,7 +132,13 @@ Item {
     property real maxSize: size             // tamaño del icono más ampliado
     readonly property bool tooltipShown: tooltip.visible
 
+    // el contenido solo existe mientras se ve: las miniaturas mantienen un
+    // stream de PipeWire por ventana (KWin la renderiza sin parar) y la lista
+    // de ventanas se rehace al abrir
+    property bool tipLoaded: false
+
     function showToolTip() {
+        tipLoaded = true;
         tooltip.visible = true;
     }
 
@@ -212,6 +218,11 @@ Item {
         hideOnWindowDeactivate: true
         outputOnly: tile.previews === null
         visible: false
+        onVisibleChanged: {
+            if (!visible) {
+                tile.tipLoaded = false;
+            }
+        }
 
         mainItem: Item {
             implicitWidth: content.implicitWidth
@@ -230,6 +241,7 @@ Item {
 
             Loader {
                 id: content
+                active: tile.tipLoaded
                 sourceComponent: tile.previews !== null ? tile.previews : labelComponent
                 Connections {
                     target: content.item
