@@ -60,7 +60,7 @@ shot() { sleep "${2:-0.5}"; xwd -root -silent | magick xwd:- "/out/$1.png"; }
 stop() { pkill -f sddm-greeter-qt6; sleep 0.5; }
 : >/out/greeter.log
 
-useradd -m -u 1000 -c "Buapdev" buapdev
+useradd -m -u 1000 -c "Alex Martín" alex
 greeter 12; shot day
 xdotool type --delay 40 "goldenglass"; shot typed
 stop

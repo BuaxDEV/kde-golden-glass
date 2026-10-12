@@ -26,7 +26,7 @@ pkgname=(
   goldenglass-plymouth
   goldenglass-login
 )
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="GoldenGlass, a macOS 27 inspired theme for KDE Plasma"
 arch=(x86_64)
