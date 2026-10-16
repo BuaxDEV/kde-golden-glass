@@ -269,7 +269,10 @@ dentro de «Vidrio».
     a KRunner. Medidas en `[apps]` de los tokens (`contents/ui/tokens.js`, que
     `tools/plasmoids.py` genera en cada plasmoid). Las acciones de Kicker
     (`actionList`) se leen solo al abrir el menú contextual: leerlas al cargar
-    tumba plasmashell. Los menús (contextual y ordenar) son QMenu
+    tumba plasmashell. Las apps se arrastran como en Kickoff (`DragHandler` +
+    `Drag.Automatic` en un elemento aparte, con el `.desktop` en
+    `text/uri-list`, solo Copy/Link): al dock, al escritorio o a Dolphin.
+    Los menús (contextual y ordenar) son QMenu
     (`PlasmaExtras.Menu`), como los de Kickoff: un `Menu` de Qt Quick quedaba
     recortado dentro del panel y, como ventana propia (`Popup.Window`), sin
     blur de KWin detrás; el QMenu lo dibuja el kstyle, que sí lo pide. Lo
@@ -622,6 +625,21 @@ dentro de «Vidrio».
   Mantener en el Dock, Salir. Arrastrar una app fijada la reordena; soltar
   archivos sobre una app los abre con ella. Publica la geometría de cada icono
   para la animación de minimizar de KWin.
+- **Añadir apps:** arrastrar una app desde Apps (o un `.desktop` desde Dolphin)
+  y soltarla en el dock. Mientras se arrastra, las apps se separan donde caerá
+  (el icono anterior crece por la derecha, `trailingSpace`); el punto de corte
+  se mide en la fila sin el hueco, como la ampliación. Al soltar se fija
+  (`requestAddLauncher`, que pasa `file:///…/x.desktop` a `applications:`) y
+  se mueve a ese sitio; si ya estaba (fijada o abierta) solo se fija y se
+  mueve. Un `DropArea` de todo el dock, por debajo de los iconos: el de cada
+  app deja pasar las apps (solo abre archivos) y la Papelera rechaza las que
+  vienen de Apps (`application/x-goldenglass-app`), así no tira el `.desktop`.
+  Cubre también los huecos: si llegara al panel, Plasma crearía un widget de
+  icono. El plasmoid reserva el ancho del hueco aunque la ampliación esté
+  apagada. En el menú de Apps, «Mantener en el Dock» (`pinApp`/`unpinApp`).
+  Mientras Apps está abierto, el plasmoid está en `NeedsAttentionStatus`: el
+  dock autoocultable aparece (también si Apps se abrió con Meta) y no se
+  esconde, para poder soltar en él.
 - **Recientes:** `RecentUsageModel` de Kicker, las `recent_count` más
   recientes que no están ya en el dock, tras un separador (como macOS).
 - **Ajustes:** `goldenglass-dock` (`tools/dock.py`) escribe la configuración
@@ -630,7 +648,9 @@ dentro de «Vidrio».
   grosor. Valores de fábrica en `[dock]` y `[plasma]` de los tokens (el
   `main.xml` del plasmoid es una plantilla). El módulo «Dock» lo llama.
 - **Pruebas:** en el sandbox, el dock real con una app abierta y el panel de
-  Apps abierto desde el dock; `goldenglass-dock` y el ajuste de grosor. El
+  Apps abierto desde el dock (también que el dock oculto aparece al abrir Apps
+  con `activateLauncherMenu` y se oculta al cerrarlo); `goldenglass-dock` y el
+  ajuste de grosor. El
   KWin virtual no tiene entrada: la ampliación con el ratón, el menú, las
   vistas previas, el arrastre y el rebote se prueban en una sesión real.
 - **Pendiente de revisar en sesión real:** la sombra de la placa se reenvía a

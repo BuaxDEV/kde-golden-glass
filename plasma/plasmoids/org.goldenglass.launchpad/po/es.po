@@ -77,3 +77,6 @@ msgstr "Mostrar más"
 
 msgid "Search “%1” in Spotlight"
 msgstr "Buscar «%1» en Spotlight"
+
+msgid "Keep in Dock"
+msgstr "Mantener en el Dock"

@@ -7,7 +7,8 @@
     mientras arranca) y al pedir atención (unas veces y queda quieto), y el
     nombre encima al pasar el ratón; con ventanas, también sus miniaturas
     (previews). El contenido interactivo (clic, menú, soltar) lo pone quien lo
-    usa, como hijo.
+    usa, como hijo. Al soltar una app en el dock, el icono anterior al sitio
+    donde caerá deja un hueco a su derecha (trailingSpace).
 */
 
 import QtQuick
@@ -35,11 +36,13 @@ Item {
     // miniaturas de ventanas (Component) o null para solo el nombre
     property Component previews: null
     property bool tooltipEnabled: true
+    // hueco a la derecha del icono (lo anima DockView al arrastrar una app)
+    property real trailingSpace: 0
     default property alias content: inner.data
 
     readonly property real lift: bounceLift
 
-    width: size
+    width: size + trailingSpace
     height: size
 
     // --- rebote ----------------------------------------------------------------
@@ -112,7 +115,7 @@ Item {
         width: dotSize
         height: dotSize
         radius: dotSize / 2
-        anchors.horizontalCenter: parent.horizontalCenter
+        x: (tile.size - dotSize) / 2
         y: tile.height + Math.max(0, (tile.padding - dotSize) / 2)
         color: Kirigami.Theme.textColor
         opacity: 0.8
@@ -120,7 +123,8 @@ Item {
 
     Item {
         id: inner
-        anchors.fill: parent
+        width: tile.size
+        height: tile.size
     }
 
     // --- nombre (y miniaturas) encima --------------------------------------------
@@ -150,7 +154,7 @@ Item {
     // un poco por encima del icono más ampliado: el globo no lo toca
     Item {
         id: tipAnchor
-        width: tile.width
+        width: tile.size
         height: tile.maxSize + Kirigami.Units.smallSpacing
         y: tile.height - height
     }

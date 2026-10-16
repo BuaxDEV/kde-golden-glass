@@ -17,6 +17,10 @@
     selección, Return abre, Tab cambia de etiqueta y Escape borra la búsqueda,
     luego la etiqueta y luego cierra. Si lo escrito no es una app, «Buscar en
     Spotlight» pasa la consulta a KRunner.
+
+    Las apps se pueden arrastrar (su .desktop, como en Kickoff): al dock, que
+    las fija donde se sueltan, al escritorio o a Dolphin. En el dock, el menú
+    contextual trae además «Mantener en el Dock».
 */
 
 import QtQuick
@@ -37,6 +41,7 @@ PlasmaCore.Dialog {
     id: panel
 
     property var plasmoidItem
+    property var dock: null         // DockView si el panel es del dock
     property var appsByCategory: ({})
     property var allApps: []
     property var suggestions: []
@@ -198,6 +203,45 @@ PlasmaCore.Dialog {
         close();
     }
 
+    // URL del .desktop de una entrada ("" si no es una app)
+    function launcherUrl(entry) {
+        if (!entry || entry.bridge) {
+            return "";
+        }
+        if (String(entry.url || "").endsWith(".desktop")) {
+            return String(entry.url);
+        }
+        const id = String(entry.id || "");
+        if (id.startsWith("applications:")) {
+            return id;
+        }
+        return id.endsWith(".desktop") ? "applications:" + id : "";
+    }
+
+    // Arrastrar una app. Lo lleva dragSource y no el delegado: la lista se
+    // rehace y el delegado podría destruirse a medio arrastre (como Kickoff).
+    // application/x-goldenglass-app: la Papelera del dock no la acepta.
+    function performDrag(handler, entry, icon) {
+        if (!handler.active) {
+            dragSource.Drag.active = false;
+            dragSource.Drag.imageSource = "";
+            return;
+        }
+        const url = launcherUrl(entry);
+        icon.grabToImage(result => {
+            if (!handler.active) {
+                return;
+            }
+            dragSource.Drag.imageSource = result.url;
+            dragSource.Drag.hotSpot = Qt.point(icon.width / 2, icon.height / 2);
+            dragSource.Drag.mimeData = {
+                "text/uri-list": url,
+                "application/x-goldenglass-app": url,
+            };
+            dragSource.Drag.active = true;
+        });
+    }
+
     function openSpotlight(text) {
         const quoted = "'" + text.replace(/'/g, "'\\''") + "'";
         executable.connectSource("dbus-send --session --type=method_call --dest=org.kde.krunner /App "
@@ -241,6 +285,14 @@ PlasmaCore.Dialog {
         height: panel.tok.height
 
         // (Dialog solo admite Items como hijos directos: lo demás va aquí)
+        Item {
+            id: dragSource
+            Drag.dragType: Drag.Automatic
+            // nunca Move: el destino podría borrar el .desktop
+            Drag.supportedActions: Qt.CopyAction | Qt.LinkAction
+            Drag.proposedAction: Qt.CopyAction
+        }
+
         P5Support.DataSource {
             id: executable
             engine: "executable"
@@ -255,9 +307,13 @@ PlasmaCore.Dialog {
         PlasmaExtras.Menu {
             id: contextMenu
             property var entry: null
+            property string url: ""
 
             function show(entry, item, x, y) {
                 contextMenu.entry = entry;
+                url = panel.launcherUrl(entry);
+                // al pulsar, QAction cambia la marca sola: se rehace al abrir
+                keepItem.checked = panel.dock !== null && url !== "" && panel.dock.isAppPinned(url);
                 visualParent = item;
                 open(x, y); // donde está el cursor, como en macOS
             }
@@ -266,6 +322,19 @@ PlasmaCore.Dialog {
                 text: i18n("Open")
                 icon: "system-run"
                 onClicked: panel.launch(contextMenu.entry)
+            }
+            PlasmaExtras.MenuItem {
+                id: keepItem
+                text: i18n("Keep in Dock")
+                checkable: true
+                visible: panel.dock !== null && contextMenu.url !== ""
+                onClicked: {
+                    if (panel.dock.isAppPinned(contextMenu.url)) {
+                        panel.dock.unpinApp(contextMenu.url);
+                    } else {
+                        panel.dock.pinApp(contextMenu.url, -1);
+                    }
+                }
             }
             PlasmaExtras.MenuItem {
                 separator: true
@@ -535,6 +604,15 @@ PlasmaCore.Dialog {
         }
         onIsCurrentChanged: if (isCurrent) owner.ensureVisible(item)
 
+        // arrastrar la app (al dock, al escritorio…); con el dedo, la vista se desplaza
+        DragHandler {
+            id: dragHandler
+            target: null
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad | PointerDevice.Stylus
+            enabled: owner.launcherUrl(item.entry) !== ""
+            onActiveChanged: owner.performDrag(dragHandler, item.entry, item.row ? listIcon : gridIcon)
+        }
+
         Rectangle {
             anchors.fill: parent
             anchors.margins: 2
@@ -554,6 +632,7 @@ PlasmaCore.Dialog {
             spacing: Kirigami.Units.smallSpacing
 
             Kirigami.Icon {
+                id: gridIcon
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: owner.tok.icon_size
                 Layout.preferredHeight: owner.tok.icon_size
@@ -578,6 +657,7 @@ PlasmaCore.Dialog {
             spacing: Kirigami.Units.largeSpacing
 
             Kirigami.Icon {
+                id: listIcon
                 Layout.preferredWidth: owner.tok.list_icon_size
                 Layout.preferredHeight: owner.tok.list_icon_size
                 source: item.entry.bridge ? "search" : (item.entry.icon || "")

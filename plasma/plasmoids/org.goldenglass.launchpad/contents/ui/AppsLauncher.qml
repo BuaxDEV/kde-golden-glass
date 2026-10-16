@@ -8,12 +8,18 @@
     (tools/plasmoids.py): un solo código para los dos.
 
     Los datos se leen por nombre de rol con Instantiator y se reúnen en listas
-    de entradas { name, icon, id, actions, model, row } para el panel.
+    de entradas { name, icon, id, url, actions, model, row } para el panel.
+
+    Mientras el panel está abierto, el plasmoid pide atención
+    (NeedsAttentionStatus): un panel autoocultable (el dock) aparece y no se
+    esconde, y se puede soltar en él una app arrastrada desde el panel.
 */
 
 import QtQuick
 import QtQml
 
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.plasmoid
 import org.kde.plasma.private.kicker as Kicker
 
 import "categories.js" as Categories
@@ -24,6 +30,15 @@ Item {
     // el PlasmoidItem que lo contiene (Kicker lo necesita como appletInterface)
     required property var plasmoidItem
     readonly property bool opened: panel.visible
+    // el dock que lo contiene (DockView: isAppPinned, pinApp, unpinApp) o null
+    property var dock: null
+
+    Binding {
+        target: Plasmoid
+        property: "status"
+        value: PlasmaCore.Types.NeedsAttentionStatus
+        when: panel.visible
+    }
 
     // --- datos para el panel ------------------------------------------------
     // categoría macOS → [entradas], ordenadas por nombre
@@ -80,6 +95,7 @@ Item {
             name: model.display,
             icon: model.decoration,
             id: model.favoriteId || "",
+            url: model.url ? String(model.url) : "",
             actions: () => reader.model.actionList || [],
             model: sourceModel,
             row: index,
@@ -195,6 +211,7 @@ Item {
     AppsPanel {
         id: panel
         plasmoidItem: launcher.plasmoidItem
+        dock: launcher.dock
         appsByCategory: launcher.appsByCategory
         allApps: launcher.allApps
         suggestions: launcher.suggestions
