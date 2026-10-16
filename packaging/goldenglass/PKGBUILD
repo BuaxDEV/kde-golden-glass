@@ -30,7 +30,7 @@ pkgver=0.2.0
 pkgrel=1
 pkgdesc="GoldenGlass, a macOS 27 inspired theme for KDE Plasma"
 arch=(x86_64)
-url="https://github.com/brayanAP/kde-golden-glass"
+url="https://github.com/BuaxDEV/kde-golden-glass"
 license=(GPL-3.0-or-later CC-BY-SA-4.0)
 makedepends=(
   cmake extra-cmake-modules git ninja

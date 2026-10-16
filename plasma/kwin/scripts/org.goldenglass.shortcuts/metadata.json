@@ -9,7 +9,7 @@
         "License": "GPL-3.0-or-later",
         "Name": "GoldenGlass shortcuts",
         "Name[es]": "Atajos de GoldenGlass",
-        "Website": "https://github.com/brayanAP/kde-golden-glass"
+        "Website": "https://github.com/BuaxDEV/kde-golden-glass"
     },
     "X-Plasma-API": "javascript",
     "X-Plasma-MainScript": "code/main.js"

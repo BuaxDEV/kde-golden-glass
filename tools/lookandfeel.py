@@ -168,7 +168,7 @@ def metadata(tokens: dict, variant: str) -> str:
             "License": "GPL-3.0-or-later",
             "Name": name,
             "Version": tokens["meta"]["version"],
-            "Website": "https://github.com/brayanAP/buapdev-cachyos-kde-macos",
+            "Website": "https://github.com/BuaxDEV/kde-golden-glass",
         },
         "X-Plasma-APIVersion": "2",
     }, indent=4) + "\n"
