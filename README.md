@@ -6,7 +6,7 @@ dock, semáforos, variantes clara/oscura/automática.
 
 > Proyecto independiente. No contiene assets, fuentes ni marcas de Apple.
 
-**Estado:** 0.2.0 — F0–F11 completas: tema, iconos, cursores, GTK, paquetes y
+**Estado:** 0.2.1 — F0–F11 completas: tema, iconos, cursores, GTK, paquetes y
 CI; sonidos, arranque, inicio de sesión, dock con ampliación y refracción de
 Liquid Glass. Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) y
 [CHANGELOG.md](CHANGELOG.md).
