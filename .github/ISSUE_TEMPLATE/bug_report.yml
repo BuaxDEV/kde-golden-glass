@@ -1,0 +1,37 @@
+name: Error
+description: Algo no funciona como debería
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Qué pasa
+      description: Qué esperabas y qué ocurrió. Añade capturas si ayudan.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducirlo
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión de GoldenGlass
+      placeholder: "pacman -Q goldenglass-kstyle  o  commit"
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Sistema
+      placeholder: "Distro, Plasma 6.x, Qt 6.x, Wayland/X11, GPU"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Registros
+      description: "Salida relevante de journalctl --user -b, plasmashell o kwin."
+      render: text

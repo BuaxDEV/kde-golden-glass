@@ -1,0 +1,17 @@
+name: Propuesta
+description: Una idea o mejora para GoldenGlass
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema o motivación
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: Cómo debería verse o comportarse. Referencias visuales bienvenidas (sin assets de Apple).
+    validations:
+      required: true

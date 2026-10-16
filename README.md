@@ -123,6 +123,24 @@ muestran los semáforos de GoldenGlass por sí solas:
 Firefox: Menú › Más herramientas › Personalizar barra de herramientas › marcar
 **Barra de título** para usar la decoración de KWin.
 
+## Contribuir
+
+Ver [CONTRIBUTING.md](CONTRIBUTING.md) (commits firmados con DCO,
+`git commit -s`) y el [código de conducta](CODE_OF_CONDUCT.md). Las
+vulnerabilidades se reportan en privado: [SECURITY.md](SECURITY.md).
+
 ## Licencia
 
-Código: GPL-3.0-or-later. Assets gráficos: CC-BY-SA-4.0. Ver `LICENSES/`.
+Código: GPL-3.0-or-later. Assets gráficos: CC-BY-SA-4.0. Las partes que vienen
+de Darkly/Breeze, KWin y Plasma conservan su licencia original
+(GPL-2.0-or-later, MIT…; ver [UPSTREAM.md](UPSTREAM.md)). Licencia de cada
+archivo en su cabecera SPDX o en [REUSE.toml](REUSE.toml); textos en
+`LICENSES/`. El proyecto cumple la especificación [REUSE](https://reuse.software).
+
+## Marcas
+
+GoldenGlass es un proyecto independiente, sin relación con Apple Inc. ni
+patrocinado o aprobado por ella. Apple, macOS, Liquid Glass y SF Pro son marcas
+de Apple Inc., citadas solo para describir la inspiración del diseño. KDE y
+Plasma son marcas de KDE e.V. El repositorio no contiene assets, fuentes,
+iconos ni sonidos de Apple.
