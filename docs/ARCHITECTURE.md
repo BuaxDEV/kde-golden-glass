@@ -545,7 +545,14 @@ dentro de «Vidrio».
     Se lee **como ese usuario** y se escribe **como `plasmalogin`** (procesos
     hijo sin privilegios, `_as_user`): root no sigue enlaces del usuario ni
     escribe con privilegios en un home ajeno. Un archivo que el usuario no
-    puede leer se omite con un aviso.
+    puede leer, que no es regular (FIFO, dispositivo) o que pasa de 1 MiB se
+    omite con un aviso y el del greeter no se toca; las operaciones como otro
+    usuario tienen un límite de tiempo.
+  - El greeter lo ve todo el mundo: del `fonts.conf` se quitan los `<dir>`,
+    `<include>` y `<cachedir>` que salgan del sistema (`/usr/share/fonts`,
+    `/usr/local/share/fonts`, `/etc/fonts`) o del home del greeter (`~`,
+    `prefix="xdg"`/`"relative"`), y si no es XML válido no se copia. La
+    distribución de teclado (`kxkbrc`) sí pasa a todos, como en el módulo de KDE.
   - Se guardan una vez los valores y archivos previos; `disable` los
     restaura (si el administrador cambió el fondo después, el fondo no se toca).
 - `goldenglass-system enable login` detecta el gestor activo
