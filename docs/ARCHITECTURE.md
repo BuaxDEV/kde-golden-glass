@@ -396,8 +396,11 @@ dentro de «Vidrio».
   sitio; sin él, el comando se vuelve a lanzar con **pkexec** sobre un ayudante
   fijo (`/usr/lib/goldenglass/system-helper`, que ejecuta `system.py` con
   `python3 -I`) y la acción de polkit `org.goldenglass.system`
-  (`auth_admin_keep`, solo para ese ayudante). Solo entonces se pide la
-  contraseña. Con root se rechazan las partes del usuario, para no escribir en
+  (`auth_admin`, solo para ese ayudante; polkit no recuerda la contraseña).
+  Solo entonces se pide la contraseña. El módulo de Ajustes manda todos los
+  cambios en una sola llamada (`goldenglass-system apply --plymouth … --login …`)
+  para pedirla una vez. Como root, `umask 022` y escrituras atómicas sin seguir
+  enlaces (`pkexec` conserva el umask de quien llama). Con root se rechazan las partes del usuario, para no escribir en
   la configuración de root. En desarrollo (sin el paquete) no hay ayudante: el
   comando pide `sudo`.
 - **Reversible:** antes de cambiar algo se guarda el valor anterior

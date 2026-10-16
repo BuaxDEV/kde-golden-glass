@@ -10,6 +10,10 @@ valor se guarda el anterior y `disable` lo restaura (si no existía, se borra).
   goldenglass-system status [PARTE…] [--json]
   goldenglass-system enable PARTE… [--variant dark|light]
   goldenglass-system disable PARTE…
+  goldenglass-system apply [--plymouth dark|light|system] [--login on|off]
+
+`apply` aplica varios cambios del sistema con una sola autenticación (lo usa
+el módulo de Ajustes).
 
 Partes del usuario (sin root; no se pueden activar con sudo):
   sounds   tema de sonidos GoldenGlass (kdeglobals) y sonido de Spectacle al
@@ -49,6 +53,7 @@ UNSET = "__goldenglass_unset__"  # kreadconfig6 lo devuelve si la clave no exist
 HELPER = Path("/usr/lib/goldenglass/system-helper")
 
 PLYMOUTH_DIR = Path("/usr/share/plymouth/themes")
+PLYMOUTH_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 PLYMOUTH_THEMES = {"dark": "goldenglass", "light": "goldenglass-light"}
 
 
@@ -120,11 +125,28 @@ def load_state(path: Path = STATE) -> dict:
         return {}
 
 
-def save_state(state: dict, path: Path = STATE) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+def write_file(path: Path, text: str, mode: int = 0o644) -> None:
+    """Escribe text en path de forma atómica, con permisos fijos y sin seguir
+    enlaces: como root, en /var/lib o /etc, no depende del umask de quien llama
+    (pkexec no lo cambia) ni de lo que haya dejado otro en el directorio."""
+    path.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
+    st = path.parent.stat()
+    if os.geteuid() == 0 and st.st_uid == 0 and st.st_mode & 0o022:
+        os.chmod(path.parent, 0o755)  # creado con un umask permisivo por versiones anteriores
+    tmp = path.with_name(f".{path.name}.tmp")
+    try:
+        tmp.unlink()
+    except FileNotFoundError:
+        pass
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, mode)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        os.fchmod(f.fileno(), mode)
+        f.write(text)
     tmp.replace(path)
+
+
+def save_state(state: dict, path: Path = STATE) -> None:
+    write_file(path, json.dumps(state, indent=2, sort_keys=True) + "\n")
 
 
 def is_enabled(part: str) -> bool:
@@ -158,7 +180,7 @@ def plymouth_theme() -> str:
 
 
 def plymouth_installed(theme: str) -> bool:
-    return (PLYMOUTH_DIR / theme / f"{theme}.plymouth").is_file()
+    return PLYMOUTH_NAME.fullmatch(theme) is not None and (PLYMOUTH_DIR / theme / f"{theme}.plymouth").is_file()
 
 
 def plymouth_warnings() -> list[str]:
@@ -358,7 +380,10 @@ def _read_files(base: Path) -> dict:
 def _write_files(base: Path, files: dict) -> None:
     """Escribe (o borra si es None) PLM_FILES bajo base y vacía la caché."""
     shutil.rmtree(base.parent / ".cache", ignore_errors=True)
-    for name, content in files.items():
+    for name in PLM_FILES:
+        if name not in files:
+            continue
+        content = files[name]
         path = base / name
         if content is None:
             try:
@@ -383,8 +408,7 @@ def enable_login(state: dict) -> None:
                  "[Theme]", "Current=GoldenGlass"]
         if CURSORS.is_dir():
             lines.append("CursorTheme=GoldenGlass-cursors")
-        SDDM_CONF.parent.mkdir(parents=True, exist_ok=True)
-        SDDM_CONF.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        write_file(SDDM_CONF, "\n".join(lines) + "\n")
         if _sddm_overridden():
             print("goldenglass-system: aviso: /etc/sddm.conf fija [Theme] Current y manda sobre "
                   f"{SDDM_CONF.name}", file=sys.stderr)
@@ -430,10 +454,12 @@ def disable_login(state: dict) -> None:
             _as_user(greeter, lambda: _write_files(Path(greeter.pw_dir) / ".config", plm["files"]))
 
 
-def run_system(command: str, parts: list[str], variant: str) -> None:
+def run_system(actions: list[tuple[str, str, str]]) -> None:
+    """Aplica (orden, parte, variante) como root, en ese orden."""
+    os.umask(0o022)  # pkexec conserva el de quien llama
     state = load_state(ROOT_STATE)
     try:
-        for part in parts:
+        for command, part, variant in actions:
             if part == "plymouth":
                 (enable_plymouth(variant, state) if command == "enable" else disable_plymouth(state))
             else:
@@ -442,16 +468,13 @@ def run_system(command: str, parts: list[str], variant: str) -> None:
         save_state(state, ROOT_STATE)
 
 
-def escalate(command: str, parts: list[str], variant: str) -> int:
-    """Vuelve a ejecutar las partes del sistema como root con pkexec."""
+def escalate(argv: list[str]) -> int:
+    """Vuelve a ejecutar la orden como root con pkexec (una sola autenticación)."""
     pkexec = shutil.which("pkexec")
     if not pkexec or not HELPER.exists():
         raise SystemExit("goldenglass-system: las partes del sistema necesitan root: "
-                         f"sudo goldenglass-system {command} {' '.join(parts)}")
-    args = [pkexec, str(HELPER), command, *parts]
-    if command == "enable":
-        args += ["--variant", variant]
-    return subprocess.run(args).returncode
+                         f"sudo goldenglass-system {' '.join(argv)}")
+    return subprocess.run([pkexec, str(HELPER), *argv]).returncode
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -466,7 +489,26 @@ def main(argv: list[str] | None = None) -> int:
         if name == "enable":
             p.add_argument("--variant", choices=list(PLYMOUTH_THEMES), default="dark",
                            help="tema de Plymouth: dark (negro, de fábrica) o light (gris claro)")
+    ap_apply = sub.add_parser("apply", help="aplica varios cambios del sistema con una sola autenticación")
+    ap_apply.add_argument("--plymouth", choices=[*PLYMOUTH_THEMES, "system"],
+                          help="tema de arranque: dark, light o system (el de la distribución)")
+    ap_apply.add_argument("--login", choices=["on", "off"], help="pantalla de inicio de sesión")
     args = ap.parse_args(argv)
+
+    if args.command == "apply":
+        actions = []
+        if args.plymouth:
+            actions.append(("disable", "plymouth", "dark") if args.plymouth == "system"
+                           else ("enable", "plymouth", args.plymouth))
+        if args.login:
+            actions.append(("enable" if args.login == "on" else "disable", "login", "dark"))
+        if not actions:
+            ap.error("apply: indica --plymouth, --login o ambos")
+        if os.geteuid() != 0:
+            return escalate(["apply", *[f"--{k}={v}" for k, v in
+                                        (("plymouth", args.plymouth), ("login", args.login)) if v]])
+        run_system(actions)
+        return 0
 
     known = [*PARTS, *SYSTEM_PARTS]
     unknown = [p for p in args.parts if p not in known]
@@ -516,8 +558,9 @@ def main(argv: list[str] | None = None) -> int:
     if system_parts:
         variant = getattr(args, "variant", "dark")
         if not root:
-            return escalate(args.command, system_parts, variant)
-        run_system(args.command, system_parts, variant)
+            return escalate([args.command, *system_parts,
+                             *(["--variant", variant] if args.command == "enable" else [])])
+        run_system([(args.command, part, variant) for part in system_parts])
     return 0
 
 
