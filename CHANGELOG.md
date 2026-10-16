@@ -1,5 +1,56 @@
 # Cambios
 
+## 0.2.1 — 2026-10-15
+
+Correcciones de seguridad, compatibilidad con KWin 6.8 y publicación como
+proyecto open source. **Actualizar** si tienes instalado `goldenglass-plasma`
+0.2.0 o anterior: el ayudante de `goldenglass-system` que se ejecuta como root
+tenía una escalada de privilegios local.
+
+### Seguridad
+
+- **Escalada a root en `goldenglass-system`:** pkexec conserva el umask de
+  quien llama, así que con `umask 000` el ayudante creaba
+  `/etc/sddm.conf.d/99-goldenglass.conf` y `/var/lib/goldenglass` escribibles
+  por cualquiera (SDDM ejecuta como root los comandos de su configuración).
+  Ahora fija `umask 022`, escribe como root de forma atómica, con permisos
+  fijos y sin seguir enlaces, y cierra a 0755 un `/var/lib/goldenglass` que
+  haya quedado abierto.
+- La acción de polkit pide la contraseña cada vez (`auth_admin`, antes
+  `auth_admin_keep`, que dejaba a otros procesos de la sesión reutilizarla unos
+  minutos). El módulo «Arranque e inicio de sesión» aplica todos los cambios en
+  una sola llamada (`goldenglass-system apply`) y la pide una vez.
+- Lo que se copia al Plasma Login Manager: solo archivos regulares de hasta
+  1 MiB (un FIFO o un archivo enorme ya no bloquean al ayudante), con límite de
+  tiempo, y el `fonts.conf` del greeter no carga fuentes ni configuración de
+  un home. El archivo de estado se valida antes de usarlo.
+
+### Cambios
+
+- **KWin 6.8:** el efecto de vidrio compila con la nueva API (sigue
+  compilando con 6.7) y trae el arreglo de upstream de la región de desenfoque
+  en ventanas con decoración propia (GTK, Electron).
+- **Dock:** arrastrar apps desde Apps para fijarlas (también un `.desktop`
+  desde Dolphin), «Mantener en el Dock» en el menú de Apps, y el dock oculto
+  aparece mientras Apps está abierto. El menú contextual del dock funciona y
+  los menús de los plasmoids son de vidrio con desenfoque. Konsole y
+  Preferencias del Sistema solo se fijan si están instalados. El rebote de un
+  icono ampliado ya no se recorta. Las vistas previas de ventanas ya no
+  mantienen un flujo de PipeWire por ventana.
+- **Campos de texto:** anillo de foco ceñido al borde, como en macOS (tokens
+  `[focus_ring]`).
+
+### Proyecto
+
+- Repositorio público en <https://github.com/BuaxDEV/kde-golden-glass>.
+- Cumple [REUSE](https://reuse.software): la licencia de cada archivo, incluidas
+  las partes de Darkly/Breeze (GPL-2.0-or-later, MIT), KWin y Plasma, está en
+  su cabecera o en `REUSE.toml`.
+- `CONTRIBUTING.md` (commits firmados con DCO), código de conducta,
+  `SECURITY.md` (reporte privado de vulnerabilidades) y plantillas.
+- CI: token de solo lectura, acciones fijadas por commit con Dependabot, y
+  comprobaciones de REUSE, gitleaks y DCO en cada PR.
+
 ## 0.2.0 — 2026-10-12
 
 Arranque, inicio de sesión, sonidos, dock con ampliación y refracción
