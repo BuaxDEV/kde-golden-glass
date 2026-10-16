@@ -754,6 +754,13 @@ dentro de «Vidrio».
 - Monorepo en GitHub.
 - Código: **GPL-3.0-or-later**. Assets gráficos (iconos, cursores, wallpapers,
   SVG): **CC-BY-SA-4.0**.
+- Las partes de upstream conservan su licencia (GPL-2.0-or-later, MIT y la
+  cláusula de KDE e.V. en `kstyle/`, `kdecoration/`, `libgoldenglasscommon/`,
+  `kwin-effect/` y la pantalla de bloqueo). Sus cabeceras no se tocan;
+  `REUSE.toml` declara la licencia de todo archivo sin etiquetas SPDX y la CI
+  comprueba el cumplimiento REUSE (`reuse lint`).
+- Comunidad: `CONTRIBUTING.md` (DCO), `CODE_OF_CONDUCT.md`, `SECURITY.md`
+  (reporte privado de GitHub), plantillas en `.github/`.
 - No se incluye ningún asset, fuente ni marca de Apple. El nombre del proyecto
   evita "macOS"/"Apple".
 

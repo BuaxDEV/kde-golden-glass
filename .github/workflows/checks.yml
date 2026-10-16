@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Comprobaciones de licencias, secretos y DCO en cada PR y en cada push a main.
+# Las acciones van fijadas por commit (Dependabot las actualiza).
+
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reuse:
+    name: REUSE (licencias)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: fsfe/reuse-action@676e2d560c9a403aa252096d99fcab3e1132b0f5 # v6.0.0
+
+  gitleaks:
+    name: Gitleaks (secretos)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dco:
+    name: DCO (Signed-off-by)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # Cada commit del PR (sin merges) debe llevar un Signed-off-by con el
+      # correo de su autor: `git commit -s`. Ver CONTRIBUTING.md.
+      - name: Check Signed-off-by
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          fail=0
+          for c in $(git rev-list --no-merges "$BASE..$HEAD"); do
+            email=$(git log -1 --format=%ae "$c")
+            if ! git log -1 --format=%B "$c" | grep -i "^Signed-off-by:" | grep -qiF "<$email>"; then
+              echo "::error::$(git log -1 --format='%h %s' "$c"): falta 'Signed-off-by: … <$email>' (git commit -s)"
+              fail=1
+            fi
+          done
+          exit $fail

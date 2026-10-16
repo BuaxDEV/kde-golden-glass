@@ -1,0 +1,112 @@
+# Licencias de los archivos sin etiquetas SPDX propias (https://reuse.software).
+# Las cabeceras de los archivos importados de upstream no se tocan para que los
+# diffs de upstream sigan aplicando (ver UPSTREAM.md). Si varias anotaciones
+# coinciden, gana la última; "closest" deja que las etiquetas del archivo, si
+# las tiene, prevalezcan.
+
+version = 1
+
+# Todo lo propio de GoldenGlass.
+[[annotations]]
+path = "**"
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 GoldenGlass contributors"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+# Capturas: assets gráficos.
+[[annotations]]
+path = "docs/screenshots/**"
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 GoldenGlass contributors"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+# Fork de Darkly (a su vez de Lightly/Breeze): GPL-2.0-or-later salvo lo de abajo.
+[[annotations]]
+path = ["CMakeLists.txt", "kstyle/**", "kdecoration/**", "libgoldenglasscommon/**"]
+precedence = "closest"
+SPDX-FileCopyrightText = [
+    "Darkly, Lightly and Breeze contributors",
+    "2026 GoldenGlass contributors",
+]
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+# Archivos de Breeze con la cláusula de KDE e.V.
+[[annotations]]
+path = [
+    "kdecoration/goldenglass.h",
+    "kdecoration/goldenglassbutton.cpp",
+    "kdecoration/goldenglassbutton.h",
+    "kdecoration/goldenglassdecoration.cpp",
+    "kdecoration/goldenglassdecoration.h",
+    "kdecoration/goldenglasssettingsprovider.cpp",
+    "kdecoration/goldenglasssettingsprovider.h",
+]
+precedence = "closest"
+SPDX-FileCopyrightText = [
+    "Darkly, Lightly and Breeze contributors",
+    "2026 GoldenGlass contributors",
+]
+SPDX-License-Identifier = "GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL"
+
+# Archivos de Oxygen/Breeze bajo MIT (autores en la cabecera de cada archivo).
+[[annotations]]
+path = [
+    "kdecoration/config/goldenglassconfigwidget.cpp",
+    "kdecoration/config/goldenglassconfigwidget.h",
+    "kdecoration/config/goldenglassdetectwidget.cpp",
+    "kdecoration/config/goldenglassdetectwidget.h",
+    "kdecoration/config/goldenglassexceptiondialog.cpp",
+    "kdecoration/config/goldenglassexceptiondialog.h",
+    "kdecoration/config/goldenglassexceptionlistwidget.cpp",
+    "kdecoration/config/goldenglassexceptionlistwidget.h",
+    "kdecoration/config/goldenglassexceptionmodel.cpp",
+    "kdecoration/config/goldenglassexceptionmodel.h",
+    "kdecoration/config/goldenglassitemmodel.cpp",
+    "kdecoration/config/goldenglassitemmodel.h",
+    "kdecoration/config/goldenglasslistmodel.h",
+    "kdecoration/goldenglassexceptionlist.cpp",
+    "kdecoration/goldenglassexceptionlist.h",
+    "kstyle/animations/goldenglassstackedwidgetdata.cpp",
+    "kstyle/animations/goldenglassstackedwidgetdata.h",
+    "kstyle/animations/goldenglassstackedwidgetengine.cpp",
+    "kstyle/animations/goldenglassstackedwidgetengine.h",
+    "kstyle/animations/goldenglasstransitiondata.cpp",
+    "kstyle/animations/goldenglasstransitiondata.h",
+    "kstyle/animations/goldenglasstransitionwidget.cpp",
+    "kstyle/animations/goldenglasstransitionwidget.h",
+    "kstyle/config/main.cpp",
+    "kstyle/goldenglassblurhelper.cpp",
+    "kstyle/goldenglassblurhelper.h",
+]
+precedence = "closest"
+SPDX-FileCopyrightText = [
+    "Oxygen and Breeze contributors",
+    "2026 GoldenGlass contributors",
+]
+SPDX-License-Identifier = "MIT"
+
+# Fork del efecto Blur de KWin 6.7.5.
+[[annotations]]
+path = "kwin-effect/**"
+precedence = "closest"
+SPDX-FileCopyrightText = [
+    "KWin contributors",
+    "2026 GoldenGlass contributors",
+]
+SPDX-License-Identifier = "GPL-2.0-or-later"
+
+[[annotations]]
+path = "kwin-effect/shaders/glass.*"
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 GoldenGlass contributors"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+# Copia de la pantalla de bloqueo de plasma-desktop 6.7.5.
+[[annotations]]
+path = "plasma/shell/org.goldenglass.desktop/contents/lockscreen/**"
+precedence = "closest"
+SPDX-FileCopyrightText = [
+    "Plasma contributors",
+    "2026 GoldenGlass contributors",
+]
+SPDX-License-Identifier = "GPL-2.0-or-later"

@@ -111,7 +111,9 @@ def header(tokens: dict) -> str:
 
     out = [
         "// Generado por tools/gen_tokens.py desde tokens/goldenglass.toml — NO EDITAR",
+        # REUSE-IgnoreStart
         "// SPDX-License-Identifier: GPL-3.0-or-later",
+        # REUSE-IgnoreEnd
         "#pragma once",
         "",
         "namespace GoldenGlass::Tokens",

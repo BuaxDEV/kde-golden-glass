@@ -10,7 +10,7 @@
         "License": "GPL-3.0-or-later",
         "Name": "GoldenGlass System Menu",
         "Name[es]": "Menú de sistema GoldenGlass",
-        "Website": "https://github.com/brayanAP/buapdev-cachyos-kde-macos"
+        "Website": "https://github.com/BuaxDEV/kde-golden-glass"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

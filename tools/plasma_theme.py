@@ -422,7 +422,7 @@ def build(tokens: dict, out: Path, level: float | None = None) -> list[Path]:
             "License": "GPL-3.0-or-later",
             "Name": "GoldenGlass",
             "Version": tokens["meta"]["version"],
-            "Website": "https://github.com/brayanAP/buapdev-cachyos-kde-macos",
+            "Website": "https://github.com/BuaxDEV/kde-golden-glass",
         },
         "X-Plasma-API": "5.0",
     }, indent=4) + "\n"

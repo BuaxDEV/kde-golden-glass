@@ -169,7 +169,9 @@ def build_colors(tokens: dict, variant: str) -> str:
 
     out = [
         "# Generado por tools/gen_tokens.py desde tokens/goldenglass.toml — NO EDITAR",
+        # REUSE-IgnoreStart
         "# SPDX-License-Identifier: GPL-3.0-or-later",
+        # REUSE-IgnoreEnd
         "",
     ]
     for name, entries in sections.items():

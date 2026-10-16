@@ -26,6 +26,9 @@ Reglas para cualquier agente (humano o IA) que trabaje en este repositorio.
   OpenAI u otra IA o herramienta de IA, en commits, PRs, tags o comentarios de
   código.
 - El autor del commit es la identidad git configurada del desarrollador.
+- **DCO:** todo commit lleva `Signed-off-by` del autor (`git commit -s`); la
+  CI lo exige en los PRs. Ver [CONTRIBUTING.md](CONTRIBUTING.md).
+- Archivos nuevos con cabecera SPDX; `reuse lint` debe pasar.
 
 ## Proyecto
 
