@@ -503,8 +503,10 @@ RegionF GlassEffect::blurRegion(EffectWindow *w) const
                 // An empty region means that the blur effect should be enabled
                 // for the whole window.
                 region = w->contentsRect();
-            } else {
+            } else if (w->decoration()) {
                 region = content->translated(w->contentsRect().topLeft()) & w->contentsRect();
+            } else {
+                region = *content & w->contentsRect();
             }
             if (frame.has_value()) {
                 region += frame.value();
@@ -544,6 +546,15 @@ bool GlassEffect::shouldBlur(const EffectWindow *w, int mask, const WindowPaintD
     return true;
 }
 
+#ifdef GOLDENGLASS_KWIN_PAINT_RESULT
+bool GlassEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data)
+{
+    blur(renderTarget, viewport, w, mask, deviceRegion, data);
+
+    // Draw the window over the blurred area
+    return effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
+}
+#else
 void GlassEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data)
 {
     blur(renderTarget, viewport, w, mask, deviceRegion, data);
@@ -551,6 +562,7 @@ void GlassEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewp
     // Draw the window over the blurred area
     effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
 }
+#endif
 
 GLTexture *GlassEffect::ensureNoiseTexture()
 {

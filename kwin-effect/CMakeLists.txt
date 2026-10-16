@@ -13,6 +13,10 @@ set(goldenglass_glass_SOURCES
 kconfig_add_kcfg_files(goldenglass_glass_SOURCES glassconfig.kcfgc)
 
 add_library(goldenglass_glass MODULE ${goldenglass_glass_SOURCES})
+# KWin 6.8 (desde la beta 6.7.90): drawWindow() devuelve si se pudo pintar
+if(KWin_VERSION VERSION_GREATER_EQUAL 6.7.90)
+    target_compile_definitions(goldenglass_glass PRIVATE GOLDENGLASS_KWIN_PAINT_RESULT)
+endif()
 target_link_libraries(goldenglass_glass PRIVATE
     KWin::kwin
     KF6::ConfigGui
