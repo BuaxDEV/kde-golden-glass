@@ -3,4 +3,7 @@
 # Partes del sistema de goldenglass-system (Plymouth, login), como root: lo
 # ejecuta pkexec con la acción de polkit org.goldenglass.system. system.py
 # solo acepta partes y variantes conocidas.
+# pkexec conserva el umask de quien llama: lo que se cree como root no debe
+# quedar escribible por otros.
+umask 022
 exec /usr/bin/python3 -I /usr/share/goldenglass/tools/system.py "$@"

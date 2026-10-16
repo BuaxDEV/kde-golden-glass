@@ -193,17 +193,17 @@ void BootKcm::save()
     if (busy()) {
         return;
     }
-    // goldenglass-system pide la contraseña con pkexec (polkit la recuerda un
-    // rato: los dos cambios seguidos solo la piden una vez)
+    // una sola llamada: goldenglass-system pide la contraseña con pkexec una vez
+    // para todos los cambios (polkit no la recuerda: auth_admin)
+    QStringList args{QStringLiteral("apply")};
     if (m_plymouth != m_loadedPlymouth) {
-        if (m_plymouth == kSystem) {
-            m_queue.append({QStringLiteral("disable"), QStringLiteral("plymouth")});
-        } else {
-            m_queue.append({QStringLiteral("enable"), QStringLiteral("plymouth"), QStringLiteral("--variant"), m_plymouth});
-        }
+        args << QStringLiteral("--plymouth") << m_plymouth;
     }
     if (m_login != m_loadedLogin) {
-        m_queue.append({m_login ? QStringLiteral("enable") : QStringLiteral("disable"), QStringLiteral("login")});
+        args << QStringLiteral("--login") << (m_login ? QStringLiteral("on") : QStringLiteral("off"));
+    }
+    if (args.size() > 1) {
+        m_queue.append(args);
     }
     if (!m_queue.isEmpty()) {
         setErrorText(QString());
