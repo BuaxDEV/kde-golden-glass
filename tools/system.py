@@ -35,12 +35,17 @@ Estado guardado: ~/.local/state/goldenglass/system.json (usuario) y
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import os
 import re
+import select
 import shutil
+import signal
+import stat
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -93,6 +98,10 @@ PLM_IMAGE = "file:///usr/share/wallpapers/GoldenGlass/"
 WALLPAPER = Path("/usr/share/wallpapers/GoldenGlass")
 # lo que copia «Aplicar ajustes de Plasma» del módulo de KDE (kcm_plasmalogin)
 PLM_FILES = ("kdeglobals", "plasmarc", "kcminputrc", "kxkbrc", "fontconfig/fonts.conf")
+MAX_FILE = 1 << 20  # bytes por archivo: sobra para cualquier kdeglobals o fonts.conf
+AS_USER_TIMEOUT = 60  # s para leer o escribir esos archivos como otro usuario
+# rutas absolutas que el fonts.conf del greeter puede usar (ver _greeter_fonts_conf)
+SYSTEM_FONT_DIRS = (Path("/usr/share/fonts"), Path("/usr/local/share/fonts"), Path("/etc/fonts"))
 
 
 def _tool(name: str, package: str = "kconfig") -> str:
@@ -353,28 +362,96 @@ def _as_user(pw, fn):
         finally:
             os._exit(code)
     os.close(write_fd)
-    with os.fdopen(read_fd, "rb") as data:
-        payload = data.read()
+
+    def abort(reason: str):
+        os.kill(pid, signal.SIGKILL)
+        os.waitpid(pid, 0)
+        raise SystemExit(f"goldenglass-system: {reason} (operación como {pw.pw_name})")
+
+    # con límite de tiempo y de tamaño: root no se queda esperando a un home
+    # colgado (NFS…) ni acumula lo que el hijo devuelva
+    payload = bytearray()
+    deadline = time.monotonic() + AS_USER_TIMEOUT
+    with os.fdopen(read_fd, "rb", buffering=0) as data:
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not select.select([data], [], [], remaining)[0]:
+                abort("tardó demasiado")
+            chunk = data.read(1 << 16)
+            if not chunk:
+                break
+            payload += chunk
+            if len(payload) > 8 * MAX_FILE * len(PLM_FILES):
+                abort("devolvió demasiados datos")
     _, status = os.waitpid(pid, 0)
     if os.waitstatus_to_exitcode(status) != 0:
         raise SystemExit(f"goldenglass-system: falló una operación como {pw.pw_name}")
     return json.loads(payload)
 
 
+def _read_file(path: Path) -> str | None:
+    """Texto de path, o None si no existe. Solo archivos regulares de hasta
+    MAX_FILE: un FIFO, un dispositivo o un archivo enorme no bloquean el
+    proceso ni agotan la memoria."""
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOCTTY)
+    except (FileNotFoundError, NotADirectoryError):
+        return None
+    with os.fdopen(fd, "rb") as f:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise OSError(errno.EINVAL, "no es un archivo regular")
+        data = f.read(MAX_FILE + 1)
+    if len(data) > MAX_FILE:
+        raise OSError(errno.EFBIG, f"ocupa más de {MAX_FILE >> 10} KiB")
+    return data.decode("utf-8", errors="replace")
+
+
 def _read_files(base: Path) -> dict:
-    """Contenido de PLM_FILES bajo base (None si no existe). Se lee con la
-    identidad del dueño (_as_user): seguir sus enlaces (stow, chezmoi…) no da
-    acceso a nada que no pueda leer ya."""
+    """Contenido de PLM_FILES bajo base (None si no existe; si no se puede
+    leer, falta y no se toca). Se lee con la identidad del dueño (_as_user):
+    seguir sus enlaces (stow, chezmoi…) no da acceso a nada que no pueda leer ya."""
     files = {}
     for name in PLM_FILES:
         try:
-            files[name] = (base / name).read_text(encoding="utf-8", errors="replace")
-        except (FileNotFoundError, NotADirectoryError):
-            files[name] = None
-        except OSError as error:  # p. ej. un enlace a algo que no puede leer
+            files[name] = _read_file(base / name)
+        except OSError as error:  # ilegible, no regular o demasiado grande
             print(f"goldenglass-system: aviso: se omite {base / name}: {error.strerror}", file=sys.stderr)
-            files[name] = None
     return files
+
+
+def _greeter_path_ok(element) -> bool:
+    """Si una ruta de fonts.conf (<dir>, <include>, <cachedir>) se queda en el
+    sistema o en el home del greeter: absoluta solo bajo SYSTEM_FONT_DIRS;
+    relativa solo con «~», prefix="xdg" o prefix="relative" (las demás dependen
+    del directorio de trabajo); nunca con «..»."""
+    text = (element.text or "").strip()
+    path = Path(text)
+    if not text or ".." in path.parts:
+        return False
+    if path.is_absolute():
+        return any(path.is_relative_to(d) for d in SYSTEM_FONT_DIRS)
+    return text.startswith("~") or element.get("prefix") in ("xdg", "relative")
+
+
+def _greeter_fonts_conf(text: str) -> str | None:
+    """fonts.conf del usuario para el greeter, que ve todo el mundo: sin rutas
+    que carguen fuentes o configuración de un home (ver _greeter_path_ok).
+    None si no es XML válido."""
+    import xml.etree.ElementTree as ET
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError:
+        return None
+    if root.tag != "fontconfig":
+        return None
+    for parent in list(root.iter()):
+        for child in list(parent):
+            if child.tag in ("dir", "include", "cachedir") and not _greeter_path_ok(child):
+                print(f"goldenglass-system: aviso: fonts.conf: se omite <{child.tag}>"
+                      f"{(child.text or '').strip()}</{child.tag}> en el greeter", file=sys.stderr)
+                parent.remove(child)
+    return ('<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">\n'
+            + ET.tostring(root, encoding="unicode") + "\n")
 
 
 def _write_files(base: Path, files: dict) -> None:
@@ -431,6 +508,14 @@ def enable_login(state: dict) -> None:
         greeter = pwd.getpwnam("plasmalogin")
         config = Path(greeter.pw_dir) / ".config"
         files = _as_user(user, lambda: _read_files(Path(user.pw_dir) / ".config"))
+        if files.get("fontconfig/fonts.conf") is not None:
+            fonts = _greeter_fonts_conf(files["fontconfig/fonts.conf"])
+            if fonts is None:
+                print("goldenglass-system: aviso: fonts.conf no es XML de fontconfig válido, "
+                      "no se copia", file=sys.stderr)
+                del files["fontconfig/fonts.conf"]
+            else:
+                files["fontconfig/fonts.conf"] = fonts
         previous = _as_user(greeter, lambda: _read_files(config))
         plm.setdefault("files", previous)
         _as_user(greeter, lambda: _write_files(config, files))
