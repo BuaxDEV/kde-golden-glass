@@ -113,7 +113,9 @@ package_goldenglass() {
 
 package_goldenglass-kstyle() {
   pkgdesc="GoldenGlass widget style, window decoration, glass effect for KWin and settings modules"
-  license=(GPL-3.0-or-later)
+  # fork de Darkly/Breeze y del Blur de KWin: licencias de upstream (REUSE.toml)
+  license=(GPL-3.0-or-later GPL-2.0-or-later MIT
+           'GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL')
   depends=(frameworkintegration kcmutils kcolorscheme kconfig kconfigwidgets kcoreaddons kdecoration
            kguiaddons ki18n kiconthemes kirigami kwindowsystem qt6-base qt6-declarative python
            kwin libxcb)  # efecto goldenglass_glass: solo carga con el KWin con el que se compiló
@@ -128,6 +130,8 @@ package_goldenglass-kstyle() {
 package_goldenglass-plasma() {
   pkgdesc="GoldenGlass Plasma style, global themes, dock, lock screen, plasmoids and color schemes"
   arch=(any)
+  # pantalla de bloqueo y vista del panel: copias de plasma-desktop (GPL-2.0-or-later)
+  license=(GPL-3.0-or-later GPL-2.0-or-later CC-BY-SA-4.0)
   depends=(plasma-workspace plasma-desktop kscreenlocker plasma5support plasma-nm plasma-pa bluez-qt
            powerdevil kcmutils fontconfig inter-font kdialog glib2 kio kconfig python polkit)
   optdepends=('goldenglass-kstyle: widget style and window decoration used by the global themes'

@@ -1,6 +1,18 @@
-Cursors:
- Ken Vermette <vermette@gmail.com> 
+GoldenGlass:
+ BuaxDEV (https://github.com/BuaxDEV) - Maintainer
+ GoldenGlass contributors (see git log)
 
-Kstyle:
+Upstream (see UPSTREAM.md):
+
+Darkly:
+ Bali10050 and Darkly contributors (https://github.com/Bali10050/darkly)
+
+Kstyle (Breeze/Oxygen):
  Hugo Pereira Da Costa <hugo.pereira@free.fr> - Developer
  Andrew Lake <jamboarder@gmail.com> - Designer
+
+Cursors:
+ Ken Vermette <vermette@gmail.com>
+
+KWin Blur effect, Plasma lock screen and panel view:
+ KDE contributors (original headers kept in each file)
