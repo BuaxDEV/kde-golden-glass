@@ -103,6 +103,12 @@ MouseArea {
     DropArea {
         id: drop
         anchors.fill: parent
+        // una app arrastrada desde Apps no se tira: en el dock, se fija
+        onEntered: drag => {
+            if (drag.formats.indexOf("application/x-goldenglass-app") >= 0) {
+                drag.accepted = false;
+            }
+        }
         onDropped: event => {
             if (event.hasUrls) {
                 button.trash(event.urls);

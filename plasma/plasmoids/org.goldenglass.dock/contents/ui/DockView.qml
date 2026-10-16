@@ -13,6 +13,11 @@
 
     La placa (slab) la dibuja el Panel.qml de GoldenGlass: aquí solo se le
     pasa su geometría (goldenglassDockSlab).
+
+    Añadir apps: arrastrarlas desde Apps (o un .desktop desde Dolphin) y
+    soltarlas en el dock. Mientras se arrastra, las apps se separan donde
+    caerá; si ya estaba en el dock (fijada o abierta), se fija y se mueve ahí.
+    Apps también ofrece «Mantener en el Dock» en su menú (pinApp/unpinApp).
 */
 
 import QtQuick
@@ -100,8 +105,8 @@ Item {
     onPanelThicknessChanged: Qt.callLater(publishSlab)
 
     // ancho reservado: la fila ampliada como mucho (integral de la curva: spread
-    // iconos de más) y la placa
-    Layout.preferredWidth: Math.ceil(baseWidth + (maxSize - iconSize) * (spread + 0.5) + 2 * pad)
+    // iconos de más) o con el hueco de una app que se suelta, y la placa
+    Layout.preferredWidth: Math.ceil(baseWidth + Math.max((maxSize - iconSize) * (spread + 0.5), dropSpace) + 2 * pad)
     Layout.minimumWidth: Layout.preferredWidth
     Layout.maximumWidth: Layout.preferredWidth
     Layout.fillHeight: true
@@ -135,6 +140,129 @@ Item {
 
     function isPinned(model) {
         return model.IsLauncher === true || model.HasLauncher === true;
+    }
+
+    // --- añadir apps -----------------------------------------------------------------
+    // Arrastrar desde Apps (o un .desktop) y soltar en el dock: las apps se
+    // separan donde caerá. dropIndex: tarea delante de la que cae (-1: nada).
+    property int dropIndex: -1
+    readonly property real dropSpace: iconSize + gap
+
+    // dropIndex para una x del dock. Se mide en la fila sin el hueco (como la
+    // ampliación): el hueco no mueve el punto de corte y no hay realimentación.
+    // Cae delante de la primera tarea cuyo centro queda a la derecha del cursor.
+    function insertionAt(x) {
+        const base = baseWidth / 2 + (x - width / 2);
+        return Math.max(0, Math.min(taskCount, Math.floor((base - iconSize / 2) / (iconSize + gap))));
+    }
+
+    // URL de lanzador si todas las del arrastre son apps (.desktop); si no, []
+    function launcherUrls(urls) {
+        const out = (urls || []).map(String).filter(u => desktopId(u) !== "");
+        return out.length > 0 && out.length === urls.length ? out : [];
+    }
+
+    // fila de la tarea de una app (por id de escritorio sin .desktop) o -1
+    function rowOf(key) {
+        for (let i = 0; i < tasksRepeater.count; ++i) {
+            const item = tasksRepeater.itemAt(i);
+            if (item && key && (item.appKey === key || item.launcherKey === key)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function appKey(url) {
+        return desktopId(url).replace(/\.desktop$/, "");
+    }
+
+    function isAppPinned(url) {
+        const row = rowOf(appKey(url));
+        return row >= 0 && isPinned(tasksRepeater.itemAt(row).model);
+    }
+
+    // fija la app y la deja delante de la tarea «index» de la fila actual (-1:
+    // donde la ponga TasksModel). Si ya estaba en el dock (fijada o abierta),
+    // la fija y la mueve.
+    function pinApp(url, index) {
+        const key = appKey(url);
+        if (!key) {
+            return;
+        }
+        const existed = rowOf(key) >= 0;
+        if (!isAppPinned(url)) {
+            // file:///…/x.desktop lo convierte TasksModel en applications:x.desktop
+            tasksModel.requestAddLauncher(url);
+        }
+        placeApp(key, index, existed, true);
+    }
+
+    function placeApp(key, index, existed, retry) {
+        const row = rowOf(key);
+        if (row < 0) {
+            // TasksModel aún no ha creado la tarea: un ciclo más
+            if (retry) {
+                Qt.callLater(placeApp, key, index, existed, false);
+            }
+            return;
+        }
+        if (index >= 0) {
+            // posición final; si ya estaba delante del sitio, al quitarla se corre uno
+            const target = Math.min(existed && index > row ? index - 1 : index, tasksRepeater.count - 1);
+            if (target !== row) {
+                tasksModel.move(row, target);
+            }
+        }
+        tasksModel.syncLaunchers();
+    }
+
+    function unpinApp(url) {
+        const row = rowOf(appKey(url));
+        if (row >= 0) {
+            tasksModel.requestRemoveLauncher(tasksRepeater.itemAt(row).model.LauncherUrlWithoutIcon);
+        }
+    }
+
+    // Apps lo usa para su «Mantener en el Dock»
+    Binding {
+        target: dock.apps
+        property: "dock"
+        value: dock
+    }
+
+    // Debajo de la fila: los iconos lo ven antes (archivos sobre una app, la
+    // Papelera) y le pasan las apps. Recoge todo el ancho del dock: soltar una
+    // app en un hueco no debe llegar al panel (crearía un widget de icono).
+    DropArea {
+        id: appDrop
+        anchors.fill: parent
+        onEntered: drag => {
+            if (dock.launcherUrls(drag.urls).length === 0) {
+                drag.accepted = false;
+                return;
+            }
+            dock.dropIndex = dock.insertionAt(drag.x);
+        }
+        onPositionChanged: drag => dock.dropIndex = dock.insertionAt(drag.x)
+        onExited: dock.dropIndex = -1
+        onDropped: drop => {
+            const urls = dock.launcherUrls(drop.urls);
+            const index = dock.insertionAt(drop.x);
+            dock.dropIndex = -1;
+            if (urls.length === 0) {
+                return;
+            }
+            // Copy: con Move, Dolphin borraría el .desktop de origen
+            drop.accept(Qt.CopyAction);
+            // en el orden del arrastre: cada una tras la anterior
+            let next = index;
+            for (const url of urls) {
+                dock.pinApp(url, next);
+                const row = dock.rowOf(dock.appKey(url));
+                next = row >= 0 ? row + 1 : next + 1;
+            }
+        }
     }
 
     // id de escritorio de una URL de lanzador: applications:x.desktop, file:///…/x.desktop
@@ -264,6 +392,8 @@ Item {
             iconSource: "goldenglass-apps"
             fallback: "view-app-grid"
             label: i18n("Apps")
+            trailingSpace: dock.dropIndex === 0 ? dock.dropSpace : 0
+            Behavior on trailingSpace { NumberAnimation { duration: T.tokens.dock.magnification_ms; easing.type: Easing.OutCubic } }
             hovered: appsArea.containsMouse
             pressed: appsArea.pressed
             MouseArea {
@@ -292,6 +422,8 @@ Item {
                 maxSize: dock.maxSize
                 iconSource: model.decoration
                 label: model.AppName || model.display || ""
+                trailingSpace: dock.dropIndex === index + 1 ? dock.dropSpace : 0
+                Behavior on trailingSpace { NumberAnimation { duration: T.tokens.dock.magnification_ms; easing.type: Easing.OutCubic } }
                 running: model.IsWindow === true || model.IsGroupParent === true
                 launching: model.IsStartup === true
                 demandsAttention: model.IsDemandingAttention === true
@@ -365,9 +497,15 @@ Item {
                     }
                 }
 
-                // soltar archivos sobre una app: se abren con ella
+                // soltar archivos sobre una app: se abren con ella (las apps
+                // pasan al DropArea del dock, que las fija)
                 DropArea {
                     anchors.fill: parent
+                    onEntered: drag => {
+                        if (dock.launcherUrls(drag.urls).length > 0) {
+                            drag.accepted = false;
+                        }
+                    }
                     onDropped: drop => {
                         if (drop.hasUrls) {
                             tasksModel.requestOpenUrls(task.modelIndex, drop.urls);
@@ -389,7 +527,7 @@ Item {
                 // para la animación de minimizar (la «lámpara» de KWin)
                 function publishGeometry() {
                     const p = mapToGlobal(0, 0);
-                    tasksModel.requestPublishDelegateGeometry(modelIndex, Qt.rect(p.x, p.y, width, height), task);
+                    tasksModel.requestPublishDelegateGeometry(modelIndex, Qt.rect(p.x, p.y, size, size), task);
                 }
                 Timer {
                     id: publishTimer
