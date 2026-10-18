@@ -182,7 +182,7 @@ Item {
         interval: 50
         onTriggered: {
             const out = [];
-            for (let i = 0; i < recentReader.count && out.length < panel.suggestedCount; ++i) {
+            for (let i = 0; i < recentReader.count && out.length < panel.recentCount; ++i) {
                 const item = recentReader.objectAt(i);
                 if (item && item.entry.name) {
                     out.push(item.entry);

@@ -3,8 +3,8 @@
     SPDX-License-Identifier: GPL-3.0-or-later
 
     Apps: icono en el dock que abre un panel centrado con todas las
-    aplicaciones (buscador, categorías, sugeridas, cuadrícula o lista), como
-    Apps de macOS 26/27. Se declara como lanzador
+    aplicaciones (buscador, categorías, recientes, cuadrícula o lista), como
+    Apps de macOS 27. Se declara como lanzador
     (org.kde.plasma.launchermenu): la tecla Meta lo abre.
 
     Los datos y el panel están en AppsLauncher.qml, que comparte con el dock.

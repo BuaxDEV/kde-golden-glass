@@ -13,8 +13,7 @@
     <entry name="magnification" type="Bool"><default>@dock.magnification@</default></entry>
     <entry name="magnificationSize" type="Int"><default>@dock.magnification_size@</default></entry>
     <entry name="showRecent" type="Bool"><default>@dock.show_recent@</default></entry>
-    <!-- panel Apps (AppsPanel.qml): grid | list, category | name -->
+    <!-- panel Apps (AppsPanel.qml): grid | list -->
     <entry name="viewMode" type="String"><default>grid</default></entry>
-    <entry name="sortMode" type="String"><default>category</default></entry>
   </group>
 </kcfg>

@@ -30,7 +30,7 @@ SOURCES = ROOT / "plasma" / "plasmoids"
 # plasmoid que usa → {plasmoid de origen: [archivos de contents/ui/]}
 SHARED = {
     "org.goldenglass.dock": {
-        "org.goldenglass.launchpad": ["AppsLauncher.qml", "AppsPanel.qml", "categories.js"],
+        "org.goldenglass.launchpad": ["AppsLauncher.qml", "AppsPanel.qml", "GlassBlur.qml", "GlassScrollView.qml", "categories.js"],
         "org.goldenglass.trash": ["TrashButton.qml"],
     },
 }
