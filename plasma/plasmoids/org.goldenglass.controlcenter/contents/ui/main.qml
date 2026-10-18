@@ -193,6 +193,14 @@ PlasmoidItem {
         }
     }
 
+    // --- Sonido ----------------------------------------------------------------
+    // Tope del volumen: el de Plasma (150 % con «Subir el volumen máximo»)
+    Volume.GlobalConfig {
+        id: volumeConfig
+    }
+    readonly property int maxVolume: volumeConfig.raiseMaximumVolume ? Volume.PulseAudio.MaximalVolume
+                                                                     : Volume.PulseAudio.NormalVolume
+
     // --- Brillo y multimedia --------------------------------------------------
     Brightness.ScreenBrightnessControl {
         id: brightnessControl
@@ -514,7 +522,7 @@ PlasmoidItem {
                         trailingIcon: "audio-speakers-symbolic"
                         trailingToolTip: i18n("Sound Output")
                         from: Volume.PulseAudio.MinimalVolume
-                        to: Volume.PulseAudio.NormalVolume
+                        to: root.maxVolume
                         onMoved: {
                             soundTile.sink.muted = false;
                             soundTile.sink.volume = Math.round(value);
@@ -596,6 +604,7 @@ PlasmoidItem {
     Component {
         id: soundDetail
         SoundDetail {
+            maxVolume: root.maxVolume
             onSettingsRequested: root.openSettings("kcm_pulseaudio")
         }
     }
