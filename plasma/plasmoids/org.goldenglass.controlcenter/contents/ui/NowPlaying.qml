@@ -32,6 +32,8 @@ Tile {
 
     implicitWidth: 2 * cc.cell + cc.gap
     implicitHeight: 2 * cc.cell + cc.gap
+    pressed: area.pressed
+    pressPoint: area.mapToItem(tile, area.mouseX, area.mouseY)
 
     ColumnLayout {
         anchors.fill: parent
@@ -39,6 +41,7 @@ Tile {
         spacing: Kirigami.Units.smallSpacing
 
         MouseArea {
+            id: area
             Layout.fillWidth: true
             Layout.fillHeight: true
             cursorShape: Qt.PointingHandCursor

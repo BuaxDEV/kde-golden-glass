@@ -34,6 +34,8 @@ Tile {
     implicitWidth: 2 * cc.cell + cc.gap
     implicitHeight: cc.cell
     radius: height / 2
+    pressed: textArea.pressed
+    pressPoint: Qt.point(textArea.x + textArea.mouseX, textArea.y + textArea.mouseY)
 
     CircleButton {
         id: circle
@@ -48,6 +50,7 @@ Tile {
     }
 
     MouseArea {
+        id: textArea
         anchors.left: circle.right
         anchors.leftMargin: Kirigami.Units.smallSpacing * 2
         anchors.right: parent.right

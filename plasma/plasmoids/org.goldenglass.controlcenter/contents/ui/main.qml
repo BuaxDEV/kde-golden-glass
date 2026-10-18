@@ -77,6 +77,7 @@ PlasmoidItem {
     FloatingPanel {
         id: panel
         content: content
+        anchorItem: root.fullRepresentationItem
         onOpened: root.refreshGlassLevel()
     }
 
@@ -258,11 +259,25 @@ PlasmoidItem {
             implicitWidth: detail !== "" ? detailView.implicitWidth : gridView.implicitWidth
             implicitHeight: detail !== "" ? detailView.implicitHeight : gridView.implicitHeight
 
-            onDetailChanged: if (detail !== "") showDetail.restart()
+            // la vista que entra (detalle o cuadrícula) brota con el mismo
+            // resorte que el Centro de control al abrirse; con la ventana
+            // oculta (al reabrir vuelve a la cuadrícula) cambia sin animar
+            onDetailChanged: {
+                switchView.stop();
+                const shown = detail !== "" ? detailView : gridView;
+                if (Window.window && Window.window.visible) {
+                    switchView.target = shown;
+                    switchView.restart();
+                } else {
+                    shown.opacity = 1;
+                    shown.scale = 1;
+                }
+            }
 
             Loader {
                 id: detailView
                 active: contentRoot.detail !== ""
+                transformOrigin: Item.Top
                 sourceComponent: ({
                     wifi: wifiDetail,
                     bluetooth: bluetoothDetail,
@@ -272,19 +287,32 @@ PlasmoidItem {
                     nowplaying: nowPlayingDetail,
                 })[contentRoot.detail] ?? null
             }
-            NumberAnimation {
-                id: showDetail
-                target: detailView
-                property: "opacity"
-                from: 0
-                to: 1
-                duration: root.cc.appear_ms
-                easing.type: Easing.OutCubic
+            ParallelAnimation {
+                id: switchView
+                property Item target
+                NumberAnimation {
+                    target: switchView.target
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: root.cc.open_fade_ms
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: switchView.target
+                    property: "scale"
+                    from: root.cc.switch_scale
+                    to: 1
+                    duration: root.cc.open_ms
+                    easing.type: Easing.OutBack
+                    easing.overshoot: root.cc.open_overshoot
+                }
             }
 
             ColumnLayout {
                 id: gridView
                 visible: contentRoot.detail === ""
+                transformOrigin: Item.Top
                 spacing: root.cc.gap
 
                 GridLayout {

@@ -277,6 +277,20 @@ dentro de «Vidrio».
       una como un vidrio (4.14). Las tarjetas son más claras que los popups
       (`tile_alpha`, sin seguir el nivel de vidrio). Sin el módulo
       (`GlassBlur.qml` va en un Loader) se ven sin difuminar.
+    - **Animaciones de Liquid Glass** (tiempos y escalas en
+      `[control_center]`): al abrir, el vidrio brota del icono de la barra con
+      un resorte (`Easing.OutBack`), más deprisa a lo alto que a lo ancho; al
+      cerrar (también al perder el foco) se encoge hacia el icono y se
+      desvanece, y el blur se quita a mitad (KWin no difumina a medias). Al
+      pulsar una tarjeta cede, se ilumina desde el punto de contacto (degradado
+      radial recortado a su forma) y vuelve con un rebote; la vista de detalle
+      y la cuadrícula entran con el mismo resorte. GlassRegion sigue las
+      escalas (esquinas elípticas si lo ancho y lo alto escalan distinto), así
+      que el vidrio de KWin se mueve con las tarjetas; durante una animación
+      manda a KWin como mucho una región cada `glass_update_ms`, y `active:
+      false` quita el blur. Mientras se cierra, la ventana deja pasar los
+      clics (`Qt.WindowTransparentForInput`); reabrirla a medio cierre sigue
+      desde donde iba, con la cuadrícula. Necesita Qt 6.8 (`PathRectangle`).
     - **Vistas de detalle**, como en macOS 26: el texto de Wi‑Fi, Bluetooth y
       Enfoque, la tarjeta de Reproducción y las de Pantalla y Sonido (fuera de
       los sliders; también el botón de salida) cambian la cuadrícula por una

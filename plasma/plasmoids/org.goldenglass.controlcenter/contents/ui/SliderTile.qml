@@ -29,8 +29,11 @@ Tile {
 
     implicitWidth: 4 * cc.cell + 3 * cc.gap
     implicitHeight: column.implicitHeight + 2 * padding
+    pressed: area.pressed
+    pressPoint: Qt.point(area.mouseX, area.mouseY)
 
     MouseArea {
+        id: area
         anchors.fill: parent
         enabled: tile.hasDetail
         cursorShape: Qt.PointingHandCursor

@@ -14,26 +14,30 @@
 namespace
 {
 // Rectángulo con las cuatro esquinas redondeadas, en franjas (como la máscara
-// del SVG de Plasma): el efecto mide el radio de cada esquina en ellas.
-QRegion roundedRegion(const QRect &rect, int radius)
+// del SVG de Plasma): el efecto mide el radio de cada esquina en ellas. Las
+// esquinas son elípticas si el elemento está escalado distinto a lo ancho
+// (rx) y a lo alto (ry).
+QRegion roundedRegion(const QRect &rect, int rx, int ry)
 {
-    radius = std::clamp(radius, 0, std::min(rect.width(), rect.height()) / 2);
+    rx = std::clamp(rx, 0, rect.width() / 2);
+    ry = std::clamp(ry, 0, rect.height() / 2);
     QRegion region(rect);
-    if (radius == 0) {
+    if (rx == 0 || ry == 0) {
         return region;
     }
-    const int d = 2 * radius;
+    const int dx = 2 * rx;
+    const int dy = 2 * ry;
     const QRect corners[] = {
-        QRect(rect.left(), rect.top(), radius, radius),
-        QRect(rect.right() - radius + 1, rect.top(), radius, radius),
-        QRect(rect.left(), rect.bottom() - radius + 1, radius, radius),
-        QRect(rect.right() - radius + 1, rect.bottom() - radius + 1, radius, radius),
+        QRect(rect.left(), rect.top(), rx, ry),
+        QRect(rect.right() - rx + 1, rect.top(), rx, ry),
+        QRect(rect.left(), rect.bottom() - ry + 1, rx, ry),
+        QRect(rect.right() - rx + 1, rect.bottom() - ry + 1, rx, ry),
     };
     const QRect ellipses[] = {
-        QRect(rect.left(), rect.top(), d, d),
-        QRect(rect.right() - d + 1, rect.top(), d, d),
-        QRect(rect.left(), rect.bottom() - d + 1, d, d),
-        QRect(rect.right() - d + 1, rect.bottom() - d + 1, d, d),
+        QRect(rect.left(), rect.top(), dx, dy),
+        QRect(rect.right() - dx + 1, rect.top(), dx, dy),
+        QRect(rect.left(), rect.bottom() - dy + 1, dx, dy),
+        QRect(rect.right() - dx + 1, rect.bottom() - dy + 1, dx, dy),
     };
     for (int i = 0; i < 4; ++i) {
         region -= QRegion(corners[i]) - QRegion(ellipses[i], QRegion::Ellipse);
@@ -45,6 +49,8 @@ QRegion roundedRegion(const QRect &rect, int radius)
 GlassRegion::GlassRegion(QQuickItem *parent)
     : QQuickItem(parent)
 {
+    m_pending.setSingleShot(true);
+    connect(&m_pending, &QTimer::timeout, this, &GlassRegion::sync);
 }
 
 GlassRegion::~GlassRegion()
@@ -65,8 +71,45 @@ void GlassRegion::setSource(QQuickItem *source)
         return;
     }
     m_source = source;
-    m_force = true;
+    requestUpdate();
     Q_EMIT sourceChanged();
+}
+
+bool GlassRegion::isActive() const
+{
+    return m_active;
+}
+
+void GlassRegion::setActive(bool active)
+{
+    if (m_active == active) {
+        return;
+    }
+    m_active = active;
+    requestUpdate();
+    Q_EMIT activeChanged();
+}
+
+int GlassRegion::updateInterval() const
+{
+    return m_updateInterval;
+}
+
+void GlassRegion::setUpdateInterval(int interval)
+{
+    if (m_updateInterval == interval) {
+        return;
+    }
+    m_updateInterval = std::max(0, interval);
+    Q_EMIT updateIntervalChanged();
+}
+
+void GlassRegion::requestUpdate()
+{
+    m_force = true;
+    if (m_window) {
+        m_window->update();
+    }
 }
 
 void GlassRegion::itemChange(ItemChange change, const ItemChangeData &value)
@@ -94,15 +137,9 @@ void GlassRegion::setWindow(QQuickWindow *window)
     // afterAnimating: en el hilo de la interfaz, en cada fotograma, después de
     // que Dialog haya reaccionado a mostrarse o cambiar de tamaño
     connect(window, &QQuickWindow::afterAnimating, this, &GlassRegion::sync);
-    const auto force = [this] {
-        m_force = true;
-        if (m_window) {
-            m_window->update();
-        }
-    };
-    connect(window, &QWindow::visibleChanged, this, force);
-    connect(window, &QWindow::widthChanged, this, force);
-    connect(window, &QWindow::heightChanged, this, force);
+    connect(window, &QWindow::visibleChanged, this, &GlassRegion::requestUpdate);
+    connect(window, &QWindow::widthChanged, this, &GlassRegion::requestUpdate);
+    connect(window, &QWindow::heightChanged, this, &GlassRegion::requestUpdate);
 }
 
 void GlassRegion::collect(QQuickItem *item, QRegion &region) const
@@ -112,9 +149,12 @@ void GlassRegion::collect(QQuickItem *item, QRegion &region) const
     }
     if (item->property("goldenGlassTile").toBool()) {
         const QRect rect = item->mapRectToScene(item->boundingRect()).toAlignedRect();
-        // el radio escala con el elemento (botones que encogen al pulsarlos)
-        const qreal scale = item->width() > 0 ? rect.width() / item->width() : 1;
-        region += roundedRegion(rect, int(std::round(item->property("radius").toReal() * scale)));
+        // el radio escala con el elemento (tarjetas que ceden al pulsarlas, el
+        // resorte al abrir, que escala distinto a lo ancho y a lo alto)
+        const qreal radius = item->property("radius").toReal();
+        const qreal scaleX = item->width() > 0 ? rect.width() / item->width() : 1;
+        const qreal scaleY = item->height() > 0 ? rect.height() / item->height() : 1;
+        region += roundedRegion(rect, int(std::round(radius * scaleX)), int(std::round(radius * scaleY)));
         return;
     }
     const auto children = item->childItems();
@@ -130,12 +170,24 @@ void GlassRegion::sync()
         return;
     }
     QRegion region;
-    collect(root, region);
+    if (m_active) {
+        collect(root, region);
+    }
     if (!m_force && region == m_applied) {
         return;
     }
+    // durante una animación, como mucho un envío cada updateInterval ms; el
+    // temporizador manda el último estado aunque la animación ya haya parado
+    if (!m_force && m_sinceLastUpdate.isValid() && m_sinceLastUpdate.elapsed() < m_updateInterval) {
+        if (!m_pending.isActive()) {
+            m_pending.start(int(m_updateInterval - m_sinceLastUpdate.elapsed()));
+        }
+        return;
+    }
+    m_pending.stop();
     m_force = false;
     m_applied = region;
+    m_sinceLastUpdate.start();
     KWindowEffects::enableBlurBehind(m_window, !region.isEmpty(), region);
 }
 

@@ -40,13 +40,12 @@ QQC2.AbstractButton {
     Accessible.checkable: isToggle
     Accessible.checked: active
 
-    scale: pressed ? 0.94 : 1
-    Behavior on scale { NumberAnimation { duration: Kirigami.Units.shortDuration } }
-
     // con tile, una pieza de vidrio más (Tile); si no, el círculo gris de las píldoras
     background: Tile {
         id: circle
         goldenGlassTile: button.tile
+        pressed: button.pressed
+        pressPoint: Qt.point(button.pressX, button.pressY)
         radius: width / 2
         opacity: button.enabled ? 1 : 0.5
         color: button.active ? (button.dark ? "white" : Kirigami.Theme.highlightColor)
@@ -57,6 +56,9 @@ QQC2.AbstractButton {
     }
 
     contentItem: Item {
+        // el glifo cede y rebota con su círculo
+        scale: circle.scale
+
         Kirigami.Icon {
             anchors.centerIn: parent
             width: button.glyphSize

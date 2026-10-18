@@ -207,8 +207,31 @@ label_delay_ms = 400     # espera antes del nombre de la app al pasar el ratón
 [control_center]
 floating_margin = 6      # px entre la barra de menús y las tarjetas
 screen_margin = 8        # px entre las tarjetas y el borde derecho de la pantalla
-appear_ms = 180          # al abrir: aparece desde la esquina de la barra
-appear_scale = 0.96
+# Animaciones de Liquid Glass. Al abrir, el vidrio brota del icono con un
+# resorte: crece desde open_scale_x × open_scale_y y se pasa un poco
+# (open_overshoot: el «overshoot» de Easing.OutBack) antes de asentarse.
+open_ms = 420            # resorte a lo ancho
+open_ms_y = 480          # a lo alto se asienta después: el vidrio «cae» de la barra
+open_fade_ms = 140
+open_scale_x = 0.85
+open_scale_y = 0.6
+open_overshoot = 1.2
+switch_scale = 0.94      # vista de detalle ↔ cuadrícula: brota desde aquí
+close_ms = 180           # al cerrar: se encoge hacia el icono y se desvanece
+close_scale = 0.92
+# KWin no difumina a medias: el vidrio se quita a esta fracción del cierre,
+# cuando las tarjetas ya casi no se ven
+close_unblur_at = 0.5
+glass_update_ms = 32     # mínimo entre dos regiones de blur enviadas a KWin
+# Al pulsar una tarjeta: cede, se ilumina desde el punto de contacto y al
+# soltarla vuelve con un rebote
+press_scale = 0.95
+press_ms = 90
+release_ms = 380
+release_overshoot = 2.2
+press_brighten_alpha = 0.08
+press_glow_alpha = 0.22
+press_glow_radius = 72   # px del brillo alrededor del punto de contacto
 icon_highlight_alpha = 0.18  # resaltado del icono de la barra mientras está abierto
 icon_highlight_radius = 5
 icon_highlight_padding = 4   # px a cada lado del icono
