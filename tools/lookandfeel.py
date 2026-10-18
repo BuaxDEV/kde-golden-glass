@@ -74,6 +74,8 @@ def values(tokens: dict, variant: str) -> dict[str, str]:
         "DOCK_HIDING": tokens["plasma"]["dock_hiding"],
         "SLIDE_IN_MS": str(tokens["plasma"]["slide_in_ms"]),
         "SLIDE_OUT_MS": str(tokens["plasma"]["slide_out_ms"]),
+        # el applet de bandeja separa los iconos en múltiplos de smallSpacing (4 px)
+        "TRAY_ICON_SPACING": str(max(1, round(tokens["plasma"]["menubar_tray_spacing"] / 4))),
         "PER_SCREEN_DESKTOPS": "true" if tokens["plasma"]["per_screen_desktops"] else "false",
         "SPLASH_BACKGROUND": splash_bg,
         "SPLASH_TRACK": _with_alpha(splash_fg, track_alpha),

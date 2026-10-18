@@ -168,6 +168,24 @@ KCM.SimpleKCM {
                     ? i18nc("@info", "Like Liquid Glass: the dock, menu bar and popups bend what is behind them, more with clearer glass. Turn it off if the graphics card struggles.")
                     : i18nc("@info", "Not available: KWin did not load the GoldenGlass effect. Rebuild goldenglass-kstyle after updating KWin.")
             }
+
+            Item {
+                Kirigami.FormData.isSection: true
+            }
+
+            QQC2.Switch {
+                Kirigami.FormData.label: i18nc("@label", "Menu bar:")
+                text: i18nc("@option:check", "Show menu bar background")
+                checked: kcm.menubarBackground
+                onToggled: kcm.menubarBackground = checked
+            }
+            QQC2.Label {
+                Layout.maximumWidth: Kirigami.Units.gridUnit * 20
+                wrapMode: Text.WordWrap
+                font: Kirigami.Theme.smallFont
+                color: Kirigami.Theme.disabledTextColor
+                text: i18nc("@info", "Off, like macOS: the menu bar is drawn straight over the wallpaper. On: a strip of glass behind it.")
+            }
         }
 
         QQC2.Label {

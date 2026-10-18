@@ -83,6 +83,15 @@ tint = 0.10          # acerca la luminancia del fondo a la media (legibilidad)
 [plasma]
 menubar_height = 28
 menubar_padding = 6      # margen inferior del contenido de la barra
+# Barra de menús sin fondo, como macOS 26/27 (el texto va sobre el fondo de
+# pantalla). true = franja de vidrio translúcido, la opción «Mostrar fondo de la
+# barra de menús» de macOS 27 (módulo Vidrio, goldenglass-glass).
+menubar_background = false
+# Con varias pantallas, opacidad de la barra de menús de las que no tienen la
+# ventana activa (macOS la atenúa)
+menubar_inactive_opacity = 0.5
+menubar_item_padding = 11   # margen a cada lado del nombre de la app y de cada menú
+menubar_tray_spacing = 16   # separación entre iconos de estado (múltiplo de 4)
 dock_icon_size = 48
 dock_padding = 6         # margen entre el borde del dock y los iconos
 # Dock como en macOS con «Ocultar y mostrar automáticamente»: escondido hasta

@@ -22,7 +22,7 @@ Tema completo para KDE Plasma en CachyOS inspirado en macOS 27 "Golden Gate"
 | Sidebars | Pegadas al borde izquierdo (no flotantes), fondo más oscuro, iconos a color | `kstyle/` |
 | Toolbars | Barras reales y uniformes, no botones flotantes | `kstyle/` + `kdecoration/` |
 | Menús | Sin iconos junto a cada comando | `kstyle/` |
-| Barra de menús | Desbordamiento de iconos tras un chevron «»; fondo translúcido opcional | `plasma/desktoptheme`, layout |
+| Barra de menús | Sin fondo (texto sobre el fondo de pantalla) y fondo translúcido opcional; nombre de la app en negrita; reloj «Vie 16 de oct  1:09 p.m.»; atenuada en la pantalla sin foco; desbordamiento de iconos tras un chevron «» | `plasma/shell` (`Panel.qml`), `plasma/desktoptheme`, layout, plasmoids `appname` y `clock` |
 | Iconos de app | Squircle con capas y más detalle | `icons/` |
 | Liquid Glass | El fondo se curva como una lente en los bordes del vidrio, con dispersión, filo de luz y tinte que se adapta al fondo | `kwin-effect/` (F11) |
 | Dock | Ampliación de los iconos bajo el cursor, rebote al abrir, apps recientes | `plasma/plasmoids/org.goldenglass.dock` (F10) |
@@ -169,13 +169,20 @@ avisos de cambio de tema cada 100 ms).
 Verificado en el sandbox midiendo la barra de menús, el título y la toolbar de
 Dolphin en 0 → 1 → 0,5 → 0 → 0 → 1.
 
+**`goldenglass-glass --menubar-background on|off`** solo guarda `goldenglassrc
+[Plasma] MenubarBackground` con aviso de cambio (de fábrica, token
+`plasma.menubar_background = false`); no toca el Plasma Style. El `Panel.qml`
+del shell lo lee en vivo (ver «Barra de menús» en 4.5).
+
 #### Módulo de Ajustes
 
 `kcm/` (`kcm_goldenglass`, C++ + QML): Preferencias del Sistema › Colores y
 temas › **Vidrio**. Control con las tres muescas de los tokens (imán al soltar
 cerca) y valores intermedios; se aplica en vivo al soltar ejecutando
 `goldenglass-glass`; si se suelta varias veces, solo se encola el último nivel.
-"Predeterminados" vuelve al nivel de fábrica; no hay "Aplicar". Traducción al
+El interruptor «Mostrar fondo de la barra de menús» escribe `goldenglassrc`
+directamente (con aviso de cambio, sin procesos). "Predeterminados" vuelve al
+nivel y al fondo de fábrica; no hay "Aplicar". Traducción al
 español en `po/es`. `kcm_apply_test` (prueba de integración, dentro de una
 sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
 
@@ -187,7 +194,7 @@ dentro de «Vidrio».
 
 | Módulo | Dónde | Contenido | Fase |
 |---|---|---|---|
-| Vidrio (`kcm_goldenglass`) | Colores y temas | slider + interruptor **Refracción** (`goldenglass-glass --refraction`; apagado y explicado si KWin no cargó el efecto) | ✅ |
+| Vidrio (`kcm_goldenglass`) | Colores y temas | slider + interruptor **Refracción** (`goldenglass-glass --refraction`; apagado y explicado si KWin no cargó el efecto) + interruptor **Mostrar fondo de la barra de menús** | ✅ |
 | Efectos de sonido (`kcm_goldenglass_sounds`) | Multimedia | sonidos de GoldenGlass y sonido al iniciar sesión, con botón para escucharlos (`pw-play`); llama a `goldenglass-system` (4.9) | ✅ F7 |
 | Arranque e inicio de sesión (`kcm_goldenglass_boot`) | Colores y temas, junto a «Pantalla de bienvenida» | Pantalla de arranque: del sistema, GoldenGlass o GoldenGlass gris, con miniaturas dibujadas con las piezas del tema y los avisos de `goldenglass-system`. Pantalla de inicio de sesión: interruptor según el gestor activo (con SDDM, el tema; con Plasma Login Manager, fondo y ajustes, con la explicación). Se aplica con «Aplicar»: pide la contraseña (una vez para los dos cambios) y, si cambia Plymouth, regenera el initramfs | ✅ F8 / F9 |
 | Dock (`kcm_goldenglass_dock`) | Espacio de trabajo (como «Escritorio y Dock») | Tamaño, **ampliación** (activada de fábrica) y su tamaño, apps recientes. En vivo con `goldenglass-dock` | ✅ F10 |
@@ -198,13 +205,15 @@ dentro de «Vidrio».
   Usa clases `ColorScheme-*`, así que **un solo Plasma Style sirve para claro y
   oscuro**; solo la opacidad queda fija en el SVG. Genera diálogos, panel (barra
   de menús y dock), tooltips, fondo de widgets, tareas del dock (punto bajo las
-  apps abiertas), resaltado de listas, campos de texto y cabeceras de popups. Lo
+  apps abiertas), resaltado de listas, campos de texto, cabeceras de popups y
+  menús de la app en la barra (`menubaritem`: margen de macOS entre títulos,
+  `plasma.menubar_item_padding`, y acento al pasar o abrir uno). Lo
   que no genera se hereda de Breeze. `plasmarc` pide saturación extra detrás del
   blur ("vibrancy").
 - **Global Themes** (`look-and-feel/`): `org.goldenglass.light.desktop` y
   `org.goldenglass.dark.desktop`. Incluyen:
-  - Script de layout: panel superior (menú de sistema, menú global, bandeja,
-    reloj) + **dock** = panel nativo flotante centrado con el plasmoid
+  - Script de layout: **barra de menús** en cada pantalla (logo, nombre de la
+    app, menú global, bandeja, Centro de control y reloj) + **dock** = panel nativo flotante centrado con el plasmoid
     `org.goldenglass.dock` (ver 4.13), **autoocultable** como en
     macOS («Ocultar y mostrar automáticamente», token `plasma.dock_hiding`): aparece al llevar el
     cursor al borde inferior y las ventanas maximizadas usan toda la pantalla.
@@ -233,6 +242,29 @@ dentro de «Vidrio».
     de disposición de KWin, no de `contents/defaults`.
   - `ShellPackage=org.goldenglass.desktop` (ver pantalla de bloqueo).
   - Iconos, cursores y wallpaper se añaden en F5.
+- **Barra de menús** como la de macOS 27. El `Panel.qml` del shell la reconoce
+  como el panel superior que lleva el menú del logo
+  (`org.goldenglass.systemmenu`); los demás paneles no cambian.
+  - Sin fondo ni blur (`NoBackground`): el texto va sobre el fondo de pantalla.
+    Fondo de vidrio translúcido opcional (4.4). El ajuste y los tokens llegan
+    por `MenuBarSettings` del módulo QML `org.goldenglass.glass`
+    (`qmlplugin/`): lee `goldenglassrc [Plasma] MenubarBackground` y lo sigue
+    con `KConfigWatcher`, sin depender del Plasma Style activo. El módulo viene
+    con `goldenglass-kstyle`: `Panel.qml` lo carga con un `Loader`
+    (`GoldenGlassMenuBarSettings.qml`) y, si falta, la barra queda sin fondo y
+    sin atenuar.
+  - Con varias pantallas, la barra de las que no tienen la ventana activa se
+    atenúa (`plasma.menubar_inactive_opacity` sobre la contención); sin ventana
+    activa no se atenúa ninguna. Los dos `TasksModel` que lo deciden solo
+    existen en la barra de menús y con más de una pantalla.
+  - El nombre de la app es el de la última ventana visible de esa pantalla; el
+    menú global (`allScreens=false`) solo enseña los menús de la ventana activa
+    en su pantalla: en las demás queda el nombre, atenuado, sin menús.
+  - Bandeja con los iconos separados como en macOS (`iconSpacing` a partir de
+    `plasma.menubar_tray_spacing`).
+  - Límites: el applet de menú global de Plasma añade al final un menú
+    «Buscar» que no se puede quitar desde su configuración; la bandeja muestra
+    su flecha de iconos ocultos (`arrow-down-symbolic`) cuando hay alguno.
 - **Pantalla de bloqueo** estilo macOS (reloj grande arriba, avatar y contraseña
   abajo). Desde Plasma 6 vive en el **paquete de shell**, no en el Global Theme:
   - `plasma/shell/org.goldenglass.desktop` solo trae `lockscreen/` y hereda el
@@ -336,6 +368,19 @@ dentro de «Vidrio».
     directorio actual si la carpeta no existe), clic abre `trash:/`, soltar
     archivos los tira con `gio trash` y el menú «Vaciar papelera…» pide
     confirmación (`kdialog`) antes de `ktrash6 --empty`.
+  - `org.goldenglass.appname` ✅ — nombre de la app en negrita entre el logo y
+    el menú global: la última ventana activada en esa pantalla, escritorio y
+    actividad, sin las minimizadas (`TasksModel` con `SortLastActivated`; tras
+    «Ocultar» pasa a la de delante), sin coletillas del `.desktop`
+    («Spotify (Launcher)» → «Spotify»). Al pulsarlo: Ocultar <app>, Ocultar
+    otros, Mostrar todo y Salir de <app> (minimiza, restaura o cierra sus
+    ventanas). Mismo margen lateral que los menús (`plasma.menubar_item_padding`).
+  - `org.goldenglass.clock` ✅ — reloj de la barra de menús: «Vie 16 de oct
+    1:09 p.m.» (día con mayúscula, orden de fecha de macOS por idioma, dos
+    espacios y la hora corta del idioma, que en es_MX trae «p.m.»). El reloj
+    digital de Plasma no puede: escribe el día en minúscula y convierte «p.m.»
+    en «P.M.». Se actualiza al cambiar el minuto; al pulsarlo, un calendario
+    (`MonthView` de Plasma).
   - `org.goldenglass.systemmenu` ✅ — menú del logo como el menú Apple: Acerca de
     este equipo (kinfocenter), Preferencias del Sistema, Tienda (solo si está
     Discover), Forzar salida (KWin `killWindow`), Reposo, Reiniciar…, Apagar…,

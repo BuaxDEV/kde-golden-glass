@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [{ "Name": "GoldenGlass contributors" }],
+        "Category": "Date and Time",
+        "Description": "Menu bar clock like macOS: day, date and time as in \"Fri Oct 16  1:09 PM\", with a calendar",
+        "Description[es]": "Reloj de la barra de menús como el de macOS: día, fecha y hora como en «Vie 16 de oct  1:09 p.m.», con un calendario",
+        "Icon": "preferences-system-time",
+        "Id": "org.goldenglass.clock",
+        "License": "GPL-3.0-or-later",
+        "Name": "GoldenGlass Clock",
+        "Name[es]": "Reloj GoldenGlass",
+        "Website": "https://github.com/BuaxDEV/kde-golden-glass"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

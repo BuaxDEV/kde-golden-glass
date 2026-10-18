@@ -7,6 +7,8 @@
   goldenglass-glass --get           # nivel actual
   goldenglass-glass --refraction on|off   # efecto de KWin goldenglass_glass
   goldenglass-glass --get-refraction      # on | off | unavailable
+  goldenglass-glass --menubar-background on|off   # franja de vidrio tras la barra de menús
+  goldenglass-glass --get-menubar-background      # on | off
   goldenglass-glass --check         # al iniciar sesión (autostart), ver abajo
 
 Lo que hace con un nivel:
@@ -25,6 +27,10 @@ vez difuminarían dos veces). --check, al iniciar sesión: la primera vez lo
 activa (es el valor de fábrica); si está pedido pero KWin no lo cargó (KWin
 actualizado sin recompilar goldenglass-kstyle) vuelve a cargar el Blur; si sí
 lo cargó, se asegura de que el Blur no esté cargado.
+
+Fondo de la barra de menús: solo escribe goldenglassrc [Plasma]
+MenubarBackground (con aviso de cambio); el Panel.qml del shell lo lee en vivo
+con MenuBarSettings (módulo QML org.goldenglass.glass). No toca el Plasma Style.
 """
 
 from __future__ import annotations
@@ -225,6 +231,17 @@ def check() -> None:
         effects_call("loadEffect", "string:blur")
 
 
+# --- fondo de la barra de menús ------------------------------------------------
+
+def get_menubar_background() -> bool:
+    default = "true" if load_tokens()["plasma"]["menubar_background"] else "false"
+    return kread(RC, "Plasma", "MenubarBackground", default) == "true"
+
+
+def set_menubar_background(on: bool) -> None:
+    kwrite(RC, "Plasma", "MenubarBackground", "true" if on else "false")
+
+
 def get_level() -> float:
     default = str(load_tokens()["glass"]["default_level"])
     return float(kread(RC, "Glass", "Level", default))
@@ -237,6 +254,9 @@ def main(argv: list[str] | None = None) -> int:
     group.add_argument("--get", action="store_true", help="muestra el nivel actual")
     group.add_argument("--refraction", choices=["on", "off"], help="efecto de refracción de KWin")
     group.add_argument("--get-refraction", action="store_true", help="on, off o unavailable")
+    group.add_argument("--menubar-background", choices=["on", "off"],
+                       help="franja de vidrio translúcido tras la barra de menús")
+    group.add_argument("--get-menubar-background", action="store_true", help="on u off")
     group.add_argument("--check", action="store_true", help="al iniciar sesión: Blur o refracción, nunca ninguno")
     ap.add_argument("--no-plasma-reload", action="store_true",
                     help="no cambiar el Plasma Style activo (solo generar y configurar)")
@@ -250,6 +270,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.refraction:
         set_refraction(args.refraction == "on")
+        return 0
+    if args.get_menubar_background:
+        print("on" if get_menubar_background() else "off")
+        return 0
+    if args.menubar_background:
+        set_menubar_background(args.menubar_background == "on")
         return 0
     if args.check:
         check()
