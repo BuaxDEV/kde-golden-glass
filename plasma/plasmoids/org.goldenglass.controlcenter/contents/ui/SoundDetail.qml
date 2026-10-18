@@ -16,6 +16,7 @@ DetailView {
     id: view
 
     readonly property var sink: Volume.PreferredDevice.sink
+    required property int maxVolume
 
     signal settingsRequested()
 
@@ -32,7 +33,7 @@ DetailView {
         iconTo: "audio-volume-high-symbolic"
         iconClickable: true
         from: Volume.PulseAudio.MinimalVolume
-        to: Volume.PulseAudio.NormalVolume
+        to: view.maxVolume
         onMoved: {
             view.sink.muted = false;
             view.sink.volume = Math.round(value);
