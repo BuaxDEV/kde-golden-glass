@@ -3,8 +3,8 @@
     "KPlugin": {
         "Authors": [{ "Name": "GoldenGlass contributors" }],
         "Category": "System Information",
-        "Description": "Control Center: Wi-Fi, Bluetooth, dark mode, Do Not Disturb, display brightness, sound, glass and now playing",
-        "Description[es]": "Centro de control: Wi‑Fi, Bluetooth, modo oscuro, No molestar, brillo, sonido, vidrio y lo que se reproduce",
+        "Description": "Control Center like macOS 26: Wi-Fi, Bluetooth, KDE Connect, Focus, now playing, screen mirroring, screenshot, dark mode, night light, display brightness, sound and glass",
+        "Description[es]": "Centro de control como el de macOS 26: Wi‑Fi, Bluetooth, KDE Connect, Enfoque, reproducción, duplicar pantalla, captura, modo oscuro, luz nocturna, brillo, sonido y vidrio",
         "Icon": "preferences-system",
         "Id": "org.goldenglass.controlcenter",
         "License": "GPL-3.0-or-later",

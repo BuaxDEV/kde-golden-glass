@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+     SPDX-License-Identifier: CC-BY-SA-4.0
+     Vidrio claro (inicio del slider): círculo hueco. Se usa como máscara (isMask). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <path fill="#000" fill-rule="evenodd" d="M8 3a5 5 0 1 1 0 10A5 5 0 0 1 8 3Zm0 1a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/>
+</svg>

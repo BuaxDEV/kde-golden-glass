@@ -111,6 +111,11 @@ endif()
 
 add_subdirectory(kcm)
 
+# Módulo QML org.goldenglass.glass (blur por piezas, p. ej. el Centro de control)
+if(${Qt6Quick_FOUND})
+    add_subdirectory(qmlplugin)
+endif()
+
 if(WITH_KWIN_EFFECT)
     add_subdirectory(kwin-effect)
 endif()

@@ -134,10 +134,12 @@ package_goldenglass-plasma() {
   license=(GPL-3.0-or-later GPL-2.0-or-later CC-BY-SA-4.0)
   depends=(plasma-workspace plasma-desktop kscreenlocker plasma5support plasma-nm plasma-pa bluez-qt
            powerdevil kcmutils fontconfig inter-font kdialog glib2 kio kconfig python polkit)
-  optdepends=('goldenglass-kstyle: widget style and window decoration used by the global themes'
+  optdepends=('goldenglass-kstyle: widget style and window decoration used by the global themes, glass tiles of the Control Center'
               'goldenglass-icons: icon theme used by the global themes'
               'goldenglass-cursors: cursor theme used by the global themes'
-              'goldenglass-wallpapers: wallpaper used by the global themes')
+              'goldenglass-wallpapers: wallpaper used by the global themes'
+              'kdeconnect: KDE Connect in the Control Center'
+              'spectacle: Screenshot button in the Control Center')
 
   local data="$pkgdir/usr/share"
   install -Dm644 gen/color-schemes/*.colors -t "$data/color-schemes/"

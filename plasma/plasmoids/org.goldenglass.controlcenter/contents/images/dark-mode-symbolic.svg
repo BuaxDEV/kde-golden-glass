@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+     SPDX-License-Identifier: CC-BY-SA-4.0
+     Modo oscuro: círculo con la mitad derecha llena, como el de macOS. Se usa
+     como máscara (isMask). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <path fill="#000" fill-rule="evenodd" d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Zm0 1.2a5.3 5.3 0 0 0 0 10.6Z"/>
+</svg>

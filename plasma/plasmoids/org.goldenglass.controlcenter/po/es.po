@@ -3,7 +3,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: plasma_applet_org.goldenglass.controlcenter\n"
-"PO-Revision-Date: 2026-10-10 18:00+0000\n"
+"PO-Revision-Date: 2026-10-16 18:00+0000\n"
 "Last-Translator: GoldenGlass contributors\n"
 "Language-Team: Spanish\n"
 "Language: es\n"
@@ -30,10 +30,31 @@ msgstr "Desactivado"
 msgid "On"
 msgstr "Activado"
 
-msgid "%1 device connected"
-msgid_plural "%1 devices connected"
-msgstr[0] "%1 dispositivo conectado"
-msgstr[1] "%1 dispositivos conectados"
+msgid "Not connected"
+msgstr "No conectado"
+
+msgid "%1 device"
+msgid_plural "%1 devices"
+msgstr[0] "%1 dispositivo"
+msgstr[1] "%1 dispositivos"
+
+msgid "Connect"
+msgstr "Connect"
+
+msgid "No devices"
+msgstr "Sin dispositivos"
+
+msgid "Screen Mirroring"
+msgstr "Duplicar pantalla"
+
+msgid "Screenshot"
+msgstr "Captura de pantalla"
+
+msgid "Night Light"
+msgstr "Luz nocturna"
+
+msgid "Focus"
+msgstr "Enfoque"
 
 msgid "Dark Mode"
 msgstr "Modo oscuro"
@@ -47,8 +68,14 @@ msgstr "Pantalla"
 msgid "Sound"
 msgstr "Sonido"
 
+msgid "Sound Output"
+msgstr "Salida de sonido"
+
 msgid "Glass"
 msgstr "Vidrio"
+
+msgid "Not Playing"
+msgstr "Sin reproducción"
 
 msgid "Previous"
 msgstr "Anterior"
@@ -61,3 +88,51 @@ msgstr "Reproducir"
 
 msgid "Next"
 msgstr "Siguiente"
+
+msgid "Wi‑Fi Settings…"
+msgstr "Ajustes de Wi‑Fi…"
+
+msgid "Password"
+msgstr "Contraseña"
+
+msgid "Known Networks"
+msgstr "Redes conocidas"
+
+msgid "Other Networks"
+msgstr "Otras redes"
+
+msgid "Bluetooth Settings…"
+msgstr "Ajustes de Bluetooth…"
+
+msgid "Devices"
+msgstr "Dispositivos"
+
+msgid "Connected"
+msgstr "Conectado"
+
+msgid "No paired devices"
+msgstr "No hay dispositivos enlazados"
+
+msgid "Notification Settings…"
+msgstr "Ajustes de notificaciones…"
+
+msgid "For 1 hour"
+msgstr "Durante 1 hora"
+
+msgid "Until tomorrow morning"
+msgstr "Hasta mañana por la mañana"
+
+msgid "Sound Settings…"
+msgstr "Ajustes de sonido…"
+
+msgid "Output"
+msgstr "Salida"
+
+msgid "Display Settings…"
+msgstr "Ajustes de pantalla…"
+
+msgid "Appearance"
+msgstr "Apariencia"
+
+msgid "Now Playing"
+msgstr "Reproducción"

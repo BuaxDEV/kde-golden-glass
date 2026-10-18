@@ -2,10 +2,14 @@
     SPDX-FileCopyrightText: 2026 GoldenGlass contributors
     SPDX-License-Identifier: GPL-3.0-or-later
 
-    Centro de control, como el de macOS: conectividad, modo oscuro, No
-    molestar, brillo, sonido, vidrio y lo que se está reproduciendo. Toda la
-    lógica es la de los módulos de Plasma (networkmanagement, bluezqt,
-    brightnesscontrolplugin, volume, notificationmanager, mpris).
+    Centro de control, como el de macOS 26: cuadrícula de 4 columnas con
+    píldoras (Wi‑Fi, Bluetooth, KDE Connect, Enfoque), Reproducción, botones
+    redondos (duplicar pantalla, captura, modo oscuro, luz nocturna) y, a lo
+    ancho, Pantalla, Sonido y Vidrio. Como en macOS, las tarjetas van sueltas
+    sobre el escritorio, cada una de vidrio (FloatingPanel), sin popup de
+    Plasma: el icono de la barra es la representación «completa». Toda la lógica es la de los módulos de
+    Plasma (networkmanagement, bluezqt, brightnesscontrolplugin, volume,
+    notificationmanager, mpris, kdeconnect) y de KWin (luz nocturna).
 */
 
 import QtQuick
@@ -15,23 +19,30 @@ import org.kde.bluezqt as BluezQt
 import org.kde.kcmutils as KCMUtils
 import org.kde.kirigami as Kirigami
 import org.kde.notificationmanager as NotificationManager
+import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.networkmanagement as PlasmaNM
 import org.kde.plasma.plasma5support as P5Support
 import org.kde.plasma.plasmoid
 import org.kde.plasma.private.brightnesscontrolplugin as Brightness
 import org.kde.plasma.private.mpris as Mpris
 import org.kde.plasma.private.volume as Volume
+import org.kde.plasma.workspace.dbus as DBus
+
+import "tokens.js" as T
 
 PlasmoidItem {
     id: root
 
-    preferredRepresentation: compactRepresentation
+    readonly property var cc: T.tokens.control_center
+
+    // El icono es la representación «completa»: Plasma no abre su popup
+    preferredRepresentation: fullRepresentation
     toolTipMainText: i18n("Control Center")
     toolTipSubText: ""
 
-    // --- Vidrio (goldenglass-glass) -------------------------------------------
+    // --- Órdenes (goldenglass-glass, kwriteconfig6, spectacle) ---------------
     property bool glassAvailable: false
-    property real glassLevel: 0.5
+    property real glassLevel: T.tokens.glass.default_level
     readonly property string glassCheck: "command -v goldenglass-glass"
     readonly property string glassGet: "goldenglass-glass --get"
 
@@ -55,25 +66,73 @@ PlasmoidItem {
         }
     }
 
-    onExpandedChanged: {
-        if (expanded && glassAvailable) {
+    function refreshGlassLevel() {
+        if (glassAvailable) {
             executable.exec(glassGet);
         }
     }
     Component.onCompleted: executable.exec(glassCheck)
 
+    // --- Abrir y cerrar -------------------------------------------------------
+    FloatingPanel {
+        id: panel
+        content: content
+        onOpened: root.refreshGlassLevel()
+    }
+
+    function toggle() {
+        panel.toggle();
+    }
+
+    function close() {
+        panel.close();
+    }
+
+    // atajo de teclado del plasmoide
+    Connections {
+        target: Plasmoid
+        function onActivated(): void {
+            root.toggle();
+        }
+    }
+
     // --- Red y Bluetooth ------------------------------------------------------
     PlasmaNM.EnabledConnections {
         id: enabledConnections
     }
-    PlasmaNM.NetworkStatus {
-        id: networkStatus
-    }
     PlasmaNM.Handler {
         id: networkHandler
     }
+    // Nombre de la red Wi‑Fi activa, como en macOS («SOAP02»)
+    property string wifiName: ""
+    PlasmaNM.NetworkModel {
+        id: networkModel
+    }
+    Instantiator {
+        id: networkWatcher
+        model: networkModel
+        delegate: QtObject {
+            readonly property bool activeWifi: model.ConnectionState === PlasmaNM.Enums.Activated
+                                               && model.Type === PlasmaNM.Enums.Wireless
+            readonly property string ssid: model.Ssid
+            onActiveWifiChanged: root.updateWifiName()
+            onSsidChanged: root.updateWifiName()
+        }
+        onObjectAdded: root.updateWifiName()
+        onObjectRemoved: root.updateWifiName()
+    }
+    function updateWifiName() {
+        for (let i = 0; i < networkWatcher.count; ++i) {
+            const connection = networkWatcher.objectAt(i);
+            if (connection && connection.activeWifi) {
+                wifiName = connection.ssid;
+                return;
+            }
+        }
+        wifiName = "";
+    }
 
-    readonly property int connectedBluetoothDevices: BluezQt.Manager.devices.filter(device => device.connected).length
+    readonly property var connectedBluetoothDevices: BluezQt.Manager.devices.filter(device => device.connected)
 
     function setBluetoothEnabled(enable) {
         BluezQt.Manager.bluetoothBlocked = !enable;
@@ -95,12 +154,42 @@ PlasmoidItem {
         if (enable) {
             const until = new Date();
             until.setFullYear(until.getFullYear() + 1);
+            setDoNotDisturbUntil(until);
+        } else {
+            setDoNotDisturbUntil(null);
+        }
+    }
+    // hasta una fecha (Date) o, con null, desactivado
+    function setDoNotDisturbUntil(until) {
+        if (until) {
             notificationSettings.notificationsInhibitedUntil = until;
         } else {
             notificationSettings.notificationsInhibitedUntil = undefined;
             notificationSettings.revokeApplicationInhibitions();
         }
         notificationSettings.save();
+    }
+
+    // --- Luz nocturna (KWin) --------------------------------------------------
+    // Como Night Shift: el botón la enciende o apaga de verdad (kwinrc), no
+    // solo la suspende. Si otro la suspendió, reanudarla cuenta como encender.
+    DBus.Properties {
+        id: nightLight
+        busType: DBus.BusType.Session
+        service: "org.kde.KWin.NightLight"
+        path: "/org/kde/KWin/NightLight"
+        iface: "org.kde.KWin.NightLight"
+    }
+    readonly property bool nightLightAvailable: nightLight.properties.available === true
+    readonly property bool nightLightOn: nightLight.properties.enabled === true && nightLight.properties.inhibited !== true
+    function toggleNightLight() {
+        if (nightLightOn) {
+            executable.exec("kwriteconfig6 --file kwinrc --group NightColor --key Active false --notify");
+        } else if (nightLight.properties.enabled === true && Brightness.NightLightInhibitor.inhibited) {
+            Brightness.NightLightInhibitor.toggleInhibition();
+        } else {
+            executable.exec("kwriteconfig6 --file kwinrc --group NightColor --key Active true --notify");
+        }
     }
 
     // --- Brillo y multimedia --------------------------------------------------
@@ -112,12 +201,38 @@ PlasmoidItem {
         id: mpris
     }
 
-    compactRepresentation: MouseArea {
-        id: compact
+    // selector de pantallas de KScreen (el de Meta+P)
+    function showScreenMirroring() {
+        root.close();
+        DBus.SessionBus.asyncCall({
+            service: "org.kde.kscreen.osdService",
+            path: "/org/kde/kscreen/osdService",
+            iface: "org.kde.kscreen.osdService",
+            member: "showActionSelector",
+        });
+    }
+
+    function openSettings(module) {
+        root.close();
+        KCMUtils.KCMLauncher.openSystemSettings(module);
+    }
+
+    // Icono de la barra; abierto, con el resaltado de los menús de macOS
+    fullRepresentation: MouseArea {
+        id: icon
         hoverEnabled: true
         Layout.minimumWidth: Kirigami.Units.iconSizes.small
         Layout.preferredWidth: height
-        onClicked: root.expanded = !root.expanded
+        onClicked: root.toggle()
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: parent.width + 2 * root.cc.icon_highlight_padding
+            height: Math.min(parent.height, T.tokens.plasma.menubar_height - 2 * root.cc.icon_highlight_inset)
+            radius: root.cc.icon_highlight_radius
+            color: Qt.alpha(Kirigami.Theme.textColor, root.cc.icon_highlight_alpha)
+            visible: panel.visible
+        }
 
         Kirigami.Icon {
             anchors.centerIn: parent
@@ -126,163 +241,341 @@ PlasmoidItem {
             source: Qt.resolvedUrl("../images/controlcenter-symbolic.svg")
             isMask: true
             color: Kirigami.Theme.textColor
-            active: compact.containsMouse || root.expanded
         }
     }
 
-    fullRepresentation: ColumnLayout {
-        Layout.minimumWidth: Kirigami.Units.gridUnit * 20
-        Layout.preferredWidth: Kirigami.Units.gridUnit * 21
-        spacing: Kirigami.Units.largeSpacing
+    // Contenido de FloatingPanel: la cuadrícula o, al pulsar un módulo, su
+    // vista de detalle (como macOS 26)
+    Component {
+        id: content
 
-        // Conectividad | modo oscuro + No molestar
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Kirigami.Units.largeSpacing
+        Item {
+            id: contentRoot
 
-            Tile {
-                Layout.fillWidth: true
-                Layout.preferredWidth: 1
-                Layout.fillHeight: true
+            // "" = cuadrícula; wifi, bluetooth, focus, display, sound, nowplaying
+            property string detail: ""
 
-                ToggleRow {
-                    Layout.fillWidth: true
-                    iconName: "network-wireless-symbolic"
-                    title: i18n("Wi‑Fi")
-                    available: enabledConnections.wirelessHwEnabled
-                    checked: enabledConnections.wirelessEnabled && enabledConnections.wirelessHwEnabled
-                    subtitle: !enabledConnections.wirelessHwEnabled ? i18n("Not available")
-                            : !checked ? i18n("Off")
-                            // «Wifi: Conectado a X» → «Conectado a X»
-                            : networkStatus.activeConnections.split("\n")[0].replace(/^[^:]+:\s*/, "")
-                    hasSettings: true
-                    onToggled: networkHandler.enableWireless(!enabledConnections.wirelessEnabled)
-                    onSettingsRequested: {
-                        root.expanded = false;
-                        KCMUtils.KCMLauncher.openSystemSettings("kcm_networkmanagement");
-                    }
-                }
-                ToggleRow {
-                    Layout.fillWidth: true
-                    iconName: "network-bluetooth-symbolic"
-                    title: i18n("Bluetooth")
-                    available: BluezQt.Manager.adapters.length > 0 || BluezQt.Manager.bluetoothBlocked
-                    checked: BluezQt.Manager.bluetoothOperational
-                    subtitle: !available ? i18n("Not available")
-                            : !checked ? i18n("Off")
-                            : root.connectedBluetoothDevices > 0 ? i18np("%1 device connected", "%1 devices connected", root.connectedBluetoothDevices)
-                            : i18n("On")
-                    hasSettings: true
-                    onToggled: root.setBluetoothEnabled(!BluezQt.Manager.bluetoothOperational)
-                    onSettingsRequested: {
-                        root.expanded = false;
-                        KCMUtils.KCMLauncher.openSystemSettings("kcm_bluetooth");
-                    }
-                }
+            implicitWidth: detail !== "" ? detailView.implicitWidth : gridView.implicitWidth
+            implicitHeight: detail !== "" ? detailView.implicitHeight : gridView.implicitHeight
+
+            onDetailChanged: if (detail !== "") showDetail.restart()
+
+            Loader {
+                id: detailView
+                active: contentRoot.detail !== ""
+                sourceComponent: ({
+                    wifi: wifiDetail,
+                    bluetooth: bluetoothDetail,
+                    focus: focusDetail,
+                    display: displayDetail,
+                    sound: soundDetail,
+                    nowplaying: nowPlayingDetail,
+                })[contentRoot.detail] ?? null
+            }
+            NumberAnimation {
+                id: showDetail
+                target: detailView
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: root.cc.appear_ms
+                easing.type: Easing.OutCubic
             }
 
             ColumnLayout {
-                Layout.fillWidth: true
-                Layout.preferredWidth: 1
-                spacing: Kirigami.Units.largeSpacing
+                id: gridView
+                visible: contentRoot.detail === ""
+                spacing: root.cc.gap
 
-                Tile {
-                    Layout.fillWidth: true
-                    ToggleRow {
-                        Layout.fillWidth: true
+                GridLayout {
+                    id: grid
+                    readonly property bool hasKdeConnect: kdeConnect.status === Loader.Ready
+
+                    columns: 4
+                    rowSpacing: root.cc.gap
+                    columnSpacing: root.cc.gap
+
+                    PillToggle {
+                        Layout.row: 0
+                        Layout.column: 0
+                        Layout.columnSpan: 2
+                        iconName: "network-wireless-symbolic"
+                        title: i18n("Wi‑Fi")
+                        available: enabledConnections.wirelessHwEnabled
+                        checked: enabledConnections.wirelessEnabled && enabledConnections.wirelessHwEnabled
+                        subtitle: !enabledConnections.wirelessHwEnabled ? i18n("Not available")
+                                : !checked ? i18n("Off")
+                                : root.wifiName.length > 0 ? root.wifiName : i18n("Not connected")
+                        hasDetail: true
+                        onToggled: networkHandler.enableWireless(!enabledConnections.wirelessEnabled)
+                        onDetailRequested: contentRoot.detail = "wifi"
+                    }
+
+                    NowPlaying {
+                        Layout.row: 0
+                        Layout.column: 2
+                        Layout.rowSpan: 2
+                        Layout.columnSpan: 2
+                        player: mpris.currentPlayer ?? null
+                        onDetailRequested: contentRoot.detail = "nowplaying"
+                    }
+
+                    PillToggle {
+                        Layout.row: 1
+                        Layout.column: 0
+                        Layout.columnSpan: 2
+                        iconName: "network-bluetooth-symbolic"
+                        title: i18n("Bluetooth")
+                        available: BluezQt.Manager.adapters.length > 0 || BluezQt.Manager.bluetoothBlocked
+                        checked: BluezQt.Manager.bluetoothOperational
+                        subtitle: !available ? i18n("Not available")
+                                : !checked ? i18n("Off")
+                                : root.connectedBluetoothDevices.length === 1 ? root.connectedBluetoothDevices[0].name
+                                : root.connectedBluetoothDevices.length > 1 ? i18np("%1 device", "%1 devices", root.connectedBluetoothDevices.length)
+                                : i18n("On")
+                        hasDetail: true
+                        onToggled: root.setBluetoothEnabled(!BluezQt.Manager.bluetoothOperational)
+                        onDetailRequested: contentRoot.detail = "bluetooth"
+                    }
+
+                    // KDE Connect en el hueco de AirDrop; sin él, Enfoque ocupa su sitio
+                    Loader {
+                        id: kdeConnect
+                        Layout.row: 2
+                        Layout.column: 0
+                        Layout.columnSpan: 2
+                        visible: grid.hasKdeConnect
+                        source: Qt.resolvedUrl("KdeConnectPill.qml")
+                    }
+                    Connections {
+                        target: kdeConnect.item
+                        function onActivated() {
+                            root.close();
+                        }
+                    }
+
+                    CircleButton {
+                        Layout.row: 2
+                        Layout.column: 2
+                        tile: true
+                        isToggle: false
+                        diameter: root.cc.cell
+                        glyphSize: root.cc.round_icon
+                        iconName: Qt.resolvedUrl("../images/screen-mirroring-symbolic.svg")
+                        toolTip: i18n("Screen Mirroring")
+                        onClicked: root.showScreenMirroring()
+                    }
+                    CircleButton {
+                        Layout.row: 2
+                        Layout.column: 3
+                        tile: true
+                        isToggle: false
+                        diameter: root.cc.cell
+                        glyphSize: root.cc.round_icon
+                        iconName: Qt.resolvedUrl("../images/screenshot-symbolic.svg")
+                        toolTip: i18n("Screenshot")
+                        onClicked: {
+                            root.close();
+                            executable.exec("spectacle --launchonly");
+                        }
+                    }
+
+                    CircleButton {
+                        Layout.row: 3
+                        Layout.column: 0
+                        tile: true
+                        diameter: root.cc.cell
+                        glyphSize: root.cc.round_icon
+                        iconName: Qt.resolvedUrl("../images/dark-mode-symbolic.svg")
+                        toolTip: i18n("Dark Mode")
+                        active: Brightness.DarkModeControl.darkMode
+                        onClicked: Brightness.DarkModeControl.darkMode = !Brightness.DarkModeControl.darkMode
+                    }
+                    CircleButton {
+                        Layout.row: 3
+                        Layout.column: 1
+                        visible: root.nightLightAvailable
+                        tile: true
+                        diameter: root.cc.cell
+                        glyphSize: root.cc.round_icon
+                        iconName: "redshift-status-on"
+                        toolTip: i18n("Night Light")
+                        active: root.nightLightOn
+                        onClicked: root.toggleNightLight()
+                    }
+
+                    PillToggle {
+                        Layout.row: grid.hasKdeConnect ? 3 : 2
+                        Layout.column: grid.hasKdeConnect ? 2 : 0
+                        Layout.columnSpan: 2
                         iconName: "weather-clear-night-symbolic"
-                        title: i18n("Dark Mode")
-                        subtitle: checked ? i18n("On") : i18n("Off")
-                        checked: Brightness.DarkModeControl.darkMode
-                        onToggled: Brightness.DarkModeControl.darkMode = !Brightness.DarkModeControl.darkMode
-                    }
-                }
-                Tile {
-                    Layout.fillWidth: true
-                    ToggleRow {
-                        Layout.fillWidth: true
-                        iconName: "notifications-disabled-symbolic"
-                        title: i18n("Do Not Disturb")
-                        subtitle: checked ? i18n("On") : i18n("Off")
+                        title: i18n("Focus")
+                        subtitle: checked ? i18n("Do Not Disturb") : ""
                         checked: root.doNotDisturb
+                        hasDetail: true
                         onToggled: root.setDoNotDisturb(!root.doNotDisturb)
+                        onDetailRequested: contentRoot.detail = "focus"
+                    }
+                }
+
+                // Pantalla: un slider por pantalla que lo permita (p. ej. DDC/CI),
+                // con su nombre debajo del título si hay varias
+                SliderTile {
+                    Layout.fillWidth: true
+                    visible: displays.count > 0
+                    title: i18n("Display")
+                    hasDetail: true
+                    onDetailRequested: contentRoot.detail = "display"
+
+                    Repeater {
+                        id: displays
+                        model: brightnessControl.isBrightnessAvailable ? brightnessControl.displays : null
+                        delegate: ColumnLayout {
+                            id: display
+                            required property string displayName
+                            required property string label
+                            required property int brightness
+                            required property int maxBrightness
+
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            PlasmaComponents3.Label {
+                                Layout.fillWidth: true
+                                visible: displays.count > 1
+                                text: display.label
+                                opacity: 0.7
+                                font: Kirigami.Theme.smallFont
+                                elide: Text.ElideRight
+                                textFormat: Text.PlainText
+                            }
+                            SliderRow {
+                                id: brightnessRow
+                                Layout.fillWidth: true
+                                iconFrom: "brightness-low-symbolic"
+                                iconTo: "brightness-high-symbolic"
+                                from: 0
+                                to: display.maxBrightness
+                                onMoved: brightnessControl.setBrightness(display.displayName, Math.round(value))
+
+                                Binding on value {
+                                    value: display.brightness
+                                    when: !brightnessRow.pressed
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Sonido
+                SliderTile {
+                    id: soundTile
+                    readonly property var sink: Volume.PreferredDevice.sink
+                    visible: sink !== null
+                    Layout.fillWidth: true
+                    title: i18n("Sound")
+                    hasDetail: true
+                    onDetailRequested: contentRoot.detail = "sound"
+
+                    SliderRow {
+                        id: soundRow
+                        Layout.fillWidth: true
+                        iconFrom: soundTile.sink && (soundTile.sink.muted || soundTile.sink.volume === 0) ? "audio-volume-muted-symbolic" : "audio-volume-low-symbolic"
+                        iconTo: "audio-volume-high-symbolic"
+                        iconClickable: true
+                        trailingIcon: "audio-speakers-symbolic"
+                        trailingToolTip: i18n("Sound Output")
+                        from: Volume.PulseAudio.MinimalVolume
+                        to: Volume.PulseAudio.NormalVolume
+                        onMoved: {
+                            soundTile.sink.muted = false;
+                            soundTile.sink.volume = Math.round(value);
+                        }
+                        onIconClicked: soundTile.sink.muted = !soundTile.sink.muted
+                        onTrailingClicked: contentRoot.detail = "sound"
+
+                        Binding on value {
+                            value: soundTile.sink ? soundTile.sink.volume : 0
+                            when: !soundRow.pressed
+                        }
+                    }
+                }
+
+                // Vidrio (macOS 27): se aplica al soltar
+                SliderTile {
+                    visible: root.glassAvailable
+                    Layout.fillWidth: true
+                    title: i18n("Glass")
+
+                    SliderRow {
+                        id: glassRow
+                        Layout.fillWidth: true
+                        iconFrom: Qt.resolvedUrl("../images/glass-low-symbolic.svg")
+                        iconTo: Qt.resolvedUrl("../images/glass-high-symbolic.svg")
+                        from: 0
+                        to: 1
+                        onReleased: {
+                            root.glassLevel = value;
+                            executable.exec("goldenglass-glass --level " + value.toFixed(3));
+                        }
+
+                        Binding on value {
+                            value: root.glassLevel
+                            when: !glassRow.pressed
+                        }
                     }
                 }
             }
         }
+    }
 
-        // Brillo (una tarjeta por pantalla que lo permita, p. ej. DDC/CI)
-        Repeater {
-            model: brightnessControl.isBrightnessAvailable ? brightnessControl.displays : null
-            delegate: SliderTile {
-                id: brightnessTile
-                required property string displayName
-                required property string label
-                required property int brightness
-                required property int maxBrightness
-
-                Layout.fillWidth: true
-                title: brightnessControl.displays.rowCount() > 1 ? label : i18n("Display")
-                iconName: "brightness-high-symbolic"
-                from: 0
-                to: maxBrightness
-                onMoved: brightnessControl.setBrightness(displayName, Math.round(value))
-
-                Binding on value {
-                    value: brightnessTile.brightness
-                    when: !brightnessTile.pressed
-                }
-            }
+    // --- Vistas de detalle ----------------------------------------------------
+    Component {
+        id: wifiDetail
+        WifiDetail {
+            handler: networkHandler
+            enabledConnections: enabledConnections
+            networkModel: networkModel
+            onSettingsRequested: root.openSettings("kcm_networkmanagement")
         }
-
-        // Sonido
-        SliderTile {
-            id: soundTile
-            readonly property var sink: Volume.PreferredDevice.sink
-            visible: sink !== null
-            Layout.fillWidth: true
-            title: i18n("Sound")
-            iconName: sink && (sink.muted || sink.volume === 0) ? "audio-volume-muted-symbolic" : "audio-volume-high-symbolic"
-            iconClickable: true
-            from: Volume.PulseAudio.MinimalVolume
-            to: Volume.PulseAudio.NormalVolume
-            onMoved: {
-                sink.muted = false;
-                sink.volume = Math.round(value);
-            }
-            onIconClicked: sink.muted = !sink.muted
-
-            Binding on value {
-                value: soundTile.sink ? soundTile.sink.volume : 0
-                when: !soundTile.pressed
-            }
+    }
+    Component {
+        id: bluetoothDetail
+        BluetoothDetail {
+            onEnableRequested: enable => root.setBluetoothEnabled(enable)
+            onSettingsRequested: root.openSettings("kcm_bluetooth")
         }
-
-        // Vidrio (macOS 27): se aplica al soltar
-        SliderTile {
-            id: glassTile
-            visible: root.glassAvailable
-            Layout.fillWidth: true
-            title: i18n("Glass")
-            iconName: "preferences-desktop-theme-global-symbolic"
-            from: 0
-            to: 1
-            onReleased: {
-                root.glassLevel = value;
-                executable.exec("goldenglass-glass --level " + value.toFixed(3));
-            }
-
-            Binding on value {
-                value: root.glassLevel
-                when: !glassTile.pressed
-            }
+    }
+    Component {
+        id: focusDetail
+        FocusDetail {
+            doNotDisturb: root.doNotDisturb
+            onUntilRequested: until => root.setDoNotDisturbUntil(until)
+            onSettingsRequested: root.openSettings("kcm_notifications")
         }
-
-        // Lo que se está reproduciendo
-        NowPlaying {
-            Layout.fillWidth: true
-            visible: player !== null && player !== undefined
-            player: mpris.currentPlayer
+    }
+    Component {
+        id: displayDetail
+        DisplayDetail {
+            brightnessControl: brightnessControl
+            nightLightAvailable: root.nightLightAvailable
+            nightLightOn: root.nightLightOn
+            onNightLightToggled: root.toggleNightLight()
+            onMirroringRequested: root.showScreenMirroring()
+            onSettingsRequested: root.openSettings("kcm_kscreen")
+        }
+    }
+    Component {
+        id: soundDetail
+        SoundDetail {
+            onSettingsRequested: root.openSettings("kcm_pulseaudio")
+        }
+    }
+    Component {
+        id: nowPlayingDetail
+        NowPlayingDetail {
+            player: mpris.currentPlayer ?? null
+            onRaised: root.close()
         }
     }
 }
