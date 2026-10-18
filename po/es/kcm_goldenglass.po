@@ -77,3 +77,15 @@ msgstr "Como Liquid Glass: el dock, la barra de menús y los menús emergentes c
 msgctxt "@info"
 msgid "Not available: KWin did not load the GoldenGlass effect. Rebuild goldenglass-kstyle after updating KWin."
 msgstr "No disponible: KWin no cargó el efecto de GoldenGlass. Vuelve a compilar goldenglass-kstyle tras actualizar KWin."
+
+msgctxt "@label"
+msgid "Menu bar:"
+msgstr "Barra de menús:"
+
+msgctxt "@option:check"
+msgid "Show menu bar background"
+msgstr "Mostrar fondo de la barra de menús"
+
+msgctxt "@info"
+msgid "Off, like macOS: the menu bar is drawn straight over the wallpaper. On: a strip of glass behind it."
+msgstr "Desactivado, como en macOS: la barra de menús se dibuja directamente sobre el fondo de pantalla. Activado: lleva detrás una franja de vidrio."

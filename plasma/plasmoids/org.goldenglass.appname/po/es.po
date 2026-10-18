@@ -1,0 +1,25 @@
+# Traducción al español del nombre de la app de GoldenGlass.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma_applet_org.goldenglass.appname\n"
+"PO-Revision-Date: 2026-10-18 12:00+0000\n"
+"Last-Translator: GoldenGlass contributors\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgid "Hide %1"
+msgstr "Ocultar %1"
+
+msgid "Hide Others"
+msgstr "Ocultar otros"
+
+msgid "Show All"
+msgstr "Mostrar todo"
+
+msgid "Quit %1"
+msgstr "Salir de %1"

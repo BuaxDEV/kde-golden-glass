@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [{ "Name": "GoldenGlass contributors" }],
+        "Category": "Windows and Tasks",
+        "Description": "Name of the active app in bold, like the app menu of the macOS menu bar: hide, hide others, show all and quit",
+        "Description[es]": "Nombre de la app activa en negrita, como el menú de la app en la barra de menús de macOS: ocultar, ocultar otras, mostrar todo y salir",
+        "Icon": "preferences-system-windows",
+        "Id": "org.goldenglass.appname",
+        "License": "GPL-3.0-or-later",
+        "Name": "GoldenGlass App Name",
+        "Name[es]": "Nombre de la app GoldenGlass",
+        "Website": "https://github.com/BuaxDEV/kde-golden-glass"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

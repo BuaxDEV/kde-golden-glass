@@ -28,25 +28,27 @@ for (let screen = 0; screen < screenCount; ++screen) {
         systemMenu.globalShortcut = "Alt+F1";
     }
 
-    // Menú global de la aplicación activa.
-    menubar.addWidget("org.kde.plasma.appmenu");
+    // Nombre de la app en negrita y su menú global, como macOS. Cada pantalla
+    // muestra los menús de sus propias ventanas (la que no tiene el foco se
+    // atenúa: Panel.qml del shell).
+    menubar.addWidget("org.goldenglass.appname");
+    const appMenu = menubar.addWidget("org.kde.plasma.appmenu");
+    appMenu.currentConfigGroup = ["General"];
+    appMenu.writeConfig("allScreens", false);
 
     menubar.addWidget("org.kde.plasma.panelspacer");
 
-    menubar.addWidget("org.kde.plasma.systemtray");
+    // Iconos de estado tan separados como en macOS.
+    const tray = menubar.addWidget("org.kde.plasma.systemtray");
+    tray.currentConfigGroup = ["General"];
+    tray.writeConfig("iconSpacing", @TRAY_ICON_SPACING@);
 
     // Centro de control (Wi‑Fi, Bluetooth, modo oscuro, No molestar, brillo,
     // sonido, vidrio, multimedia), junto al reloj como en macOS.
     menubar.addWidget("org.goldenglass.controlcenter");
 
-    // Reloj estilo macOS: "sáb 10 oct 13:04".
-    const clock = menubar.addWidget("org.kde.plasma.digitalclock");
-    clock.currentConfigGroup = ["Appearance"];
-    clock.writeConfig("showDate", true);
-    clock.writeConfig("dateFormat", "custom");
-    clock.writeConfig("customDateFormat", "ddd d MMM");
-    clock.writeConfig("dateDisplayFormat", 1); // BesideTime
-    clock.writeConfig("showSeconds", 0);       // Never
+    // Reloj de macOS: «Vie 16 de oct  1:09 p.m.».
+    menubar.addWidget("org.goldenglass.clock");
 }
 
 // --- Dock (pantalla principal) ----------------------------------------------

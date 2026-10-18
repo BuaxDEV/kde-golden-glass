@@ -25,6 +25,7 @@ GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
     : KQuickConfigModule(parent, data)
     , m_process(new QProcess(this))
     , m_level(GoldenGlass::Tokens::GlassDefaultLevel)
+    , m_menubarBackground(GoldenGlass::Tokens::MenubarBackground)
 {
     // Los cambios se aplican en vivo al soltar el control: no hay «Aplicar».
     setButtons(KAbstractConfigModule::Default);
@@ -105,6 +106,25 @@ void GlassKcm::setRefraction(bool value)
     m_refractionProcess->start(program, {QStringLiteral("--refraction"), value ? QStringLiteral("on") : QStringLiteral("off")});
 }
 
+bool GlassKcm::menubarBackground() const
+{
+    return m_menubarBackground;
+}
+
+void GlassKcm::setMenubarBackground(bool value)
+{
+    if (m_menubarBackground == value) {
+        return;
+    }
+    m_menubarBackground = value;
+    // Con aviso: el Panel.qml del shell lo relee al momento (MenuBarSettings).
+    KConfigGroup group(KSharedConfig::openConfig(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig), QStringLiteral("Plasma"));
+    group.writeEntry("MenubarBackground", value, KConfig::Notify);
+    group.sync();
+    Q_EMIT menubarBackgroundChanged();
+    updateRepresentsDefaults();
+}
+
 void GlassKcm::loadRefraction()
 {
     const QString program = QStandardPaths::findExecutable(QStringLiteral("goldenglass-glass"));
@@ -123,13 +143,19 @@ void GlassKcm::loadRefraction()
 void GlassKcm::load()
 {
     loadRefraction();
-    const KConfigGroup group(KSharedConfig::openConfig(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig), QStringLiteral("Glass"));
-    setLevel(group.readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel));
+    const KSharedConfig::Ptr config = KSharedConfig::openConfig(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig);
+    const bool menubar = config->group(QStringLiteral("Plasma")).readEntry("MenubarBackground", GoldenGlass::Tokens::MenubarBackground);
+    if (m_menubarBackground != menubar) {
+        m_menubarBackground = menubar;
+        Q_EMIT menubarBackgroundChanged();
+    }
+    setLevel(config->group(QStringLiteral("Glass")).readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel));
 }
 
 void GlassKcm::defaults()
 {
     applyLevel(GoldenGlass::Tokens::GlassDefaultLevel);
+    setMenubarBackground(GoldenGlass::Tokens::MenubarBackground);
 }
 
 void GlassKcm::applyLevel(double level)
@@ -162,7 +188,13 @@ void GlassKcm::setLevel(double level)
         m_level = level;
         Q_EMIT levelChanged();
     }
-    setRepresentsDefaults(qAbs(m_level - GoldenGlass::Tokens::GlassDefaultLevel) < kSameLevel);
+    updateRepresentsDefaults();
+}
+
+void GlassKcm::updateRepresentsDefaults()
+{
+    setRepresentsDefaults(qAbs(m_level - GoldenGlass::Tokens::GlassDefaultLevel) < kSameLevel
+                          && m_menubarBackground == GoldenGlass::Tokens::MenubarBackground);
 }
 
 void GlassKcm::setErrorText(const QString &text)

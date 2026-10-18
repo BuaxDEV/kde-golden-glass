@@ -45,6 +45,56 @@ Item {
         }
     }
 
+    // GoldenGlass: barra de menús de macOS 26/27 = el panel superior con el
+    // menú del logo (org.goldenglass.systemmenu). Va sin fondo ni blur: el
+    // texto se dibuja sobre el fondo de pantalla, salvo con «Mostrar fondo de
+    // la barra de menús» (goldenglassrc [Plasma] MenubarBackground).
+    readonly property bool goldenglassMenubar: containment?.plasmoid?.location === PlasmaCore.Types.TopEdge
+        && (containment?.plasmoid?.applets ?? []).some(applet => applet.pluginName === "org.goldenglass.systemmenu")
+    readonly property bool goldenglassNoBackground: containment?.plasmoid?.backgroundHints === PlasmaCore.Types.NoBackground
+        || (goldenglassMenubar && !(goldenglassMenubarSettings.item?.background ?? false))
+    // Ajustes en vivo y tokens (módulo QML de goldenglass-kstyle). Si no está,
+    // falla solo este Loader: la barra queda sin fondo y sin atenuar.
+    Loader {
+        id: goldenglassMenubarSettings
+        active: root.goldenglassMenubar
+        source: Qt.resolvedUrl("GoldenGlassMenuBarSettings.qml")
+    }
+
+    // GoldenGlass: con varias pantallas, la barra de menús de las que no tienen
+    // la ventana activa se atenúa, como en macOS. Sin ventana activa (escritorio)
+    // no se atenúa ninguna.
+    Loader {
+        id: goldenglassDimming
+        active: root.goldenglassMenubar && Qt.application.screens.length > 1 && goldenglassMenubarSettings.item !== null
+        sourceComponent: Item {
+            // activeTask no avisa si la ventana activa ya lo era al llenarse el
+            // modelo: count obliga a recalcular entonces.
+            readonly property bool inactive: activeTasks.count >= 0 && screenTasks.count >= 0
+                && activeTasks.activeTask.valid && !screenTasks.activeTask.valid
+            TaskManager.TasksModel {
+                id: activeTasks
+                filterByScreen: false
+                filterByVirtualDesktop: false
+                filterByActivity: false
+            }
+            TaskManager.TasksModel {
+                id: screenTasks
+                screenGeometry: panel.screenGeometry
+                filterByScreen: true
+                filterByVirtualDesktop: false
+                filterByActivity: false
+            }
+        }
+    }
+    Binding {
+        target: root.containment
+        property: "opacity"
+        when: root.containment && root.goldenglassMenubar
+        value: goldenglassDimming.item?.inactive ? goldenglassMenubarSettings.item.inactiveOpacity : 1
+        restoreMode: Binding.RestoreBindingOrValue
+    }
+
     property bool floatingPrefix: floatingPanelSvg.usedPrefix === "floating"
     readonly property bool verticalPanel: containment?.plasmoid?.formFactor === PlasmaCore.Types.Vertical
 
@@ -172,7 +222,7 @@ Item {
         visible: root.floatingness === 0 && root.panelOpacity !== 1
         enabledBorders: panel.enabledBorders
         anchors.fill: floatingTranslucentItem
-        imagePath: containment?.plasmoid?.backgroundHints === PlasmaCore.Types.NoBackground ? "" : "widgets/panel-background"
+        imagePath: root.goldenglassNoBackground ? "" : "widgets/panel-background"
     }
     KSvg.FrameSvgItem {
         id: floatingTranslucentItem
@@ -182,14 +232,14 @@ Item {
         width: root.goldenglassDock ? root.goldenglassDockSlab.width : root.panelItemWidth
         height: root.goldenglassDock ? root.goldenglassDockSlab.height : root.panelItemHeight
 
-        imagePath: containment?.plasmoid?.backgroundHints === PlasmaCore.Types.NoBackground ? "" : "widgets/panel-background"
+        imagePath: root.goldenglassNoBackground ? "" : "widgets/panel-background"
     }
     KSvg.FrameSvgItem {
         id: floatingOpaqueItem
         visible: root.floatingness !== 0 && root.panelOpacity !== 0
         opacity: root.panelOpacity
         anchors.fill: floatingTranslucentItem
-        imagePath: containment?.plasmoid?.backgroundHints === PlasmaCore.Types.NoBackground ? "" : "solid/widgets/panel-background"
+        imagePath: root.goldenglassNoBackground ? "" : "solid/widgets/panel-background"
     }
     KSvg.FrameSvgItem {
         id: opaqueItem
@@ -197,7 +247,7 @@ Item {
         opacity: root.panelOpacity
         enabledBorders: panel.enabledBorders
         anchors.fill: floatingTranslucentItem
-        imagePath: containment?.plasmoid?.backgroundHints === PlasmaCore.Types.NoBackground ? "" : "solid/widgets/panel-background"
+        imagePath: root.goldenglassNoBackground ? "" : "solid/widgets/panel-background"
     }
 
     Keys.onEscapePressed: {
@@ -337,7 +387,7 @@ Item {
                 return;
             }
 
-            return containment.plasmoid.backgroundHints;
+            return root.goldenglassNoBackground ? PlasmaCore.Types.NoBackground : containment.plasmoid.backgroundHints;
         }
         restoreMode: Binding.RestoreBinding
     }

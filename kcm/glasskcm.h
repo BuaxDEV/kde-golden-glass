@@ -24,6 +24,8 @@ class GlassKcm : public KQuickConfigModule
     Q_PROPERTY(bool refraction READ refraction WRITE setRefraction NOTIFY refractionChanged)
     //* KWin tiene el efecto (si no: goldenglass-kstyle no compilado para esta versión de KWin)
     Q_PROPERTY(bool refractionAvailable READ refractionAvailable NOTIFY refractionChanged)
+    //* franja de vidrio translúcido tras la barra de menús (de fábrica sin fondo, como macOS)
+    Q_PROPERTY(bool menubarBackground READ menubarBackground WRITE setMenubarBackground NOTIFY menubarBackgroundChanged)
 
 public:
     GlassKcm(QObject *parent, const KPluginMetaData &data);
@@ -36,6 +38,8 @@ public:
     bool refraction() const;
     void setRefraction(bool value);
     bool refractionAvailable() const;
+    bool menubarBackground() const;
+    void setMenubarBackground(bool value);
 
     //* aplica un nivel (0 = más transparente, 1 = más opaco); si ya hay uno
     //* aplicándose, se aplica el último pedido al terminar
@@ -49,11 +53,13 @@ Q_SIGNALS:
     void busyChanged();
     void errorTextChanged();
     void refractionChanged();
+    void menubarBackgroundChanged();
 
 private:
     void startProcess(double level);
     void loadRefraction();
     void setLevel(double level);
+    void updateRepresentsDefaults();
     void setErrorText(const QString &text);
 
     QProcess *m_process = nullptr;
@@ -63,4 +69,5 @@ private:
     QProcess *m_refractionProcess = nullptr;
     bool m_refraction = false;
     bool m_refractionAvailable = false;
+    bool m_menubarBackground;
 };

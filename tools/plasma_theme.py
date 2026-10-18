@@ -353,6 +353,24 @@ def lineedit_svg(tokens: dict) -> str:
     return svg.render()
 
 
+def menubaritem_svg(tokens: dict) -> str:
+    """Menús de la app en la barra de menús (applet de menú global).
+
+    Margen lateral de macOS entre títulos. Al pasar o abrir un menú el applet
+    pinta el texto con el color de texto resaltado: el fondo tiene que ser el
+    acento entero para que se lea.
+    """
+    r = tokens["radius"]["control"]
+    pad = tokens["plasma"]["menubar_item_padding"]
+    # arriba y abajo, un margen real: KSvg no lee una marca de 0 px y usaría la esquina
+    margins = (4, pad, 4, pad)
+    svg = Svg()
+    frame(svg, "normal-", r, Paint(None, 0.0, "#000000"), margins=margins)
+    frame(svg, "hover-", r, Paint(HIGHLIGHT, 1.0), margins=margins)
+    frame(svg, "pressed-", r, Paint(HIGHLIGHT, 1.0), margins=margins)
+    return svg.render()
+
+
 def plasmoidheading_svg(tokens: dict) -> str:
     """Cabecera/pie de los popups: transparentes, como en macOS."""
     m = tokens["plasma"]["popup_margin"]
@@ -398,6 +416,7 @@ def build(tokens: dict, out: Path, level: float | None = None) -> list[Path]:
 
     files["widgets/tasks.svg"] = tasks_svg(tokens)
     files["widgets/viewitem.svg"] = viewitem_svg(tokens)
+    files["widgets/menubaritem.svg"] = menubaritem_svg(tokens)
     files["widgets/lineedit.svg"] = lineedit_svg(tokens)
     files["widgets/plasmoidheading.svg"] = plasmoidheading_svg(tokens)
 
