@@ -164,13 +164,66 @@ window_title_weight = "DemiBold"
 # Apps (lanzador del dock): panel centrado como el de Spotlight en macOS 26/27
 # ---------------------------------------------------------------------------
 [apps]
-width = 760          # px del contenido del panel (sin el borde de vidrio)
+# Panel de Apps como el de macOS 27 (medidas calibradas con una captura):
+# cabecera de buscador sin caja, etiquetas de categoría, fila de recientes,
+# separador y todas las apps de la A a la Z.
+width = 840          # px del panel de vidrio
 height = 580
-columns = 6          # iconos por fila en cuadrícula
-icon_size = 60       # px, cuadrícula
+radius = 26          # esquinas del panel, más abiertas que las de un popup
+margin = 20          # px entre el borde del panel y el contenido
+header_height = 56   # fila del buscador (hasta la línea fina)
+search_scale = 1.75  # texto del buscador respecto al texto normal
+search_icon = 26     # px del glifo de Apps a la izquierda del buscador
+separator_alpha = 0.14   # líneas finas (color de texto con esta opacidad)
+chip_height = 26     # etiquetas de categoría: rectángulos redondeados
+chip_radius = 7
+chip_padding = 9     # px a cada lado del texto
+chip_alpha = 0.10    # fondo de una etiqueta (color de texto)
+chip_hover_alpha = 0.16
+chip_selected_alpha = 0.30
+columns = 7          # iconos por fila en cuadrícula
+icon_size = 76       # px, cuadrícula (el squircle ocupa 52/64: ~62 px visibles)
+row_height = 102     # px de cada fila de la cuadrícula
 list_icon_size = 24  # px, lista
-section_rows = 2     # filas por categoría antes de «Mostrar más»
-suggested = 6        # apps en «Sugeridas»
+list_row_height = 36
+recent = 7           # apps en la fila de recientes (una fila)
+selected_alpha = 0.14    # selección con el teclado (color de texto)
+selected_radius = 12
+press_brightness = -0.35 # el icono se oscurece al pulsarlo, como en Launchpad
+shadow_blur = 48     # sombra del panel
+shadow_offset = 16
+shadow_alpha = 0.35
+# Al abrir, el panel crece desde open_scale con un resorte suave y aparece; al
+# cerrar se encoge hasta close_scale y se desvanece, como Spotlight.
+open_ms = 360
+open_fade_ms = 140
+open_scale = 0.94
+open_overshoot = 1.0
+close_ms = 160
+close_scale = 0.96
+close_unblur_at = 0.5    # fracción del cierre a la que se quita el blur de KWin
+glass_update_ms = 32
+
+[scroll]
+# Desplazamiento como en macOS (GlassScrollView de los plasmoids): barra
+# superpuesta que solo aparece al desplazarse, rueda suave, inercia del touchpad
+# y rebote elástico en los extremos.
+wheel_step = 100         # px por paso de la rueda del ratón
+wheel_ms = 260           # animación de cada paso de rueda
+rubber_band = 0.55       # resistencia del rebote (la constante de UIScrollView)
+rebound_ms = 450         # vuelta al borde tras estirarse
+deceleration = 2500      # px/s², inercia al soltar el touchpad
+max_velocity = 6000      # px/s
+min_fling = 120          # px/s mínimos para que siga deslizándose al soltar
+bar_width = 7            # tirador de la barra superpuesta
+bar_hover_width = 11     # al pasar el ratón por el borde (aparece el carril)
+bar_margin = 3           # px entre el tirador y el borde
+bar_min = 32             # alto mínimo del tirador
+bar_alpha = 0.45         # tirador (color de texto)
+bar_track_alpha = 0.08   # carril, solo con el ratón encima
+bar_hide_ms = 900        # sin desplazarse, la barra se esconde tras esto
+bar_fade_ms = 250
+edge_fade = 28           # px del borde difuminado bajo las etiquetas
 
 [traffic_lights]
 # macOS 27 (Golden Gate): gemas de vidrio algo mayores que los 12 px planos

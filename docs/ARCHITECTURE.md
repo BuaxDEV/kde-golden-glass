@@ -341,22 +341,35 @@ dentro de «Vidrio».
     Usa los módulos QML de Plasma (privados: se revisan en cada actualización de
     Plasma) y D‑Bus (`org.kde.plasma.workspace.dbus`) para KWin y KScreen.
   - `org.goldenglass.launchpad` ✅ **Apps** — primer elemento del dock, como
-    Apps de macOS 26/27 (que sustituyó a Launchpad y vive en Spotlight): un
-    `PlasmaCore.Dialog` flotante centrado en la pantalla del dock (vidrio, blur
-    y sombra del Plasma Style) con buscador, etiquetas de categoría, «Sugeridas»
-    (`RecentUsageModel`) y secciones por categoría con «Mostrar más», en
-    cuadrícula o lista y por categoría o por nombre (se recuerda en la
-    configuración del plasmoid). Las categorías del menú de KDE (`RootModel`,
-    identificadas por su icono) se agrupan en las 7 de macOS (`categories.js`).
-    Teclado: flechas y Return, Tab entre etiquetas, Escape borra y luego
-    cierra; si lo escrito no es una app, «Buscar en Spotlight» pasa la consulta
-    a KRunner. Medidas en `[apps]` de los tokens (`contents/ui/tokens.js`, que
+    Apps de macOS 27 (que sustituyó a Launchpad y vive en Spotlight): una pieza
+    de vidrio centrada en la pantalla del dock, con esquinas amplias y sombra
+    propia (`RectangularShadow`). Es un `PlasmaCore.Dialog` sin fondo: el vidrio
+    lo dibuja el panel con la opacidad del nivel de vidrio (`goldenglassrc`) y
+    `GlassRegion` pide a KWin el blur solo detrás de él, como el Centro de
+    control. Cabecera de buscador sin caja («Búsqueda en Spotlight», glifo de
+    Apps y «⋯» con cuadrícula o lista, que se recuerda en la configuración del
+    plasmoid), etiquetas de categoría como rectángulos redondeados que llegan
+    hasta el borde (filtran; otra pulsación quita el filtro), una fila de
+    recientes (`RecentUsageModel`), una línea fina y todas las apps de la A a la
+    Z, sin títulos de sección. Desplazamiento como el de macOS
+    (`GlassScrollView.qml`, tokens `[scroll]`): barra superpuesta que solo
+    aparece al desplazarse, rueda del ratón animada, touchpad con inercia
+    (`Flickable.flick`; el ratón no arrastra el contenido para poder arrastrar
+    apps), rebote elástico con la fórmula de UIScrollView y las apps
+    difuminándose al pasar bajo las etiquetas (máscara de alfa con
+    `MultiEffect`). Al abrir crece desde el centro con un resorte suave y
+    aparece; al cerrar se encoge y se desvanece. Las categorías del
+    menú de KDE (`RootModel`, identificadas por su icono) se agrupan en las 8
+    de macOS (`categories.js`).
+    Teclado: flechas y Return (la selección solo se ve al usar el teclado o al
+    buscar), Tab entre etiquetas, Escape borra y luego cierra; si lo escrito
+    no es una app, «Buscar en Spotlight» pasa la consulta a KRunner. Medidas en `[apps]` de los tokens (`contents/ui/tokens.js`, que
     `tools/plasmoids.py` genera en cada plasmoid). Las acciones de Kicker
     (`actionList`) se leen solo al abrir el menú contextual: leerlas al cargar
     tumba plasmashell. Las apps se arrastran como en Kickoff (`DragHandler` +
     `Drag.Automatic` en un elemento aparte, con el `.desktop` en
     `text/uri-list`, solo Copy/Link): al dock, al escritorio o a Dolphin.
-    Los menús (contextual y ordenar) son QMenu
+    Los menús (contextual y «⋯») son QMenu
     (`PlasmaExtras.Menu`), como los de Kickoff: un `Menu` de Qt Quick quedaba
     recortado dentro del panel y, como ventana propia (`Popup.Window`), sin
     blur de KWin detrás; el QMenu lo dibuja el kstyle, que sí lo pide. Lo

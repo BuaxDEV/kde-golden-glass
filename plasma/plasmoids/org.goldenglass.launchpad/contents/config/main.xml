@@ -7,7 +7,5 @@
   <group name="General">
     <!-- grid | list -->
     <entry name="viewMode" type="String"><default>grid</default></entry>
-    <!-- category | name -->
-    <entry name="sortMode" type="String"><default>category</default></entry>
   </group>
 </kcfg>

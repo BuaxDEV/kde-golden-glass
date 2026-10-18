@@ -3,7 +3,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: plasma_applet_org.goldenglass.launchpad\n"
-"PO-Revision-Date: 2026-10-10 20:30+0000\n"
+"PO-Revision-Date: 2026-10-18 13:30+0000\n"
 "Last-Translator: GoldenGlass contributors\n"
 "Language-Team: Spanish\n"
 "Language: es\n"
@@ -12,17 +12,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 
-msgid "All"
-msgstr "Todas"
-
 msgid "Utilities"
 msgstr "Utilidades"
 
 msgid "Productivity & Finance"
 msgstr "Productividad y finanzas"
 
-msgid "Social"
-msgstr "Social"
+msgid "Developer Tools"
+msgstr "Herramientas para desarrolladores"
+
+msgid "Social Networking"
+msgstr "Redes sociales"
 
 msgid "Creativity"
 msgstr "Creatividad"
@@ -31,22 +31,10 @@ msgid "Information & Reading"
 msgstr "Información y lectura"
 
 msgid "Entertainment"
-msgstr "Entretenimiento"
+msgstr "Ocio"
 
 msgid "Other"
 msgstr "Otras"
-
-msgid "Applications"
-msgstr "Aplicaciones"
-
-msgid "All Applications"
-msgstr "Todas las aplicaciones"
-
-msgid "Suggested"
-msgstr "Sugeridas"
-
-msgid "Search"
-msgstr "Buscar"
 
 msgid "Show as Grid"
 msgstr "Ver como cuadrícula"
@@ -54,29 +42,20 @@ msgstr "Ver como cuadrícula"
 msgid "Show as List"
 msgstr "Ver como lista"
 
-msgid "Sort"
-msgstr "Ordenar"
-
-msgid "By Category"
-msgstr "Por categoría"
-
-msgid "By Name"
-msgstr "Por nombre"
-
 msgid "No applications"
 msgstr "No hay aplicaciones"
 
 msgid "Open"
 msgstr "Abrir"
 
-msgid "Show Less"
-msgstr "Mostrar menos"
-
-msgid "Show More"
-msgstr "Mostrar más"
-
 msgid "Search “%1” in Spotlight"
 msgstr "Buscar «%1» en Spotlight"
 
 msgid "Keep in Dock"
 msgstr "Mantener en el Dock"
+
+msgid "Spotlight Search"
+msgstr "Búsqueda en Spotlight"
+
+msgid "More"
+msgstr "Más"

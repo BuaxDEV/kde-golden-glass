@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2026 GoldenGlass contributors
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Categorías de Apps, como las de macOS 26/27. Cada categoría del menú de KDE
-// (identificada por su icono, que no depende del idioma) va a una de ellas;
-// lo que no está en la tabla va a «Otras».
+// Categorías de Apps, como las de macOS 27 y en su orden. Cada categoría del
+// menú de KDE (identificada por su icono, que no depende del idioma) va a una
+// de ellas; lo que no está en la tabla va a «Otras».
 
 .pragma library
 
-var order = ["utilities", "productivity", "social", "creativity", "reading", "entertainment", "other"];
+var order = ["utilities", "developer", "social", "productivity", "entertainment", "creativity", "reading", "other"];
 
 var byIcon = {
     "applications-utilities": "utilities",
@@ -15,7 +15,7 @@ var byIcon = {
     "applications-system": "utilities",
     "preferences-system": "utilities",
     "preferences-desktop": "utilities",
-    "applications-development": "productivity",
+    "applications-development": "developer",
     "applications-office": "productivity",
     "applications-internet": "social",
     "applications-graphics": "creativity",
