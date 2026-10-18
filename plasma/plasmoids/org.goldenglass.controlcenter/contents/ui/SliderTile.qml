@@ -2,63 +2,56 @@
     SPDX-FileCopyrightText: 2026 GoldenGlass contributors
     SPDX-License-Identifier: GPL-3.0-or-later
 
-    Tarjeta con título y control deslizante con icono (pantalla, sonido,
-    vidrio). El icono puede ser un botón (p. ej. silenciar).
+    Tarjeta a lo ancho con título y sus sliders (SliderRow, como hijos), como
+    Pantalla y Sonido en macOS 26. Con hasDetail, un clic fuera de los
+    sliders abre su vista de detalle.
 */
 
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls as QQC2
 
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
+
+import "tokens.js" as T
 
 Tile {
     id: tile
 
     property string title
-    property string iconName
-    property alias from: slider.from
-    property alias to: slider.to
-    property alias value: slider.value
-    property alias stepSize: slider.stepSize
-    property alias pressed: slider.pressed
-    property bool iconClickable: false
+    property bool hasDetail: false
+    default property alias rows: column.data
 
-    signal moved()
-    signal released()
-    signal iconClicked()
+    signal detailRequested()
 
-    PlasmaComponents3.Label {
-        text: tile.title
-        font.weight: Font.DemiBold
-        textFormat: Text.PlainText
+    readonly property var cc: T.tokens.control_center
+    readonly property real padding: (cc.cell - cc.icon_circle) / 2
+
+    implicitWidth: 4 * cc.cell + 3 * cc.gap
+    implicitHeight: column.implicitHeight + 2 * padding
+    pressed: area.pressed
+    pressPoint: Qt.point(area.mouseX, area.mouseY)
+
+    MouseArea {
+        id: area
+        anchors.fill: parent
+        enabled: tile.hasDetail
+        cursorShape: Qt.PointingHandCursor
+        onClicked: tile.detailRequested()
     }
 
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: Kirigami.Units.smallSpacing
+    ColumnLayout {
+        id: column
+        anchors.fill: parent
+        anchors.margins: tile.padding
+        spacing: Kirigami.Units.smallSpacing * 2
 
-        PlasmaComponents3.ToolButton {
-            visible: tile.iconClickable
-            icon.name: tile.iconName
-            display: QQC2.AbstractButton.IconOnly
-            text: tile.title
-            onClicked: tile.iconClicked()
-        }
-        Kirigami.Icon {
-            visible: !tile.iconClickable
-            source: tile.iconName
-            isMask: true
-            color: Kirigami.Theme.textColor
-            implicitWidth: Kirigami.Units.iconSizes.small
-            implicitHeight: implicitWidth
-        }
-        PlasmaComponents3.Slider {
-            id: slider
+        PlasmaComponents3.Label {
             Layout.fillWidth: true
-            onMoved: tile.moved()
-            onPressedChanged: if (!pressed) tile.released()
+            text: tile.title
+            font.weight: Font.DemiBold
+            elide: Text.ElideRight
+            textFormat: Text.PlainText
         }
     }
 }

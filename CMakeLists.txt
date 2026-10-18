@@ -12,7 +12,8 @@ project(
 
 set(KF6_MIN_VERSION "6.10.0")
 set(KDE_COMPILERSETTINGS_LEVEL "5.82")
-set(QT_MIN_VERSION "6.7.0")
+# 6.8: PathRectangle (QtQuick.Shapes) en las tarjetas del Centro de control
+set(QT_MIN_VERSION "6.8.0")
 
 include(GenerateExportHeader)
 include(FeatureSummary)
@@ -110,6 +111,11 @@ if(WITH_DECORATIONS)
 endif()
 
 add_subdirectory(kcm)
+
+# Módulo QML org.goldenglass.glass (blur por piezas, p. ej. el Centro de control)
+if(${Qt6Quick_FOUND})
+    add_subdirectory(qmlplugin)
+endif()
 
 if(WITH_KWIN_EFFECT)
     add_subdirectory(kwin-effect)

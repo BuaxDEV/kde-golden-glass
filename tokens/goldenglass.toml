@@ -200,6 +200,69 @@ preview_width = 220      # px de las miniaturas de ventanas en el tooltip
 label_delay_ms = 400     # espera antes del nombre de la app al pasar el ratón
 
 # ---------------------------------------------------------------------------
+# Centro de control (plasmoid org.goldenglass.controlcenter): cuadrícula de 4
+# columnas como la de macOS 26. Un botón redondo ocupa una celda, una píldora
+# (Wi‑Fi, Bluetooth…) dos y «Reproducción» 2 × 2; los sliders, la fila entera.
+# ---------------------------------------------------------------------------
+[control_center]
+floating_margin = 6      # px entre la barra de menús y las tarjetas
+screen_margin = 8        # px entre las tarjetas y el borde derecho de la pantalla
+# Animaciones de Liquid Glass. Al abrir, el vidrio brota del icono con un
+# resorte: crece desde open_scale_x × open_scale_y y se pasa un poco
+# (open_overshoot: el «overshoot» de Easing.OutBack) antes de asentarse.
+open_ms = 420            # resorte a lo ancho
+open_ms_y = 480          # a lo alto se asienta después: el vidrio «cae» de la barra
+open_fade_ms = 140
+open_scale_x = 0.85
+open_scale_y = 0.6
+open_overshoot = 1.2
+switch_scale = 0.94      # vista de detalle ↔ cuadrícula: brota desde aquí
+close_ms = 180           # al cerrar: se encoge hacia el icono y se desvanece
+close_scale = 0.92
+# KWin no difumina a medias: el vidrio se quita a esta fracción del cierre,
+# cuando las tarjetas ya casi no se ven
+close_unblur_at = 0.5
+glass_update_ms = 32     # mínimo entre dos regiones de blur enviadas a KWin
+# Al pulsar una tarjeta: cede, se ilumina desde el punto de contacto y al
+# soltarla vuelve con un rebote
+press_scale = 0.95
+press_ms = 90
+release_ms = 380
+release_overshoot = 2.2
+press_brighten_alpha = 0.08
+press_glow_alpha = 0.22
+press_glow_radius = 72   # px del brillo alrededor del punto de contacto
+icon_highlight_alpha = 0.18  # resaltado del icono de la barra mientras está abierto
+icon_highlight_radius = 5
+icon_highlight_padding = 4   # px a cada lado del icono
+icon_highlight_inset = 3     # px por arriba y por abajo dentro de la barra
+cell = 64                # px del lado de una celda (botón redondo)
+gap = 12                 # px entre celdas
+tile_radius = 24         # tarjetas rectangulares (sliders, Reproducción)
+icon_circle = 36         # círculo del icono dentro de las píldoras
+icon = 20                # glifo de las píldoras
+round_icon = 22          # glifo de los botones redondos
+off_alpha = 0.14         # círculo de un control apagado
+off_hover_alpha = 0.22
+slider_height = 6        # pista de los sliders
+slider_track_alpha = 0.20
+# Las tarjetas son más claras que los popups, como en macOS 26: fondo de
+# vidrio con esta opacidad, sin seguir el nivel de vidrio
+tile_alpha = 0.30
+# Vistas de detalle (clic en Wi‑Fi, Bluetooth, Enfoque, Pantalla, Sonido o
+# Reproducción): una tarjeta con título, lista y «Ajustes de…»
+detail_title_scale = 1.15    # título respecto al texto normal
+detail_max_height = 360      # px de lista antes de desplazarse
+row_height = 36
+row_radius = 8
+row_hover_alpha = 0.08
+row_circle = 26              # círculo del icono de cada fila
+row_icon = 16
+separator_alpha = 0.12
+switch_width = 36            # interruptor de la cabecera
+switch_height = 20
+
+# ---------------------------------------------------------------------------
 # Arranque (Plymouth, tools/plymouth.py): logo y barra fina como el arranque de
 # Mac, con las proporciones del splash de Plasma. Medidas en px para una
 # pantalla de 1080 líneas; el script las escala con la altura de la pantalla.

@@ -249,13 +249,65 @@ dentro de «Vidrio».
 - **Spotlight:** KRunner flotante y centrado (`krunnerrc FreeFloating=true`,
   escrito por el script de layout), estilizado por el Plasma Style.
 - **Plasmoids propios** (`plasmoids/`):
-  - `org.goldenglass.controlcenter` ✅ — en la barra, junto al reloj. Tarjetas de
-    Wi‑Fi y Bluetooth (el texto abre sus ajustes), Modo oscuro (`DarkModeControl`
-    de Plasma; el layout fija `DefaultLight/DarkLookAndFeel` a los temas
-    GoldenGlass), No molestar, brillo por pantalla (si hay control, p. ej.
-    DDC/CI), sonido con silencio, vidrio (`goldenglass-glass`) y lo que se
-    reproduce (MPRIS). Usa los módulos QML de Plasma (privados: se revisan en
-    cada actualización de Plasma).
+  - `org.goldenglass.controlcenter` ✅ — en la barra, junto al reloj. Cuadrícula
+    de 4 columnas como la de macOS 26 (medidas en `[control_center]`), cada
+    control en su tarjeta de vidrio:
+    - Píldoras (círculo que conmuta; el texto abre sus ajustes): Wi‑Fi (con el
+      nombre de la red), Bluetooth, KDE Connect en el hueco de AirDrop (se carga
+      aparte: sin `kdeconnect` no aparece y Enfoque ocupa su sitio) y Enfoque
+      (No molestar).
+    - Reproducción (MPRIS) de 2 × 2, siempre visible («Sin reproducción»).
+    - Botones redondos: Duplicar pantalla (selector de pantallas de KScreen, el
+      de Meta+P), Captura (Spectacle), Modo oscuro (`DarkModeControl` de Plasma;
+      el layout fija `DefaultLight/DarkLookAndFeel` a los temas GoldenGlass) y
+      Luz nocturna, que la enciende o apaga de verdad (`kwinrc [NightColor]
+      Active`) como Night Shift, no solo la suspende.
+    - **Tarjetas sueltas de vidrio, como macOS 26** (único modo): el popup
+      de Plasma (`AppletPopup`) no deja quitar su fondo, así que el icono de la
+      barra es la representación «completa» (como Apps: Plasma no abre popup)
+      y abre su propia ventana (`FloatingPanel.qml`): un `PlasmaCore.Dialog`
+      sin fondo que cubre la pantalla, transparente, con las tarjetas pegadas
+      al borde derecho bajo la barra y el icono resaltado mientras está
+      abierta. Un clic fuera de las tarjetas la cierra, también en la barra de
+      menús (que no toma el foco: perderlo no bastaría); y también Esc, el
+      atajo del plasmoide o el foco en otra pantalla. Sin fondo, Dialog no pide
+      blur: lo pide `GlassRegion`, del módulo QML `org.goldenglass.glass`
+      (`qmlplugin/`, C++, en `goldenglass-kstyle`), con la forma de cada
+      tarjeta (`goldenGlassTile`), y el efecto `goldenglass_glass` dibuja cada
+      una como un vidrio (4.14). Las tarjetas son más claras que los popups
+      (`tile_alpha`, sin seguir el nivel de vidrio). Sin el módulo
+      (`GlassBlur.qml` va en un Loader) se ven sin difuminar.
+    - **Animaciones de Liquid Glass** (tiempos y escalas en
+      `[control_center]`): al abrir, el vidrio brota del icono de la barra con
+      un resorte (`Easing.OutBack`), más deprisa a lo alto que a lo ancho; al
+      cerrar (también al perder el foco) se encoge hacia el icono y se
+      desvanece, y el blur se quita a mitad (KWin no difumina a medias). Al
+      pulsar una tarjeta cede, se ilumina desde el punto de contacto (degradado
+      radial recortado a su forma) y vuelve con un rebote; la vista de detalle
+      y la cuadrícula entran con el mismo resorte. GlassRegion sigue las
+      escalas (esquinas elípticas si lo ancho y lo alto escalan distinto), así
+      que el vidrio de KWin se mueve con las tarjetas; durante una animación
+      manda a KWin como mucho una región cada `glass_update_ms`, y `active:
+      false` quita el blur. Mientras se cierra, la ventana deja pasar los
+      clics (`Qt.WindowTransparentForInput`); reabrirla a medio cierre sigue
+      desde donde iba, con la cuadrícula. Necesita Qt 6.8 (`PathRectangle`).
+    - **Vistas de detalle**, como en macOS 26: el texto de Wi‑Fi, Bluetooth y
+      Enfoque, la tarjeta de Reproducción y las de Pantalla y Sonido (fuera de
+      los sliders; también el botón de salida) cambian la cuadrícula por una
+      tarjeta con título (e interruptor), lista y «Ajustes de…»: redes
+      conocidas y otras (conectar, desconectar, contraseña en la fila; la
+      lógica del applet de redes de Plasma), dispositivos Bluetooth
+      emparejados, No molestar durante 1 hora o hasta mañana, brillo de cada
+      pantalla con modo oscuro, luz nocturna y duplicar pantalla, volumen y
+      salidas de sonido, y el reproductor con progreso. Esc vuelve a la
+      cuadrícula; al cerrar y abrir, vuelve también.
+    - A lo ancho, sliders sin tirador: Pantalla (un slider por pantalla con
+      control, p. ej. DDC/CI, en la misma tarjeta), sonido con silencio y
+      salida, y vidrio (`goldenglass-glass`).
+    - Encendido: círculo blanco con el glifo en acento (en tema claro, círculo
+      de acento con glifo blanco).
+    Usa los módulos QML de Plasma (privados: se revisan en cada actualización de
+    Plasma) y D‑Bus (`org.kde.plasma.workspace.dbus`) para KWin y KScreen.
   - `org.goldenglass.launchpad` ✅ **Apps** — primer elemento del dock, como
     Apps de macOS 26/27 (que sustituyó a Launchpad y vive en Spotlight): un
     `PlasmaCore.Dialog` flotante centrado en la pantalla del dock (vidrio, blur
@@ -683,11 +735,16 @@ dentro de «Vidrio».
   `krunner`: dock, barra de menús, popups, Centro de control, Apps,
   tooltips, Spotlight). Las ventanas de las apps reciben el blur normal, como
   en macOS.
-- **Forma:** el rectángulo que envuelve la región de blur, y el radio de cada
-  esquina medido en la propia región (Plasma la manda con la forma redondeada
-  de su SVG, en franjas: una esquina mide lo que tardan en tocar el lateral).
-  Así sirve para cualquier superficie sin saber de qué tipo es. Distancia con
-  signo `sdfRoundedBox` (la de KWin, copiada en el shader).
+- **Forma:** la región de blur se separa en piezas (rectángulos que se tocan)
+  y cada una es un vidrio con su borde y su refracción: casi siempre hay una
+  sola (popup, dock), pero el Centro de control con tarjetas sueltas manda
+  una por tarjeta. De cada pieza, el rectángulo que la envuelve y el radio de
+  cada esquina medido en la propia región (Plasma la manda con la forma
+  redondeada de su SVG, en franjas: una esquina mide lo que tardan en tocar el
+  lateral). Así sirve para cualquier superficie sin saber de qué tipo es.
+  Distancia con signo `sdfRoundedBox` (la de KWin, copiada en el shader); una
+  pasada por pieza, y fuera de su forma el shader deja los píxeles
+  transparentes.
 - **Shader** (`shaders/glass.frag`):
   - **Lente en el borde:** en una banda de `edge` px (como mucho el 30 % del
     lado corto, para el dock), el fondo se toma de más adentro a lo largo de

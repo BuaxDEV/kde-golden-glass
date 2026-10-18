@@ -40,6 +40,7 @@
 #include <QWindow>
 #include <cmath> // for ceil()
 #include <cstdlib>
+#include <numeric>
 
 #include <KConfigGroup>
 #include <KSharedConfig>
@@ -975,12 +976,12 @@ bool GlassEffect::isGlassSurface(const EffectWindow *w) const
 // Radio de cada esquina medido en la región de blur: Plasma la manda con la
 // forma redondeada de su SVG, en franjas; una esquina mide lo que tardan las
 // franjas en tocar el lateral. (arriba-izq., arriba-der., abajo-izq., abajo-der.)
-static QVector4D cornerRadii(const RegionF &region, const RectF &box)
+static QVector4D cornerRadii(const QList<RectF> &rects, const RectF &box)
 {
     const float maxRadius = std::min(box.width(), box.height()) / 2;
     float topLeft = maxRadius, topRight = maxRadius, bottomLeft = maxRadius, bottomRight = maxRadius;
     constexpr float epsilon = 0.5;
-    for (const RectF &rect : region.rects()) {
+    for (const RectF &rect : rects) {
         if (std::abs(rect.left() - box.left()) < epsilon) {
             topLeft = std::min(topLeft, float(rect.top() - box.top()));
             bottomLeft = std::min(bottomLeft, float(box.bottom() - rect.bottom()));
@@ -993,13 +994,48 @@ static QVector4D cornerRadii(const RegionF &region, const RectF &box)
     return QVector4D(topLeft, topRight, bottomLeft, bottomRight);
 }
 
+// Piezas separadas de la región (rectángulos que se tocan o se solapan): una
+// ventana puede llevar varias piezas de vidrio sueltas (las tarjetas del Centro
+// de control) y cada una tiene su propio borde, sus esquinas y su refracción.
+struct GlassPiece {
+    QList<RectF> rects;
+    RectF bounds;
+};
+
+static QList<GlassPiece> glassPieces(const RegionF &region)
+{
+    // los rectángulos de una región van ordenados por su borde superior
+    const QSpan<const RectF> rects = region.rects();
+    std::vector<qsizetype> parent(rects.size());
+    std::iota(parent.begin(), parent.end(), 0);
+    const auto find = [&parent](qsizetype i) {
+        while (parent[i] != i) {
+            i = parent[i] = parent[parent[i]];
+        }
+        return i;
+    };
+    constexpr float touch = 0.5;
+    for (qsizetype i = 0; i < rects.size(); ++i) {
+        const RectF grown = rects[i].adjusted(-touch, -touch, touch, touch);
+        for (qsizetype j = i + 1; j < rects.size() && rects[j].top() <= grown.bottom(); ++j) {
+            if (grown.intersects(rects[j])) {
+                parent[find(i)] = find(j);
+            }
+        }
+    }
+    QHash<qsizetype, GlassPiece> pieces;
+    for (qsizetype i = 0; i < rects.size(); ++i) {
+        GlassPiece &piece = pieces[find(i)];
+        piece.bounds = piece.rects.isEmpty() ? rects[i] : piece.bounds.united(rects[i]);
+        piece.rects.append(rects[i]);
+    }
+    return pieces.values();
+}
+
 void GlassEffect::drawGlass(const RenderViewport &viewport, const RegionF &blurShape, const Rect &backgroundRect,
                             const Rect &scaledBackgroundRect, GLFramebuffer *read, GLTexture *sharp, int vertexCount, float modulation)
 {
     const qreal scale = viewport.scale();
-    const RectF bounds = blurShape.boundingRect();
-    const QVector4D radii = cornerRadii(blurShape, bounds) * scale;
-    const RectF box = bounds.translated(-backgroundRect.topLeft()).scaled(scale);
 
     ShaderManager::instance()->pushShader(m_glassPass.shader.get());
 
@@ -1012,13 +1048,8 @@ void GlassEffect::drawGlass(const RenderViewport &viewport, const RegionF &blurS
     shader->setUniform(m_glassPass.colorMatrixLocation, m_colorMatrix);
     shader->setUniform(m_glassPass.halfpixelLocation, halfpixel);
     shader->setUniform(m_glassPass.offsetLocation, float(m_offset));
-    shader->setUniform(m_glassPass.boxLocation, QVector4D(box.center().x(), box.center().y(), box.width() * 0.5, box.height() * 0.5));
-    shader->setUniform(m_glassPass.cornerRadiusLocation, radii);
     shader->setUniform(m_glassPass.opacityLocation, modulation);
     shader->setUniform(m_glassPass.backgroundSizeLocation, QVector2D(scaledBackgroundRect.width(), scaledBackgroundRect.height()));
-    // en superficies bajas (el dock) la banda curvada no ocupa toda la placa
-    const float edge = std::min(float(m_refractionEdge * scale), float(std::min(box.width(), box.height()) * 0.3));
-    shader->setUniform(m_glassPass.edgeLocation, edge);
     shader->setUniform(m_glassPass.strengthLocation, float(m_refractionStrength * scale));
     shader->setUniform(m_glassPass.dispersionLocation, m_refractionDispersion);
     shader->setUniform(m_glassPass.specularLocation, m_refractionSpecular);
@@ -1035,7 +1066,20 @@ void GlassEffect::drawGlass(const RenderViewport &viewport, const RegionF &blurS
     // premultiplicado: el borde suave de la forma se mezcla con lo de detrás
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-    GLVertexBuffer::streamingBuffer()->draw(GL_TRIANGLES, 6, vertexCount);
+
+    // Una pasada por pieza con toda la geometría: fuera de su forma el shader
+    // deja los píxeles transparentes, así que solo pinta la suya.
+    for (const GlassPiece &piece : glassPieces(blurShape)) {
+        const QVector4D radii = cornerRadii(piece.rects, piece.bounds) * scale;
+        const RectF box = piece.bounds.translated(-backgroundRect.topLeft()).scaled(scale);
+        shader->setUniform(m_glassPass.boxLocation, QVector4D(box.center().x(), box.center().y(), box.width() * 0.5, box.height() * 0.5));
+        shader->setUniform(m_glassPass.cornerRadiusLocation, radii);
+        // en superficies bajas (el dock) la banda curvada no ocupa toda la placa
+        const float edge = std::min(float(m_refractionEdge * scale), float(std::min(box.width(), box.height()) * 0.3));
+        shader->setUniform(m_glassPass.edgeLocation, edge);
+        GLVertexBuffer::streamingBuffer()->draw(GL_TRIANGLES, 6, vertexCount);
+    }
+
     glDisable(GL_BLEND);
 
     glActiveTexture(GL_TEXTURE1);
