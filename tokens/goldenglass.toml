@@ -144,6 +144,43 @@ glass_titlebar = true
 show_icons = false
 
 # ---------------------------------------------------------------------------
+# Dolphin como el Finder de macOS 27 (estilo de apps + decoración)
+# ---------------------------------------------------------------------------
+# Sin barra de título: los semáforos van sobre la barra lateral, que llega
+# hasta arriba, y la toolbar comparte esa primera fila. Botones agrupados en
+# cápsulas de vidrio, el nombre de la carpeta como título y la lista con
+# franjas redondeadas. Medidas calibradas con una captura de Finder (px
+# lógicos); colores de cápsulas, franjas y selección en [light]/[dark].
+[finder]
+# Apps con la barra de título integrada (app_id de Wayland). La decoración
+# solo la quita en sus ventanas con menú (las principales, no los diálogos).
+apps = ["org.kde.dolphin"]
+toolbar_height = 52      # primera fila: semáforos + toolbar
+capsule_height = 34
+capsule_gap = 9          # px entre cápsulas
+button_width = 36        # cada botón dentro de una cápsula
+icon_size = 18           # glifos de la toolbar
+menu_arrow = 9           # chevron ⌄ de los botones con menú (Agrupar)
+title_scale = 1.2        # nombre de la carpeta respecto al texto normal
+selected_inset = 3       # píldora del control segmentado dentro de su cápsula
+# Liquid Glass: al pulsar, el botón cede y vuelve con un rebote; la píldora
+# del control segmentado se desliza hasta el botón nuevo.
+press_scale = 0.86
+press_ms = 90
+release_ms = 380
+release_overshoot = 2.2
+slide_ms = 280
+hover_ms = 150
+# Barra lateral: selección en píldora gris que se desliza entre elementos
+sidebar_selection_inset = 10   # px a cada lado
+sidebar_selection_radius = 7
+sidebar_slide_ms = 240
+# Lista: franjas alternas y selección redondeadas, separadas de los bordes
+row_inset = 9
+row_radius = 6
+list_icon_size = 16      # iconos (y miniaturas) de la lista, como en Finder
+
+# ---------------------------------------------------------------------------
 # Tipografía — familias son alias de fontconfig (ver fontconfig/)
 # Tamaños en puntos de KDE (13 px de macOS ≈ 10 pt a 96 dpi)
 # ---------------------------------------------------------------------------
@@ -524,6 +561,15 @@ separator = "#0000001A"
 
 traffic_light_inactive = "#D1D1D1"
 
+# Finder (Dolphin): cápsulas de la toolbar, franjas de la lista y selección
+# de la barra lateral; se pintan sobre la barra lateral o la vista
+finder_capsule = "#FFFFFFC7"
+finder_capsule_border = "#00000014"
+finder_hover = "#0000000D"
+finder_selected = "#00000017"     # píldora del control segmentado
+finder_stripe = "#0000000A"
+finder_sidebar_selected = "#00000017"
+
 # ---------------------------------------------------------------------------
 # Paleta oscura
 # ---------------------------------------------------------------------------
@@ -555,3 +601,10 @@ selection_inactive = "#464646"
 separator = "#FFFFFF1A"
 
 traffic_light_inactive = "#4D4D4D"
+
+finder_capsule = "#FFFFFF0E"
+finder_capsule_border = "#FFFFFF12"
+finder_hover = "#FFFFFF0F"
+finder_selected = "#FFFFFF19"
+finder_stripe = "#FFFFFF0C"
+finder_sidebar_selected = "#FFFFFF22"

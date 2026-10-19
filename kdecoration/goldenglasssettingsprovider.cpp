@@ -69,6 +69,13 @@ void SettingsProvider::reconfigure()
 
     m_defaultSettings->load();
 
+    if (!m_integratedSettings) {
+        m_integratedSettings = InternalSettingsPtr(new InternalSettings());
+        m_integratedSettings->setCurrentGroup(QStringLiteral("Windeco"));
+    }
+    m_integratedSettings->load();
+    m_integratedSettings->setHideTitleBar(true);
+
     ExceptionList exceptions;
     exceptions.readConfig(m_config);
     m_exceptions = exceptions.get();
@@ -114,6 +121,25 @@ InternalSettingsPtr SettingsProvider::internalSettings(Decoration *decoration) c
         QRegularExpression rx(internalSettings->exceptionPattern());
         if (rx.match(value).hasMatch()) {
             return internalSettings;
+        }
+    }
+
+    // GoldenGlass: the main windows (the ones exporting a menu bar; dialogs have
+    // none) of the integrated title bar apps go without title bar, as in
+    // Finder. The style sees the same conditions and draws the traffic lights
+    // in their toolbar.
+    if (decoration->window()->hasApplicationMenu()) {
+        const QStringList apps = m_defaultSettings->integratedTitleBarApps();
+        if (!apps.isEmpty()) {
+            if (windowClass.isEmpty()) {
+                windowClass = decoration->window()->windowClass();
+            }
+            const auto names = windowClass.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+            for (const QString &name : names) {
+                if (apps.contains(name)) {
+                    return m_integratedSettings;
+                }
+            }
         }
     }
 

@@ -1,4 +1,4 @@
-add_library(goldenglasscommon${QT_MAJOR_VERSION} OBJECT goldenglassboxshadowrenderer.cpp)
+add_library(goldenglasscommon${QT_MAJOR_VERSION} OBJECT goldenglassboxshadowrenderer.cpp goldenglasstrafficlight.cpp)
 
 set_target_properties(goldenglasscommon${QT_MAJOR_VERSION} PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 

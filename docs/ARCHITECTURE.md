@@ -21,6 +21,7 @@ Tema completo para KDE Plasma en CachyOS inspirado en macOS 27 "Golden Gate"
 | Semáforos | Sombreado tipo vidrio ("candy-like", eco de Aqua) | `kdecoration/` |
 | Sidebars | Pegadas al borde izquierdo (no flotantes), fondo más oscuro, iconos a color | `kstyle/` |
 | Toolbars | Barras reales y uniformes, no botones flotantes | `kstyle/` + `kdecoration/` |
+| Finder | Sin barra de título: semáforos sobre la barra lateral, toolbar en la misma fila con botones en cápsulas de vidrio, la carpeta como título, lista con franjas | `kstyle/goldenglassfinder.cpp` + `kdecoration/` (Dolphin) |
 | Menús | Sin iconos junto a cada comando | `kstyle/` |
 | Barra de menús | Sin fondo (texto sobre el fondo de pantalla) y fondo translúcido opcional; nombre de la app en negrita; reloj «Vie 16 de oct  1:09 p.m.»; atenuada en la pantalla sin foco; desbordamiento de iconos tras un chevron «» | `plasma/shell` (`Panel.qml`), `plasma/desktoptheme`, layout, plasmoids `appname` y `clock` |
 | Iconos de app | Squircle con capas y más detalle | `icons/` |
@@ -120,9 +121,64 @@ goldenglass/
   para que coincidan).
 - Las apps Kirigami/QML lo heredan vía `qqc2-desktop-style`.
 
+#### Dolphin como Finder — `goldenglassfinder.cpp`
+
+Dolphin imita el Finder de macOS 27 (tokens `[finder]` y los colores
+`finder_*` de `[light]`/`[dark]`). Solo para las apps de
+`[Common] IntegratedTitleBarApps` (de fábrica `org.kde.dolphin`, token
+`finder.apps`).
+
+- **Sin barra de título.** La decoración la quita en las ventanas de esas apps
+  que exportan su menú (`hasApplicationMenu`: la ventana principal, no los
+  diálogos), conserva sombra, esquinas redondeadas arriba
+  (`setBorderRadius`) y el borde superior para redimensionar. El estilo
+  comprueba lo mismo (`QMenuBar::isNativeMenuBar` y `kwinrc` con
+  `org.goldenglass.decoration`) y entonces la toolbar pinta los semáforos
+  (`libgoldenglasscommon/goldenglasstrafficlight.cpp`, los de la decoración)
+  con la regla de Apple, símbolos al pasar el ratón y las mismas acciones.
+  Doble clic en la toolbar vacía maximiza; arrastrar mueve la ventana.
+- **Barra lateral hasta arriba.** La toolbar y la cabecera de columnas tienen
+  el color y el vidrio de la barra lateral; un separador invisible al
+  principio de la toolbar (`goldenglass_finder_lead`) la hace tan ancha como la
+  barra lateral, o como los semáforos si está oculta. `QToolBarLayout` solo
+  admite márgenes iguales (intercambia izquierda y arriba): por eso el
+  separador, y el estilo recoloca los márgenes tras cada cambio de estilo.
+  Sin línea entre barra lateral y contenido; el separador del dock y el
+  hueco de la barra de desplazamiento se pintan, y la vista va sin marco.
+- **Cápsulas.** Los botones entre separadores forman una cápsula
+  (`capsule_height`); uno solo es un círculo (búsqueda). Los checables (vistas)
+  son un control segmentado cuya píldora se desliza (`slide_ms`, resorte); ‹ ›
+  llevan una línea entre ellos. Al pasar el ratón el segmento se ilumina y al
+  pulsar cede y vuelve con rebote (`press_scale`, `release_overshoot`). ⌄ solo
+  en menús de clic (Agrupar), no en los de pulsación larga (historial de ‹ ›).
+  Glifos propios para ⋯, búsqueda y agrupar.
+- **Título.** La ruta (`KUrlNavigator`) solo enseña la carpeta actual, en
+  negrita y mayor (`title_scale`); Ctrl+L la edita. KIO borra tarde los botones
+  que sobran, así que se actualiza en diferido.
+- **Barra lateral:** selección en píldora gris (`finder_sidebar_selected`) que
+  se desliza (`sidebar_slide_ms`), sin resaltado al pasar el ratón, texto sin
+  cambiar de color.
+- **Lista:** franjas alternas redondeadas y separadas de los bordes
+  (`row_inset`, `row_radius`), también bajo las filas vacías; Dolphin pinta las
+  suyas de borde a borde con `AlternateBase`, que el estilo deja transparente.
+  Selección de fila completa con las mismas medidas; sin rectángulo de foco ni
+  líneas de árbol. Cabecera de Finder: separadores cortos, columna ordenada en
+  negrita con su chevron. La región de blur incluye la cabecera.
+- **Valores de fábrica** (`goldenglassrc [Finder] DolphinDefaults`): la
+  primera vez que Dolphin abre con GoldenGlass el estilo escribe, si el usuario
+  no los tiene: la toolbar de Finder en `kxmlgui5/dolphin/dolphinui.rc` (el
+  `dolphinui.rc` de Dolphin con otra `mainToolBar`; al actualizarse Dolphin,
+  XMLGUI conserva esa toolbar), botones solo con icono, sin barra de estado,
+  iconos de 16 px en la lista (`list_icon_size`) y la vista en lista con
+  Nombre, Tamaño, Tipo y Modificado (`view_properties/global/.directory`, que
+  Dolphin migra a sus atributos extendidos al guardar).
+- Límites: Dolphin no tiene vista de galería ni Compartir/Etiquetas en la
+  toolbar (van Dividir y ⋯); las barras de capacidad de los discos de la barra
+  lateral las pinta su delegado y no se pueden quitar.
+
 ### 4.2 Decoración de ventanas — `kdecoration/` (C++, KDecoration3)
 - En el mismo árbol CMake que `kstyle/` (como Breeze/Darkly), config compartida.
-- **Semáforos** (`goldenglasstrafficlight.cpp`), como los de macOS 27 Golden
+- **Semáforos** (`libgoldenglasscommon/goldenglasstrafficlight.cpp`, compartido con el estilo), como los de macOS 27 Golden
   Gate (Liquid Glass): gemas de vidrio de 14 px separadas 8 px con sombra suave
   que las separa de la ventana, relleno con volumen, borde fino, **brillo arriba
   y brillo abajo** y glifo tintado por botón (×, −, triángulos de pantalla
@@ -138,9 +194,11 @@ goldenglass/
 - Radio de esquina y sombras desde los tokens.
 - **Toolbar unificada:** con `decoration.glass_titlebar` la barra de título usa
   el mismo color (Header) y la misma opacidad de vidrio que la toolbar, y KWin
-  difumina detrás de ambas: se ven como una sola barra. Límite: los semáforos no
-  pueden compartir fila con los botones de la toolbar, porque la toolbar la
-  dibuja cada aplicación.
+  difumina detrás de ambas: se ven como una sola barra. Los semáforos no pueden
+  compartir fila con los botones de la toolbar, porque la toolbar la dibuja
+  cada aplicación; la excepción son las apps de `IntegratedTitleBarApps`
+  (Dolphin), que van sin barra de título y cuyo estilo pinta los semáforos
+  (ver «Dolphin como Finder» en 4.1).
 
 ### 4.3 Efecto de vidrio
 - **Base: blur nativo de KWin + superficies semitransparentes.** Es lo que se

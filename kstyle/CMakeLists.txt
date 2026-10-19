@@ -39,6 +39,7 @@ set(goldenglass_PART_SRCS
     debug/goldenglasswidgetexplorer.cpp
     goldenglassaddeventfilter.cpp
     goldenglassblurhelper.cpp
+    goldenglassfinder.cpp
     goldenglassframeshadow.cpp
     goldenglasshelper.cpp
     goldenglassmdiwindowshadow.cpp

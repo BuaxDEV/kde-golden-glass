@@ -58,6 +58,10 @@ private:
     //* default configuration
     InternalSettingsPtr m_defaultSettings;
 
+    //* default configuration without title bar, for the main windows of the
+    //* IntegratedTitleBarApps (the style draws their window buttons)
+    InternalSettingsPtr m_integratedSettings;
+
     //* exceptions
     InternalSettingsList m_exceptions;
 

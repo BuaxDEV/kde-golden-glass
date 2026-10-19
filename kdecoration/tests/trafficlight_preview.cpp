@@ -7,7 +7,7 @@
  * Filas: barra de título clara y oscura (a tamaño real y ampliadas ×4).
  */
 
-#include "../goldenglasstrafficlight.h"
+#include "goldenglasstrafficlight.h"
 #include "goldenglass_tokens.h"
 
 #include <QFont>
