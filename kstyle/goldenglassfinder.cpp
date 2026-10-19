@@ -84,6 +84,11 @@ QString actionName(const QToolButton *button)
     return button->objectName();
 }
 
+//* QAbstractScrollArea::setViewportMargins is protected
+struct ScrollAreaAccess : QAbstractScrollArea {
+    using QAbstractScrollArea::setViewportMargins;
+};
+
 //* KIO's breadcrumb widgets live in the KDEPrivate namespace
 bool isKioPrivate(const QObject *object, const char *className)
 {
@@ -238,8 +243,13 @@ void Finder::polish(QWidget *widget)
             palette.setColor(group, QPalette::HighlightedText, palette.color(group, QPalette::WindowText));
         }
         view->setPalette(palette);
-        // KIO draws the icon 4 px into the item: the spacing puts it inside the pill
-        static_cast<QListView *>(widget)->setSpacing(qMax(0, Tokens::FinderSidebarIconPadding - 4));
+        // KIO draws the icon 4 px into the item (and the text relative to the
+        // viewport): a viewport margin puts both inside the pill, which is
+        // painted underneath, on the view itself
+        const int margin = qMax(0, Tokens::FinderSidebarIconPadding - 4);
+        static_cast<ScrollAreaAccess *>(view)->setViewportMargins(margin, 0, margin, 0);
+        view->removeEventFilter(this);
+        view->installEventFilter(this);
         view->viewport()->removeEventFilter(this);
         view->viewport()->installEventFilter(this);
 
@@ -322,13 +332,11 @@ bool Finder::isIntegratedWindow(const QWidget *window) const
 //____________________________________________________________________
 int Finder::sidebarItemHeight(const QWidget *widget) const
 {
-    // the spacing (icon inside the pill) goes above and below every place:
-    // the rows keep Finder's pitch
-    auto view = qobject_cast<const QListView *>(widget);
-    if (!_active || !view || !view->inherits("KFilePlacesView")) {
+    // Finder's row pitch
+    if (!_active || !widget || !widget->inherits("KFilePlacesView")) {
         return -1;
     }
-    return Tokens::FinderSidebarRowHeight - 2 * view->spacing();
+    return Tokens::FinderSidebarRowHeight;
 }
 
 //____________________________________________________________________
@@ -869,11 +877,9 @@ void Finder::updateSearch(QWidget *bar) const
         }
         editor->setProperty("_goldenglass_finderSearch", true);
         editor->setProperty("_goldenglass_searchBar", QVariant::fromValue<QObject *>(bar));
-        // it shrinks (down to a minimum) before the toolbar overflows
-        editor->setFixedHeight(Tokens::FinderCapsuleHeight);
-        editor->setMinimumWidth(Tokens::FinderSearchMinWidth);
-        editor->setMaximumWidth(Tokens::FinderSearchWidth);
-        editor->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        // fixed: sharing the free space with the title would make them resize
+        // each other in a loop
+        editor->setFixedSize(Tokens::FinderSearchWidth, Tokens::FinderCapsuleHeight);
         editor->setTextMargins(Tokens::FinderCapsuleHeight * 2 / 3, 0, 2, 0);
         editor->installEventFilter(const_cast<Finder *>(this));
         action = toolBar->insertWidget(before, editor);
@@ -1300,10 +1306,20 @@ bool Finder::eventFilter(QObject *object, QEvent *event)
             return false;
         }
 
+        // the sidebar pill lies on the view, under its viewport (it reaches
+        // into the viewport margins)
+        if (widget->inherits("KFilePlacesView")) {
+            paintSidebarSelection(static_cast<QListView *>(widget));
+            return false;
+        }
+
         // painted before the view draws its items
         QWidget *parent = widget->parentWidget();
         if (parent && parent->inherits("KFilePlacesView")) {
-            paintSidebarSelection(widget);
+            // selection, scroll or relayout: the pill follows on the view
+            if (syncSidebarSelection(static_cast<QListView *>(parent))) {
+                parent->update();
+            }
         } else if (parent && parent->inherits("KItemListContainerViewport")) {
             paintStripes(widget);
         }
@@ -1482,11 +1498,10 @@ bool Finder::drawItemViewItem(const QStyleOptionViewItem *option, QPainter *pain
 }
 
 //____________________________________________________________________
-void Finder::paintSidebarSelection(QWidget *viewport) const
+bool Finder::syncSidebarSelection(QListView *view) const
 {
-    auto view = qobject_cast<QListView *>(viewport->parentWidget());
-    if (!view || !view->selectionModel() || !view->model()) {
-        return;
+    if (!view->selectionModel() || !view->model()) {
+        return false;
     }
 
     QModelIndex index;
@@ -1502,7 +1517,7 @@ void Finder::paintSidebarSelection(QWidget *viewport) const
         selection.slide = new QVariantAnimation(self);
         selection.slide->setStartValue(1.0);
         selection.slide->setEndValue(1.0);
-        QPointer<QWidget> target(viewport);
+        QPointer<QWidget> target(view);
         connect(selection.slide, &QVariantAnimation::valueChanged, self, [target]() {
             if (target) {
                 target->update();
@@ -1516,33 +1531,32 @@ void Finder::paintSidebarSelection(QWidget *viewport) const
     SidebarSelection &selection = it.value();
 
     if (!index.isValid()) {
+        const bool changed = selection.index.isValid();
         selection.index = QPersistentModelIndex();
         selection.slide->stop();
-        return;
+        return changed;
     }
 
     // the first place of a section also holds its header: the pill covers the
-    // item only, as tall as a place without header, plus the spacing around it
-    // (the whole row, edge to edge)
-    QRect itemRect = view->visualRect(index);
+    // item only, as tall as a place without header, across the whole view
+    const QRect itemRect = view->visualRect(index);
     int rowHeight = itemRect.height();
     const int rows = view->model()->rowCount(view->rootIndex());
     for (int row = 0; row < rows; ++row) {
-        const QModelIndex other = view->model()->index(row, 0, view->rootIndex());
         if (view->isRowHidden(row)) {
             continue;
         }
-        const int height = view->visualRect(other).height();
+        const int height = view->visualRect(view->model()->index(row, 0, view->rootIndex())).height();
         if (height > 0) {
             rowHeight = qMin(rowHeight, height);
         }
     }
-    const qreal spacing = view->spacing();
-    const QRectF target(0, itemRect.bottom() + 1 - rowHeight - spacing / 2, viewport->width(), rowHeight + spacing);
+    const QPoint offset = view->viewport()->pos();
+    const QRectF target(0, offset.y() + itemRect.bottom() + 1 - rowHeight, view->width(), rowHeight);
 
-    const qreal progress = selection.slide->currentValue().toReal();
     if (selection.index != index) {
         const bool animate = selection.index.isValid();
+        const qreal progress = selection.slide->currentValue().toReal();
         selection.from = animate ? lerp(selection.from, selection.to, progress) : target;
         selection.to = target;
         selection.index = index;
@@ -1557,16 +1571,30 @@ void Finder::paintSidebarSelection(QWidget *viewport) const
             selection.slide->setStartValue(1.0);
             selection.slide->setEndValue(1.0);
         }
-    } else if (selection.slide->state() != QAbstractAnimation::Running) {
-        // scrolled or resized: follow the item
+        return true;
+    }
+    if (selection.to == target) {
+        return false;
+    }
+    // scrolled or resized: follow the item
+    selection.to = target;
+    if (selection.slide->state() != QAbstractAnimation::Running) {
         selection.from = target;
-        selection.to = target;
-    } else {
-        selection.to = target;
+    }
+    return true;
+}
+
+//____________________________________________________________________
+void Finder::paintSidebarSelection(QListView *view) const
+{
+    syncSidebarSelection(view);
+    const auto it = _sidebars.constFind(view);
+    if (it == _sidebars.cend() || !it->index.isValid()) {
+        return;
     }
 
-    const QRectF rect = lerp(selection.from, selection.to, selection.slide->currentValue().toReal());
-    QPainter painter(viewport);
+    const QRectF rect = lerp(it->from, it->to, it->slide->currentValue().toReal());
+    QPainter painter(view);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setPen(Qt::NoPen);
     painter.setBrush(token(Tokens::FinderSidebarSelectedLight, Tokens::FinderSidebarSelectedDark, view->palette()));

@@ -116,7 +116,6 @@ def header(tokens: dict) -> str:
         ("FinderRowRadius", int(finder["row_radius"]), "esquinas de franjas y selección"),
         ("FinderListIconSize", int(finder["list_icon_size"]), "iconos de la lista"),
         ("FinderSearchWidth", int(finder["search_width"]), "campo de búsqueda en la toolbar"),
-        ("FinderSearchMinWidth", int(finder["search_min_width"]), "ancho mínimo del campo de búsqueda"),
         ("Semáforos y colores fijos (px, 0xAARRGGBB)", None, None),
         ("TrafficLightDiameter", tl["diameter"], "diámetro"),
         ("TrafficLightGap", tl["gap"], "separación entre bordes"),

@@ -158,14 +158,14 @@ Dolphin imita el Finder de macOS 27 (tokens `[finder]` y los colores
 - **Barra lateral:** selección en píldora gris (`finder_sidebar_selected`) que
   ocupa la fila y se desliza (`sidebar_slide_ms`), sin resaltado al pasar el
   ratón, texto sin cambiar de color. KIO dibuja el icono a 4 px del borde del
-  elemento: el margen del dock (`sidebar_margin`) y el espaciado de la lista
-  (`sidebar_icon_padding`) lo dejan dentro de la píldora, y la altura de cada
-  lugar compensa el espaciado para mantener el paso de Finder
-  (`sidebar_row_height`).
+  elemento (y el texto relativo a la vista, no al elemento): el margen del dock
+  (`sidebar_margin`) y un margen interior de la vista (`sidebar_icon_padding`)
+  los dejan dentro de la píldora, que se pinta en la vista, bajo su viewport.
+  Cada lugar mide `sidebar_row_height`.
 - **Búsqueda como en Finder:** al buscar, el campo de la barra de búsqueda de
   Dolphin (`Search::Bar`) pasa a la toolbar en lugar de la lupa: cápsula con
-  lupa y el anillo de foco de `[focus_ring]`, de `search_min_width` a
-  `search_width` (se encoge antes de que la toolbar desborde). La barra queda
+  lupa y el anillo de foco de `[focus_ring]`, de ancho fijo `search_width` (si
+  compartiera el espacio libre con el título, se redimensionarían en bucle). La barra queda
   en una fila del color de la toolbar con Aquí / En todas partes y Filtrar; sin
   ✕: Esc borra y luego cierra (el estilo reenvía Esc y ↓ a la barra). Al cerrar
   vuelve la lupa; el campo se borra con su pestaña.

@@ -14,6 +14,7 @@
 #include <functional>
 
 class QApplication;
+class QListView;
 class QPainter;
 class QToolBar;
 class QToolButton;
@@ -153,7 +154,9 @@ private:
     void updateNavigator(QWidget *navigator) const;
 
     bool eventFilterToolBar(QToolBar *toolBar, QEvent *event);
-    void paintSidebarSelection(QWidget *viewport) const;
+    //* updates the sidebar pill; true when it moved
+    bool syncSidebarSelection(QListView *view) const;
+    void paintSidebarSelection(QListView *view) const;
     void paintStripes(QWidget *viewport) const;
 
     QColor sidebarBackground(const QWidget *widget, const QPalette &palette, bool *clear) const;

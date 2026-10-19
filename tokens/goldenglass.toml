@@ -184,8 +184,7 @@ row_radius = 6
 list_icon_size = 16      # iconos (y miniaturas) de la lista, como en Finder
 # Búsqueda: la lupa se convierte en un campo en cápsula dentro de la toolbar,
 # con el anillo de foco de [focus_ring]
-search_width = 230       # ancho máximo; se encoge antes de desbordar la toolbar
-search_min_width = 120
+search_width = 230
 
 # ---------------------------------------------------------------------------
 # Tipografía — familias son alias de fontconfig (ver fontconfig/)
