@@ -163,6 +163,7 @@ icon_size = 18           # glifos de la toolbar
 menu_arrow = 9           # chevron ⌄ de los botones con menú (Agrupar)
 title_scale = 1.2        # nombre de la carpeta respecto al texto normal
 selected_inset = 3       # píldora del control segmentado dentro de su cápsula
+divider_height = 15      # línea entre ‹ › y entre segmentos sin seleccionar
 # Liquid Glass: al pulsar, el botón cede y vuelve con un rebote; la píldora
 # del control segmentado se desliza hasta el botón nuevo.
 press_scale = 0.86
@@ -170,6 +171,7 @@ press_ms = 90
 release_ms = 380
 release_overshoot = 2.2
 slide_ms = 280
+slide_overshoot = 0.9    # resorte de esa píldora (Easing.OutBack)
 hover_ms = 150
 # Barra lateral: selección en píldora gris que se desliza entre elementos;
 # el icono queda dentro de ella, como en Finder
@@ -181,6 +183,8 @@ sidebar_slide_ms = 240
 # Lista: franjas alternas y selección redondeadas, separadas de los bordes
 row_inset = 9
 row_radius = 6
+header_padding = 8       # cabecera de columnas: margen del texto
+header_arrow_width = 16  # y hueco del chevron de la columna ordenada
 list_icon_size = 16      # iconos (y miniaturas) de la lista, como en Finder
 # Búsqueda: la lupa se convierte en un campo en cápsula dentro de la toolbar,
 # con el anillo de foco de [focus_ring]

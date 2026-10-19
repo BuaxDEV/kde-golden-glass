@@ -45,6 +45,7 @@
 #include <QVariantAnimation>
 #include <QtMath>
 
+#include <dlfcn.h>
 #include <sys/xattr.h>
 
 namespace GoldenGlass
@@ -82,6 +83,16 @@ QString actionName(const QToolButton *button)
         return action->objectName();
     }
     return button->objectName();
+}
+
+//* KItemListWidget::alternateBackground() const, exported by Dolphin's
+//* library: which rows Dolphin stripes (it restarts in every group). The
+//* style is loaded into Dolphin, so the symbol is there; elsewhere, null.
+using AlternateBackground = bool (*)(const void *);
+AlternateBackground alternateBackgroundFunction()
+{
+    static const auto function = reinterpret_cast<AlternateBackground>(dlsym(RTLD_DEFAULT, "_ZNK15KItemListWidget19alternateBackgroundEv"));
+    return function;
 }
 
 //* QAbstractScrollArea::setViewportMargins is protected
@@ -209,10 +220,15 @@ void Finder::polish(QWidget *widget)
         }
 
     } else if (qobject_cast<QDockWidget *>(widget) && qobject_cast<QMainWindow *>(widget->parentWidget())) {
-        // the toolbar follows the width of the sidebar; the selection pill
-        // keeps Finder's distance to the sidebar edges
-        const int margin = Tokens::FinderSidebarMargin;
-        widget->setContentsMargins(margin, 2, margin, 2);
+        // the toolbar follows the width of the sidebars; the places one keeps
+        // Finder's distance from the selection pill to its edges
+        if (widget->objectName() == QLatin1String("placesDock")) {
+            if (!widget->property("_goldenglass_margins").isValid()) {
+                widget->setProperty("_goldenglass_margins", QVariant::fromValue(widget->contentsMargins()));
+            }
+            const int margin = Tokens::FinderSidebarMargin;
+            widget->setContentsMargins(margin, 2, margin, 2);
+        }
         widget->removeEventFilter(this);
         widget->installEventFilter(this);
 
@@ -257,6 +273,9 @@ void Finder::polish(QWidget *widget)
         auto container = static_cast<QAbstractScrollArea *>(widget);
         // the view reaches the window edges, without frame: its background
         // also goes under the (overlay) scrollbars
+        if (!container->property("_goldenglass_frameShape").isValid()) {
+            container->setProperty("_goldenglass_frameShape", int(container->frameShape()));
+        }
         container->setFrameShape(QFrame::NoFrame);
         container->removeEventFilter(this);
         container->installEventFilter(this);
@@ -274,10 +293,39 @@ void Finder::unpolish(QWidget *widget)
         return;
     }
     widget->removeEventFilter(this);
-    // another style: the toolbar gets back its own layout (QToolBar resets
-    // the margins on the style change)
+
+    // another style: undo what polish changed. The toolbar gets back its own
+    // layout (QToolBar resets the margins on the style change)
     if (qobject_cast<QToolBar *>(widget)) {
         delete widget->findChild<QWidget *>(QStringLiteral("goldenglass_finder_lead"), Qt::FindDirectChildrenOnly);
+
+    } else if (const QVariant margins = widget->property("_goldenglass_margins"); margins.isValid()) {
+        widget->setContentsMargins(margins.value<QMargins>());
+        widget->setProperty("_goldenglass_margins", QVariant());
+
+    } else if (widget->inherits("KFilePlacesView")) {
+        auto view = static_cast<QAbstractScrollArea *>(widget);
+        static_cast<ScrollAreaAccess *>(view)->setViewportMargins(0, 0, 0, 0);
+        view->setPalette(QPalette());
+        view->viewport()->removeEventFilter(this);
+
+    } else if (widget->inherits("KItemListContainer")) {
+        auto container = static_cast<QAbstractScrollArea *>(widget);
+        if (const QVariant shape = container->property("_goldenglass_frameShape"); shape.isValid()) {
+            container->setFrameShape(QFrame::Shape(shape.toInt()));
+            container->setProperty("_goldenglass_frameShape", QVariant());
+        }
+        if (auto graphicsView = qobject_cast<QGraphicsView *>(container->viewport())) {
+            graphicsView->viewport()->removeEventFilter(this);
+        }
+
+    } else if (widget->property("_goldenglass_searchLayout").toBool()) {
+        // the search bar gets its field back (Filter stays in the second row)
+        if (auto editor = qobject_cast<QLineEdit *>(widget->property("_goldenglass_searchEditor").value<QObject *>())) {
+            editor->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+            editor->removeEventFilter(this);
+        }
+        delete _searchFields.take(widget).data();
     }
 }
 
@@ -531,7 +579,7 @@ Finder::Pill &Finder::pillFor(const Group &group) const
             pill.slide->setEndValue(1.0);
             pill.slide->setDuration(Tokens::FinderSlideMs);
             QEasingCurve curve(QEasingCurve::OutBack);
-            curve.setOvershoot(0.9);
+            curve.setOvershoot(Tokens::FinderSlideOvershoot);
             pill.slide->setEasingCurve(curve);
             pill.slide->start();
         } else {
@@ -630,7 +678,7 @@ bool Finder::drawToolButton(const QStyleOptionToolButton *option, QPainter *pain
                 continue;
             }
             const qreal x = right->geometry().left();
-            const qreal half = capsule.height() * 0.22;
+            const qreal half = Tokens::FinderDividerHeight / 2.0;
             painter->drawLine(QPointF(x, capsule.center().y() - half), QPointF(x, capsule.center().y() + half));
         }
         painter->setPen(Qt::NoPen);
@@ -839,8 +887,7 @@ void Finder::updateSearch(QWidget *bar) const
         bar->setProperty("_goldenglass_searchEditor", QVariant::fromValue<QObject *>(editor));
     }
 
-    auto action = qobject_cast<QAction *>(editor->property("_goldenglass_searchAction").value<QObject *>());
-    if (!action) {
+    if (!bar->property("_goldenglass_searchLayout").toBool()) {
         // the bar keeps one row: Here / Everywhere and Filter; Esc closes it
         QWidget *contents = editor->parentWidget();
         auto top = contents ? qobject_cast<QBoxLayout *>(contents->layout()) : nullptr;
@@ -864,9 +911,56 @@ void Finder::updateSearch(QWidget *bar) const
                 button->hide();
             }
         }
-        firstRow->removeWidget(editor);
 
-        // in the toolbar, where the magnifier is
+        // Dolphin's field stays in its bar (the bar keeps using it), shrunk to
+        // nothing: the field in the toolbar mirrors it and takes its focus
+        editor->setMaximumSize(0, 0);
+        editor->setProperty("_goldenglass_searchSource", true);
+        editor->setProperty("_goldenglass_searchBar", QVariant::fromValue<QObject *>(bar));
+        editor->installEventFilter(const_cast<Finder *>(this));
+        bar->setProperty("_goldenglass_searchLayout", true);
+        _searchBars.append(bar);
+    }
+
+    // the field in the toolbar, where the magnifier is; it belongs to the
+    // toolbar, so it is created again if XMLGUI rebuilds the toolbar
+    QLineEdit *field = _searchFields.value(bar);
+    if (!field || field->parentWidget() != toolBar) {
+        delete field;
+        field = new QLineEdit;
+        field->setProperty("_goldenglass_finderSearch", true);
+        field->setProperty("_goldenglass_searchBar", QVariant::fromValue<QObject *>(bar));
+        field->setClearButtonEnabled(true);
+        // fixed: sharing the free space with the title would make them resize
+        // each other in a loop
+        field->setFixedSize(Tokens::FinderSearchWidth, Tokens::FinderCapsuleHeight);
+        field->setTextMargins(Tokens::FinderCapsuleHeight * 2 / 3, 0, 2, 0);
+        field->setPlaceholderText(editor->placeholderText());
+        field->setText(editor->text());
+        field->installEventFilter(const_cast<Finder *>(this));
+
+        // what the user types reaches the bar as if typed in its own field
+        QPointer<QLineEdit> source(editor);
+        connect(field, &QLineEdit::textEdited, field, [source](const QString &text) {
+            if (source) {
+                source->setText(text);
+                Q_EMIT source->textEdited(text);
+            }
+        });
+        connect(field, &QLineEdit::returnPressed, field, [source]() {
+            if (source) {
+                Q_EMIT source->returnPressed();
+            }
+        });
+        connect(editor, &QLineEdit::textChanged, field, [field, source](const QString &text) {
+            if (field->text() != text) {
+                field->setText(text);
+            }
+            if (source) {
+                field->setPlaceholderText(source->placeholderText());
+            }
+        });
+
         QAction *before = nullptr;
         const auto actions = toolBar->actions();
         for (QAction *candidate : actions) {
@@ -875,26 +969,47 @@ void Finder::updateSearch(QWidget *bar) const
                 break;
             }
         }
-        editor->setProperty("_goldenglass_finderSearch", true);
-        editor->setProperty("_goldenglass_searchBar", QVariant::fromValue<QObject *>(bar));
-        // fixed: sharing the free space with the title would make them resize
-        // each other in a loop
-        editor->setFixedSize(Tokens::FinderSearchWidth, Tokens::FinderCapsuleHeight);
-        editor->setTextMargins(Tokens::FinderCapsuleHeight * 2 / 3, 0, 2, 0);
-        editor->installEventFilter(const_cast<Finder *>(this));
-        action = toolBar->insertWidget(before, editor);
-        editor->setProperty("_goldenglass_searchAction", QVariant::fromValue<QObject *>(action));
+        QPointer<QAction> action(toolBar->insertWidget(before, field));
+        _searchFields.insert(bar, field);
+        if (!bar->property("_goldenglass_searchCleanup").toBool()) {
+            bar->setProperty("_goldenglass_searchCleanup", true);
+            // the field goes with its tab
+            auto self = const_cast<Finder *>(this);
+            connect(bar, &QObject::destroyed, self, [self](QObject *object) {
+                if (QLineEdit *field = self->_searchFields.take(object)) {
+                    QToolBar *toolBar = qobject_cast<QToolBar *>(field->parentWidget());
+                    const auto actions = toolBar ? toolBar->actions() : QList<QAction *>();
+                    for (QAction *action : actions) {
+                        if (toolBar->widgetForAction(action) == field) {
+                            delete action; // deletes the field too
+                            break;
+                        }
+                    }
+                }
+                self->_searchBars.removeAll(nullptr);
+            });
+        }
+    }
 
-        // the field goes with its tab (the action deletes it)
-        QPointer<QAction> guard(action);
-        connect(bar, &QObject::destroyed, toolBar, [guard]() {
-            delete guard.data();
-        });
+    QAction *action = nullptr;
+    const auto toolBarActions = toolBar->actions();
+    for (QAction *candidate : toolBarActions) {
+        if (toolBar->widgetForAction(candidate) == field) {
+            action = candidate;
+            break;
+        }
+    }
+    if (!action) {
+        return;
     }
 
     // shown while its bar is searching in a visible tab
     const bool searching = bar->isEnabled() && bar->isVisible();
     if (action->isVisible() != searching) {
+        if (!searching && field->hasFocus()) {
+            // as the bar does when its own field loses the search
+            QMetaObject::invokeMethod(bar, "focusViewRequest");
+        }
         action->setVisible(searching);
     }
 
@@ -1244,9 +1359,23 @@ bool Finder::eventFilter(QObject *object, QEvent *event)
         return false;
     }
 
+    if (widget->property("_goldenglass_searchSource").toBool()) {
+        // Dolphin focuses its own (hidden) field: the toolbar one takes over
+        if (event->type() == QEvent::FocusIn) {
+            QPointer<QLineEdit> field(_searchFields.value(widget->property("_goldenglass_searchBar").value<QObject *>()));
+            QTimer::singleShot(0, this, [field]() {
+                if (field && field->isVisible()) {
+                    field->setFocus(Qt::OtherFocusReason);
+                    field->selectAll();
+                }
+            });
+        }
+        return false;
+    }
+
     if (widget->property("_goldenglass_finderSearch").toBool()) {
-        // the field left its Search::Bar: Esc (clear, then close) and ↓ (to the
-        // view) still go to it
+        // the toolbar field: Esc (clear, then close) and ↓ (to the view) go to
+        // the bar, as from its own field
         auto bar = qobject_cast<QWidget *>(widget->property("_goldenglass_searchBar").value<QObject *>());
         auto keyEvent = static_cast<QKeyEvent *>(event);
         if (bar && event->type() == QEvent::KeyPress && keyEvent->key() == Qt::Key_Escape) {
@@ -1332,7 +1461,8 @@ bool Finder::eventFilterToolBar(QToolBar *toolBar, QEvent *event)
 {
     const bool integrated = isIntegratedWindow(toolBar->window());
 
-    const auto setHovered = [this, toolBar](bool hovered) {
+    // one entry per toolbar, removed with it
+    const auto lightsFor = [this, toolBar]() -> Lights & {
         Lights &lights = _lights[toolBar];
         if (!lights.glyphs) {
             lights.glyphs = new QVariantAnimation(this);
@@ -1348,6 +1478,11 @@ bool Finder::eventFilterToolBar(QToolBar *toolBar, QEvent *event)
                 delete _lights.take(object).glyphs;
             });
         }
+        return lights;
+    };
+
+    const auto setHovered = [this, toolBar, &lightsFor](bool hovered) {
+        Lights &lights = lightsFor();
         if (lights.hovered != hovered) {
             lights.hovered = hovered;
             animateTo(lights.glyphs, hovered ? 1.0 : 0.0, Tokens::FinderHoverMs, QEasingCurve::OutCubic);
@@ -1374,7 +1509,7 @@ bool Finder::eventFilterToolBar(QToolBar *toolBar, QEvent *event)
         if (integrated && mouseEvent->button() == Qt::LeftButton) {
             const Light light = lightAt(toolBar, mouseEvent->position());
             if (light != Light::None) {
-                _lights[toolBar].pressed = light;
+                lightsFor().pressed = light;
                 toolBar->update(lightsRect(toolBar).toAlignedRect());
                 return true;
             }
@@ -1417,11 +1552,17 @@ bool Finder::eventFilterToolBar(QToolBar *toolBar, QEvent *event)
     case QEvent::ActionAdded:
     case QEvent::ActionRemoved:
     case QEvent::StyleChange: {
-        // after QToolBar has reset its layout margins (or XMLGUI its actions)
+        // after QToolBar has reset its layout margins (or XMLGUI its actions,
+        // dropping the search fields)
         QPointer<QToolBar> target(toolBar);
         QTimer::singleShot(0, this, [this, target]() {
             if (target) {
                 updateToolBarMargins(target->window());
+                for (const auto &bar : std::as_const(_searchBars)) {
+                    if (bar && bar->window() == target->window()) {
+                        updateSearch(bar);
+                    }
+                }
             }
         });
         break;
@@ -1538,19 +1679,9 @@ bool Finder::syncSidebarSelection(QListView *view) const
     }
 
     // the first place of a section also holds its header: the pill covers the
-    // item only, as tall as a place without header, across the whole view
+    // item only (as tall as every place, sidebarItemHeight), across the view
     const QRect itemRect = view->visualRect(index);
-    int rowHeight = itemRect.height();
-    const int rows = view->model()->rowCount(view->rootIndex());
-    for (int row = 0; row < rows; ++row) {
-        if (view->isRowHidden(row)) {
-            continue;
-        }
-        const int height = view->visualRect(view->model()->index(row, 0, view->rootIndex())).height();
-        if (height > 0) {
-            rowHeight = qMin(rowHeight, height);
-        }
-    }
+    const int rowHeight = qMin(itemRect.height(), int(Tokens::FinderSidebarRowHeight));
     const QPoint offset = view->viewport()->pos();
     const QRectF target(0, offset.y() + itemRect.bottom() + 1 - rowHeight, view->width(), rowHeight);
 
@@ -1610,14 +1741,12 @@ void Finder::paintStripes(QWidget *viewport) const
         return;
     }
 
-    // details view only (it has a header), and not grouped: Dolphin restarts
-    // the alternation in each group
+    // details view only (it has a header); only the items on screen
     QGraphicsObject *listView = nullptr;
     QGraphicsObject *header = nullptr;
-    QGraphicsObject *firstRow = nullptr;
-    QRectF firstRowRect;
+    QList<QPair<QRectF, QGraphicsObject *>> rows;
     bool grouped = false;
-    const auto items = graphicsView->scene()->items();
+    const auto items = graphicsView->items(viewport->rect());
     for (QGraphicsItem *item : items) {
         QGraphicsObject *object = item->toGraphicsObject();
         if (!object || !object->isVisible()) {
@@ -1630,13 +1759,10 @@ void Finder::paintStripes(QWidget *viewport) const
         } else if (object->inherits("KItemListView")) {
             listView = object;
         } else if (object->inherits("KItemListWidget")) {
-            const QRectF rect = graphicsView->mapFromScene(object->mapToScene(object->boundingRect())).boundingRect();
-            if (!firstRow || rect.top() < firstRowRect.top()) {
-                firstRow = object;
-                firstRowRect = rect;
-            }
+            rows.append({graphicsView->mapFromScene(object->mapToScene(object->boundingRect())).boundingRect(), object});
         }
     }
+
     // the header shares the toolbar glass: the blur region follows it
     QWidget *container = graphicsView->parentWidget();
     const QRectF headerRect = header ? graphicsView->mapFromScene(header->mapToScene(header->boundingRect())).boundingRect() : QRectF();
@@ -1664,41 +1790,64 @@ void Finder::paintStripes(QWidget *viewport) const
         }
         painter.fillRect(above, background);
     }
-    if (grouped) {
-        return;
-    }
-    const qreal scrollOffset = listView->property("scrollOffset").toReal();
 
     // rows keep their height when the folder is empty (Finder still stripes it)
+    std::sort(rows.begin(), rows.end(), [](const auto &a, const auto &b) {
+        return a.first.top() < b.first.top();
+    });
     qreal rowHeight = viewport->property("_goldenglass_rowHeight").toReal();
-    if (firstRow) {
-        rowHeight = firstRowRect.height();
+    if (!rows.isEmpty()) {
+        rowHeight = rows.first().first.height();
         viewport->setProperty("_goldenglass_rowHeight", rowHeight);
     }
     if (rowHeight < 4) {
         return;
     }
 
-    // the row index of an item comes from its position: Dolphin stripes the odd ones
     const qreal top = headerRect.bottom();
-    qreal anchorY = top - scrollOffset;
-    int anchorIndex = 0;
-    if (firstRow) {
-        anchorIndex = qRound((firstRowRect.top() - top + scrollOffset) / rowHeight);
-        anchorY = firstRowRect.top();
-    }
-    int index = anchorIndex + qFloor((top - anchorY) / rowHeight);
-    qreal y = anchorY + (index - anchorIndex) * rowHeight;
-
+    const qreal inset = Tokens::FinderRowInset;
+    const qreal radius = Tokens::FinderRowRadius;
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setPen(Qt::NoPen);
     painter.setBrush(token(Tokens::FinderStripeLight, Tokens::FinderStripeDark, viewport->palette()));
     painter.setClipRect(QRectF(0, top, viewport->width(), viewport->height() - top));
-    const qreal inset = Tokens::FinderRowInset;
-    const qreal radius = Tokens::FinderRowRadius;
-    for (; y < viewport->height(); y += rowHeight, ++index) {
+    const auto stripe = [&](qreal y) {
+        painter.drawRoundedRect(QRectF(inset, y, viewport->width() - 2 * inset, rowHeight), radius, radius);
+    };
+
+    if (const auto alternate = alternateBackgroundFunction(); alternate && !rows.isEmpty()) {
+        // Dolphin knows which rows alternate (it restarts in every group)
+        for (const auto &row : std::as_const(rows)) {
+            if (alternate(row.second)) {
+                stripe(row.first.top());
+            }
+        }
+        // past the last row, the alternation goes on to the bottom
+        bool striped = alternate(rows.last().second);
+        for (qreal y = rows.last().first.bottom(); y < viewport->height(); y += rowHeight) {
+            striped = !striped;
+            if (striped) {
+                stripe(y);
+            }
+        }
+        return;
+    }
+
+    // without Dolphin's answer: the odd rows from the first one (not grouped)
+    if (grouped) {
+        return;
+    }
+    const qreal scrollOffset = listView->property("scrollOffset").toReal();
+    qreal anchorY = top - scrollOffset;
+    int anchorIndex = 0;
+    if (!rows.isEmpty()) {
+        anchorIndex = qRound((rows.first().first.top() - top + scrollOffset) / rowHeight);
+        anchorY = rows.first().first.top();
+    }
+    int index = anchorIndex + qFloor((top - anchorY) / rowHeight);
+    for (qreal y = anchorY + (index - anchorIndex) * rowHeight; y < viewport->height(); y += rowHeight, ++index) {
         if (index & 1) {
-            painter.drawRoundedRect(QRectF(inset, y, viewport->width() - 2 * inset, rowHeight), radius, radius);
+            stripe(y);
         }
     }
 }
@@ -1748,8 +1897,8 @@ bool Finder::drawHeader(const QStyleOptionHeader *option, QPainter *painter, con
     }
     painter->setPen(text);
 
-    const int padding = 8;
-    const int arrowWidth = sorted ? 16 : 0;
+    const int padding = Tokens::FinderHeaderPadding;
+    const int arrowWidth = sorted ? Tokens::FinderHeaderArrowWidth : 0;
     const QRect textRect = rect.adjusted(padding, 0, -padding - arrowWidth, -1);
     painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, QFontMetrics(font).elidedText(option->text, Qt::ElideRight, textRect.width()));
 
@@ -1829,6 +1978,7 @@ void Finder::applyDolphinDefaults() const
     const QString globalProps = dataDir + QStringLiteral("/dolphin/view_properties/global");
     const QString dotDirectory = globalProps + QStringLiteral("/.directory");
     bool hasViewMode = false;
+    QByteArray attributeProps;
     if (QFile::exists(dotDirectory)) {
         KConfig props(dotDirectory, KConfig::SimpleConfig);
         hasViewMode = props.group(QStringLiteral("Dolphin")).hasKey("ViewMode");
@@ -1839,12 +1989,21 @@ void Finder::applyDolphinDefaults() const
         if (size > 0) {
             QByteArray value(size, Qt::Uninitialized);
             if (getxattr(path.constData(), attribute, value.data(), value.size()) > 0) {
+                attributeProps = value;
                 hasViewMode = value.contains("ViewMode=");
             }
         }
     }
     if (!hasViewMode) {
         QDir().mkpath(globalProps);
+        // the .directory goes first: it starts from what the attribute holds
+        // (sorting, hidden files…), so only the view mode and columns change
+        if (!attributeProps.isEmpty()) {
+            QFile file(dotDirectory);
+            if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+                file.write(attributeProps);
+            }
+        }
         KConfig props(dotDirectory, KConfig::SimpleConfig);
         KConfigGroup dolphin = props.group(QStringLiteral("Dolphin"));
         dolphin.writeEntry("Version", 4);

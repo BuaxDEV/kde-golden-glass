@@ -14,6 +14,7 @@
 #include <functional>
 
 class QApplication;
+class QLineEdit;
 class QListView;
 class QPainter;
 class QToolBar;
@@ -175,6 +176,9 @@ private:
     mutable QHash<const QObject *, Pill> _pills;
     mutable QHash<const QObject *, Lights> _lights;
     mutable QHash<const QObject *, SidebarSelection> _sidebars;
+    //* search bars seen, and the toolbar field of each
+    mutable QList<QPointer<QWidget>> _searchBars;
+    mutable QHash<const QObject *, QPointer<QLineEdit>> _searchFields;
     mutable bool _updatingNavigator = false;
     mutable bool _updatingSpacer = false;
 };

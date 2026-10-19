@@ -641,12 +641,15 @@ if (m_internalSettings->floatingTitlebar()){
     }
 #endif
 #if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
-    // without title bar the client reaches the top: round its top corners too
-    qreal topRadius = 0;
+    // without title bar the client reaches the top: round its top corners too,
+    // except where they touch the screen edges (as the bottom ones)
+    qreal topLeftRadius = 0;
+    qreal topRightRadius = 0;
     if (hideTitleBar() && m_internalSettings->roundedCorners() && !isTopEdge()) {
-        topRadius = m_scaledCornerRadius;
+        topLeftRadius = isLeftEdge() ? 0 : m_scaledCornerRadius;
+        topRightRadius = isRightEdge() ? 0 : m_scaledCornerRadius;
     }
-    setBorderRadius(KDecoration3::BorderRadius(topRadius, topRadius, bottomRightRadius, bottomLeftRadius));
+    setBorderRadius(KDecoration3::BorderRadius(topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius));
 #endif
     if (isMaximized() || !outlinesEnabled()) {
 #if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)

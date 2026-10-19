@@ -144,7 +144,8 @@ Dolphin imita el Finder de macOS 27 (tokens `[finder]` y los colores
   admite márgenes iguales (intercambia izquierda y arriba): por eso el
   separador, y el estilo recoloca los márgenes tras cada cambio de estilo.
   Sin línea entre barra lateral y contenido; el separador del dock y el
-  hueco de la barra de desplazamiento se pintan, y la vista va sin marco.
+  hueco de la barra de desplazamiento se pintan, y la vista va sin marco. Con
+  otro estilo, `unpolish` devuelve márgenes, marco y paleta.
 - **Cápsulas.** Los botones entre separadores forman una cápsula
   (`capsule_height`); uno solo es un círculo (búsqueda). Los checables (vistas)
   son un control segmentado cuya píldora se desliza (`slide_ms`, resorte); ‹ ›
@@ -155,23 +156,30 @@ Dolphin imita el Finder de macOS 27 (tokens `[finder]` y los colores
 - **Título.** La ruta (`KUrlNavigator`) solo enseña la carpeta actual, en
   negrita y mayor (`title_scale`); Ctrl+L la edita. KIO borra tarde los botones
   que sobran, así que se actualiza en diferido.
-- **Barra lateral:** selección en píldora gris (`finder_sidebar_selected`) que
+- **Barra lateral** (el dock `placesDock`): selección en píldora gris (`finder_sidebar_selected`) que
   ocupa la fila y se desliza (`sidebar_slide_ms`), sin resaltado al pasar el
   ratón, texto sin cambiar de color. KIO dibuja el icono a 4 px del borde del
   elemento (y el texto relativo a la vista, no al elemento): el margen del dock
   (`sidebar_margin`) y un margen interior de la vista (`sidebar_icon_padding`)
   los dejan dentro de la píldora, que se pinta en la vista, bajo su viewport.
   Cada lugar mide `sidebar_row_height`.
-- **Búsqueda como en Finder:** al buscar, el campo de la barra de búsqueda de
-  Dolphin (`Search::Bar`) pasa a la toolbar en lugar de la lupa: cápsula con
-  lupa y el anillo de foco de `[focus_ring]`, de ancho fijo `search_width` (si
-  compartiera el espacio libre con el título, se redimensionarían en bucle). La barra queda
-  en una fila del color de la toolbar con Aquí / En todas partes y Filtrar; sin
-  ✕: Esc borra y luego cierra (el estilo reenvía Esc y ↓ a la barra). Al cerrar
-  vuelve la lupa; el campo se borra con su pestaña.
+- **Búsqueda como en Finder:** al buscar, la lupa de la toolbar se convierte
+  en un campo en cápsula con lupa y el anillo de foco de `[focus_ring]`, de
+  ancho fijo `search_width` (si compartiera el espacio libre con el título, se
+  redimensionarían en bucle). Ese campo es del estilo (si XMLGUI reconstruye la
+  toolbar se crea otro) y refleja el de la barra de búsqueda de Dolphin
+  (`Search::Bar`), que se queda en su barra reducido a 0×0: texto, Intro y
+  foco pasan de uno a otro (mover el de Dolphin dejaría a la barra con un
+  puntero colgante al reconstruirse la toolbar). La barra queda en una fila del
+  color de la toolbar con Aquí / En todas partes y Filtrar; sin ✕: Esc borra y
+  luego cierra (el estilo reenvía Esc y ↓ a la barra). Al cerrar vuelve la lupa.
 - **Lista:** franjas alternas redondeadas y separadas de los bordes
   (`row_inset`, `row_radius`), también bajo las filas vacías; Dolphin pinta las
-  suyas de borde a borde con `AlternateBase`, que el estilo deja transparente.
+  suyas de borde a borde con `AlternateBase`, que el estilo deja transparente
+  (también en los diálogos de Dolphin). Qué filas llevan franja lo dice el
+  propio Dolphin (`KItemListWidget::alternateBackground`, exportada por
+  `libdolphinprivate`, resuelta con `dlsym`), así que con «Mostrar en grupos»
+  la alternancia vuelve a empezar en cada grupo.
   Selección de fila completa con las mismas medidas; sin rectángulo de foco ni
   líneas de árbol. Cabecera de Finder: separadores cortos, columna ordenada en
   negrita con su chevron. La región de blur incluye la cabecera.
