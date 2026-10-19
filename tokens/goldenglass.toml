@@ -171,14 +171,21 @@ release_ms = 380
 release_overshoot = 2.2
 slide_ms = 280
 hover_ms = 150
-# Barra lateral: selección en píldora gris que se desliza entre elementos
-sidebar_selection_inset = 10   # px a cada lado
+# Barra lateral: selección en píldora gris que se desliza entre elementos;
+# el icono queda dentro de ella, como en Finder
+sidebar_margin = 9             # px del borde de la barra lateral a la píldora
+sidebar_icon_padding = 9       # px de la píldora al icono
+sidebar_row_height = 30        # px entre una fila y la siguiente (Finder: 31 pt)
 sidebar_selection_radius = 7
 sidebar_slide_ms = 240
 # Lista: franjas alternas y selección redondeadas, separadas de los bordes
 row_inset = 9
 row_radius = 6
 list_icon_size = 16      # iconos (y miniaturas) de la lista, como en Finder
+# Búsqueda: la lupa se convierte en un campo en cápsula dentro de la toolbar,
+# con el anillo de foco de [focus_ring]
+search_width = 230       # ancho máximo; se encoge antes de desbordar la toolbar
+search_min_width = 120
 
 # ---------------------------------------------------------------------------
 # Tipografía — familias son alias de fontconfig (ver fontconfig/)

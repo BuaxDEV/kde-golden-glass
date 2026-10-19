@@ -66,6 +66,8 @@ public:
     bool isIntegratedWindow(const QWidget *window) const;
 
     int toolBarItemMargin() const;
+    //* height of a place in the sidebar (-1: not Finder's sidebar)
+    int sidebarItemHeight(const QWidget *widget) const;
     QSize toolButtonSize(const QStyleOptionToolButton *option, const QWidget *widget) const;
 
     //* painting; each one returns false when the element is not Finder's
@@ -75,6 +77,8 @@ public:
     bool drawHeader(const QStyleOptionHeader *option, QPainter *painter, const QWidget *widget) const;
     bool drawNavigatorButton(const QWidget *widget) const;
     bool drawDockSeparator(const QStyleOption *option, QPainter *painter, const QWidget *widget) const;
+    //* search field moved into the toolbar (PE_PanelLineEdit and PE_FrameLineEdit)
+    bool drawSearchField(const QStyleOption *option, QPainter *painter, const QWidget *widget, bool frame) const;
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
@@ -143,6 +147,8 @@ private:
     void updateToolBarMargins(QWidget *window) const;
     //* invisible widget in front of the buttons, as wide as the sidebar
     QWidget *ensureLeadSpacer(QToolBar *toolBar) const;
+    //* Dolphin's search field goes into the toolbar, in place of the magnifier
+    void updateSearch(QWidget *bar) const;
     //* only the current folder of the breadcrumb stays visible
     void updateNavigator(QWidget *navigator) const;
 

@@ -1318,7 +1318,15 @@ void Style::drawPrimitive(PrimitiveElement element, const QStyleOption *option, 
                 return;
             }
             break;
+        case PE_PanelLineEdit:
+            if (_finder->drawSearchField(option, painter, widget, false)) {
+                return;
+            }
+            break;
         case PE_FrameLineEdit:
+            if (_finder->drawSearchField(option, painter, widget, true)) {
+                return;
+            }
             // the location is a title until it is edited (Ctrl+L)
             if (_finder->isFinderNavigator(widget)) {
                 const auto comboBox = widget->findChild<QComboBox *>();
@@ -4138,6 +4146,11 @@ QSize Style::itemViewItemSizeFromContents(const QStyleOption *option, const QSiz
 {
     // call base class
     const QSize size(ParentStyleClass::sizeFromContents(CT_ItemViewItem, option, contentsSize, widget));
+
+    // Dolphin as Finder: places keep Finder's row pitch
+    if (const int height = _finder->sidebarItemHeight(widget); height > 0) {
+        return QSize(size.width() + 2 * Metrics::ItemView_ItemMarginWidth, height);
+    }
     return expandSize(size, Metrics::ItemView_ItemMarginWidth);
 }
 

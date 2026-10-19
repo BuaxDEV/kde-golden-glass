@@ -28,7 +28,9 @@
 #include <QGuiApplication>
 #include <QHoverEvent>
 #include <QItemSelectionModel>
+#include <QKeyEvent>
 #include <QLayout>
+#include <QLineEdit>
 #include <QListView>
 #include <QMainWindow>
 #include <QMenuBar>
@@ -202,7 +204,10 @@ void Finder::polish(QWidget *widget)
         }
 
     } else if (qobject_cast<QDockWidget *>(widget) && qobject_cast<QMainWindow *>(widget->parentWidget())) {
-        // the toolbar follows the width of the sidebar
+        // the toolbar follows the width of the sidebar; the selection pill
+        // keeps Finder's distance to the sidebar edges
+        const int margin = Tokens::FinderSidebarMargin;
+        widget->setContentsMargins(margin, 2, margin, 2);
         widget->removeEventFilter(this);
         widget->installEventFilter(this);
 
@@ -212,6 +217,19 @@ void Finder::polish(QWidget *widget)
         widget->installEventFilter(this);
         updateNavigator(widget);
 
+    } else if (widget->inherits("Search::Bar")) {
+        widget->removeEventFilter(this);
+        widget->installEventFilter(this);
+        QPointer<QWidget> bar(widget);
+        QMetaObject::invokeMethod(
+            this,
+            [this, bar]() {
+                if (bar) {
+                    updateSearch(bar);
+                }
+            },
+            Qt::QueuedConnection);
+
     } else if (widget->inherits("KFilePlacesView")) {
         auto view = static_cast<QAbstractScrollArea *>(widget);
         // selected places keep the text color: the selection is a gray pill
@@ -220,6 +238,8 @@ void Finder::polish(QWidget *widget)
             palette.setColor(group, QPalette::HighlightedText, palette.color(group, QPalette::WindowText));
         }
         view->setPalette(palette);
+        // KIO draws the icon 4 px into the item: the spacing puts it inside the pill
+        static_cast<QListView *>(widget)->setSpacing(qMax(0, Tokens::FinderSidebarIconPadding - 4));
         view->viewport()->removeEventFilter(this);
         view->viewport()->installEventFilter(this);
 
@@ -300,6 +320,18 @@ bool Finder::isIntegratedWindow(const QWidget *window) const
 }
 
 //____________________________________________________________________
+int Finder::sidebarItemHeight(const QWidget *widget) const
+{
+    // the spacing (icon inside the pill) goes above and below every place:
+    // the rows keep Finder's pitch
+    auto view = qobject_cast<const QListView *>(widget);
+    if (!_active || !view || !view->inherits("KFilePlacesView")) {
+        return -1;
+    }
+    return Tokens::FinderSidebarRowHeight - 2 * view->spacing();
+}
+
+//____________________________________________________________________
 int Finder::toolBarItemMargin() const
 {
     // centers the capsules in the first row (QToolBar adds the frame width)
@@ -369,6 +401,12 @@ QSize Finder::toolButtonSize(const QStyleOptionToolButton *option, const QWidget
     auto button = qobject_cast<const QToolButton *>(widget);
     const bool hamburger = button && actionName(button) == QLatin1String("hamburger_menu");
     const bool hasMenu = option && showsMenuArrow(option) && !hamburger;
+
+    // the search field takes the place of the magnifier
+    if (button && actionName(button) == QLatin1String("toggle_search") && button->parentWidget()
+        && button->parentWidget()->property("_goldenglass_searchShown").toBool()) {
+        return QSize(0, Tokens::FinderCapsuleHeight);
+    }
 
     int width = Tokens::FinderButtonWidth + (hasMenu ? Tokens::FinderMenuArrow : 0);
     if (button && !hasMenu && groupFor(button).buttons.size() == 1) {
@@ -510,6 +548,10 @@ bool Finder::drawToolButton(const QStyleOptionToolButton *option, QPainter *pain
         return false;
     }
     auto button = static_cast<const QToolButton *>(widget);
+    if (button->width() <= 0) {
+        // the magnifier while the search field is shown
+        return true;
+    }
     const Group group = groupFor(button);
     if (group.buttons.isEmpty()) {
         return false;
@@ -754,6 +796,166 @@ bool Finder::drawDockSeparator(const QStyleOption *option, QPainter *painter, co
         _helper.renderTransparentArea(painter, option->rect);
     }
     painter->fillRect(option->rect, background);
+    painter->restore();
+    return true;
+}
+
+//____________________________________________________________________
+void Finder::updateSearch(QWidget *bar) const
+{
+    auto mainWindow = qobject_cast<QMainWindow *>(bar->window());
+    QToolBar *toolBar = mainWindow ? mainWindow->findChild<QToolBar *>(QStringLiteral("mainToolBar"), Qt::FindDirectChildrenOnly) : nullptr;
+    if (!toolBar || !isFinderToolBar(toolBar)) {
+        return;
+    }
+
+    // the field is the line edit next to the "Here" / "Everywhere" buttons
+    auto editor = qobject_cast<QLineEdit *>(bar->property("_goldenglass_searchEditor").value<QObject *>());
+    if (!editor) {
+        const auto edits = bar->findChildren<QLineEdit *>();
+        for (QLineEdit *edit : edits) {
+            if (!edit->isClearButtonEnabled() || !edit->parentWidget()) {
+                continue;
+            }
+            const auto buttons = edit->parentWidget()->findChildren<QToolButton *>(Qt::FindDirectChildrenOnly);
+            if (std::any_of(buttons.cbegin(), buttons.cend(), [](const QToolButton *button) {
+                    return button->isCheckable();
+                })) {
+                editor = edit;
+                break;
+            }
+        }
+        if (!editor) {
+            return;
+        }
+        bar->setProperty("_goldenglass_searchEditor", QVariant::fromValue<QObject *>(editor));
+    }
+
+    auto action = qobject_cast<QAction *>(editor->property("_goldenglass_searchAction").value<QObject *>());
+    if (!action) {
+        // the bar keeps one row: Here / Everywhere and Filter; Esc closes it
+        QWidget *contents = editor->parentWidget();
+        auto top = contents ? qobject_cast<QBoxLayout *>(contents->layout()) : nullptr;
+        if (!top || top->count() < 2) {
+            return;
+        }
+        auto firstRow = qobject_cast<QBoxLayout *>(top->itemAt(0)->layout());
+        QLayout *secondRow = top->itemAt(1)->layout();
+        if (!firstRow || !secondRow) {
+            return;
+        }
+        const auto buttons = contents->findChildren<QToolButton *>(Qt::FindDirectChildrenOnly);
+        for (QToolButton *button : buttons) {
+            if (firstRow->indexOf(button) < 0) {
+                continue;
+            }
+            if (button->menu()) {
+                firstRow->removeWidget(button);
+                secondRow->addWidget(button);
+            } else {
+                button->hide();
+            }
+        }
+        firstRow->removeWidget(editor);
+
+        // in the toolbar, where the magnifier is
+        QAction *before = nullptr;
+        const auto actions = toolBar->actions();
+        for (QAction *candidate : actions) {
+            if (candidate->objectName() == QLatin1String("toggle_search")) {
+                before = candidate;
+                break;
+            }
+        }
+        editor->setProperty("_goldenglass_finderSearch", true);
+        editor->setProperty("_goldenglass_searchBar", QVariant::fromValue<QObject *>(bar));
+        // it shrinks (down to a minimum) before the toolbar overflows
+        editor->setFixedHeight(Tokens::FinderCapsuleHeight);
+        editor->setMinimumWidth(Tokens::FinderSearchMinWidth);
+        editor->setMaximumWidth(Tokens::FinderSearchWidth);
+        editor->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        editor->setTextMargins(Tokens::FinderCapsuleHeight * 2 / 3, 0, 2, 0);
+        editor->installEventFilter(const_cast<Finder *>(this));
+        action = toolBar->insertWidget(before, editor);
+        editor->setProperty("_goldenglass_searchAction", QVariant::fromValue<QObject *>(action));
+
+        // the field goes with its tab (the action deletes it)
+        QPointer<QAction> guard(action);
+        connect(bar, &QObject::destroyed, toolBar, [guard]() {
+            delete guard.data();
+        });
+    }
+
+    // shown while its bar is searching in a visible tab
+    const bool searching = bar->isEnabled() && bar->isVisible();
+    if (action->isVisible() != searching) {
+        action->setVisible(searching);
+    }
+
+    bool shown = false;
+    const auto actions = toolBar->actions();
+    for (QAction *candidate : actions) {
+        QWidget *widget = toolBar->widgetForAction(candidate);
+        shown = shown || (candidate->isVisible() && widget && widget->property("_goldenglass_finderSearch").toBool());
+    }
+    if (toolBar->property("_goldenglass_searchShown").toBool() != shown) {
+        toolBar->setProperty("_goldenglass_searchShown", shown);
+        for (QAction *candidate : actions) {
+            if (candidate->objectName() == QLatin1String("toggle_search")) {
+                if (QWidget *magnifier = toolBar->widgetForAction(candidate)) {
+                    magnifier->updateGeometry();
+                    magnifier->update();
+                }
+            }
+        }
+    }
+}
+
+//____________________________________________________________________
+bool Finder::drawSearchField(const QStyleOption *option, QPainter *painter, const QWidget *widget, bool frame) const
+{
+    if (!widget || !widget->property("_goldenglass_finderSearch").toBool()) {
+        return false;
+    }
+    if (frame) {
+        // all drawn with the panel
+        return true;
+    }
+
+    // capsule as the toolbar buttons, magnifier inside, macOS focus ring
+    const QPalette &palette(option->palette);
+    const bool focus = (option->state & QStyle::State_HasFocus) || widget->hasFocus();
+    const qreal ring = Tokens::FocusRingWidth;
+    const QRectF body = QRectF(widget->rect()).adjusted(ring - 0.5, ring - 0.5, -ring + 0.5, -ring + 0.5);
+    const qreal radius = body.height() / 2;
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing);
+    painter->setPen(QPen(token(Tokens::FinderCapsuleBorderLight, Tokens::FinderCapsuleBorderDark, palette), 1));
+    painter->setBrush(token(Tokens::FinderCapsuleLight, Tokens::FinderCapsuleDark, palette));
+    painter->drawRoundedRect(body, radius, radius);
+
+    if (focus) {
+        QColor accent(palette.color(QPalette::Active, QPalette::Highlight));
+        accent.setAlphaF(Tokens::FocusRingAlpha);
+        painter->setPen(QPen(accent, ring));
+        painter->setBrush(Qt::NoBrush);
+        const QRectF ringRect = body.adjusted(-ring / 2 + 0.5, -ring / 2 + 0.5, ring / 2 - 0.5, ring / 2 - 0.5);
+        painter->drawRoundedRect(ringRect, ringRect.height() / 2, ringRect.height() / 2);
+    }
+
+    // magnifier, in the placeholder color
+    QColor glyph(palette.color(QPalette::Text));
+    glyph.setAlphaF(glyph.alphaF() * 0.6);
+    QPen pen(glyph, 1.6);
+    pen.setCapStyle(Qt::RoundCap);
+    painter->setPen(pen);
+    painter->setBrush(Qt::NoBrush);
+    const qreal r = 5.0;
+    const QPointF c(body.left() + body.height() / 2 + 1, body.center().y() - 1);
+    painter->drawEllipse(c, r, r);
+    const qreal d = r * 0.7071;
+    painter->drawLine(QPointF(c.x() + d + 0.7, c.y() + d + 0.7), QPointF(c.x() + d + 4.2, c.y() + d + 4.2));
     painter->restore();
     return true;
 }
@@ -1011,6 +1213,48 @@ bool Finder::eventFilter(QObject *object, QEvent *event)
         return false;
     }
     auto widget = static_cast<QWidget *>(object);
+
+    if (widget->inherits("Search::Bar")) {
+        switch (event->type()) {
+        case QEvent::Paint: {
+            // the scope row continues the toolbar surface, like the header
+            QPainter painter(widget);
+            bool clear = false;
+            const QColor background = sidebarBackground(widget, widget->palette(), &clear);
+            if (clear) {
+                _helper.renderTransparentArea(&painter, widget->rect());
+            }
+            painter.fillRect(widget->rect(), background);
+            break;
+        }
+        case QEvent::Show:
+        case QEvent::Hide:
+        case QEvent::EnabledChange:
+            updateSearch(widget);
+            break;
+        default:
+            break;
+        }
+        return false;
+    }
+
+    if (widget->property("_goldenglass_finderSearch").toBool()) {
+        // the field left its Search::Bar: Esc (clear, then close) and ↓ (to the
+        // view) still go to it
+        auto bar = qobject_cast<QWidget *>(widget->property("_goldenglass_searchBar").value<QObject *>());
+        auto keyEvent = static_cast<QKeyEvent *>(event);
+        if (bar && event->type() == QEvent::KeyPress && keyEvent->key() == Qt::Key_Escape) {
+            QKeyEvent copy(QEvent::KeyPress, keyEvent->key(), keyEvent->modifiers(), keyEvent->text());
+            QCoreApplication::sendEvent(bar, &copy);
+            return true;
+        }
+        if (bar && event->type() == QEvent::KeyRelease && keyEvent->key() == Qt::Key_Down) {
+            QKeyEvent copy(QEvent::KeyRelease, keyEvent->key(), keyEvent->modifiers(), keyEvent->text());
+            QCoreApplication::sendEvent(bar, &copy);
+            return true;
+        }
+        return false;
+    }
 
     if (widget->inherits("KUrlNavigator")) {
         if (event->type() == QEvent::LayoutRequest || event->type() == QEvent::Resize || event->type() == QEvent::Show
@@ -1278,7 +1522,8 @@ void Finder::paintSidebarSelection(QWidget *viewport) const
     }
 
     // the first place of a section also holds its header: the pill covers the
-    // item only, as tall as a place without header
+    // item only, as tall as a place without header, plus the spacing around it
+    // (the whole row, edge to edge)
     QRect itemRect = view->visualRect(index);
     int rowHeight = itemRect.height();
     const int rows = view->model()->rowCount(view->rootIndex());
@@ -1292,8 +1537,8 @@ void Finder::paintSidebarSelection(QWidget *viewport) const
             rowHeight = qMin(rowHeight, height);
         }
     }
-    const qreal inset = Tokens::FinderSidebarSelectionInset;
-    const QRectF target(inset, itemRect.bottom() + 1 - rowHeight, viewport->width() - 2 * inset, rowHeight);
+    const qreal spacing = view->spacing();
+    const QRectF target(0, itemRect.bottom() + 1 - rowHeight - spacing / 2, viewport->width(), rowHeight + spacing);
 
     const qreal progress = selection.slide->currentValue().toReal();
     if (selection.index != index) {
