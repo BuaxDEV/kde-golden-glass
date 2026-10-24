@@ -39,6 +39,9 @@ public:
     }
 
 private:
+    //* assign the current config data to the widgets
+    void loadWidgets();
+
     std::list<QString> _shadowSizes = {"None", "Small", "Medium", "Large", "VeryLarge"};
 
 Q_SIGNALS:
