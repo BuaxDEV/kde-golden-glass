@@ -865,10 +865,16 @@ dentro de «Vidrio».
 - **CI ✅** (`.github/workflows/ci.yml` → `tools/ci.sh`): en cada PR y push a
   `main`, en un contenedor `archlinux:latest`, instala las dependencias de
   compilación del PKGBUILD (con caché de pacman), comprueba Python, bash y las
-  traducciones, ejecuta los generadores, compila el C++ y pasa ctest, y hace
-  `makepkg` del commit; los paquetes quedan como artefacto. El mismo script se
-  ejecuta en local con `podman run --rm -v "$PWD":/src:Z -w /src
-  docker.io/library/archlinux:latest tools/ci.sh`.
+  traducciones, comprueba los módulos QML y la versión del shell contra el
+  Plasma de Arch (`tools/check_plasma_compat.py`), ejecuta los generadores,
+  compila el C++ y pasa ctest, y hace `makepkg` del commit; los paquetes quedan
+  como artefacto. El mismo script se ejecuta en local con `podman run --rm -v
+  "$PWD":/src:Z -w /src docker.io/library/archlinux:latest tools/ci.sh`.
+- **Plasma next** (`.github/workflows/plasma-next.yml`): cada lunes, la misma CI
+  sobre `main` contra el Arch actual y contra `[kde-unstable]`
+  (`GOLDENGLASS_CI_REPOS=kde-unstable`), que Arch llena con las betas de Plasma
+  unas semanas antes de cada versión: avisa de lo que se va a romper antes de
+  que llegue a stable.
 - KDE Store: opcional y posterior, solo para partes no compiladas.
 
 ## 6. Repositorio y licencias
@@ -918,7 +924,7 @@ Refracción en las ventanas de las apps.
 |---|---|
 | Opacidad del Plasma Style no ajustable en vivo | Resuelto en el spike de F3: regenerar + alternar id (o rebote por Breeze); plan B: 3 sub-temas fijos |
 | Divergencia del fork de Darkly respecto a upstream | Renombrado limpio y registro de cambios propios para poder hacer rebase |
-| Roturas por actualizaciones de Qt/KDE (rolling) | PKGBUILD con rebuild; CI contra la versión actual de Arch |
+| Roturas por actualizaciones de Qt/KDE (rolling) | PKGBUILD con rebuild; CI contra la versión actual de Arch y, cada semana, contra `[kde-unstable]` (betas de Plasma) |
 | Alias de fuente no resuelto por Qt | Plan B descrito en 4.6 |
 | libadwaita ignora temas | Solo colores; documentado |
 | Los plasmoids usan módulos QML privados de Plasma (sin API estable) | Mínimo Plasma 6.8; probar en el sandbox tras cada actualización de Plasma |

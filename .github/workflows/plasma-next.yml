@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Compila y prueba main contra el Arch actual y contra [kde-unstable] (betas de
+# Plasma, KWin y Frameworks) cada semana, sin esperar a un commit: avisa de lo
+# que va a romper la próxima versión de Plasma antes de que llegue a stable.
+name: Plasma next
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+  # el cron solo corre desde main: los cambios de la CI se prueban en su PR
+  pull_request:
+    paths:
+      - .github/workflows/plasma-next.yml
+      - tools/ci.sh
+
+permissions:
+  contents: read
+
+concurrency:
+  group: plasma-next
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.repos }}
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        repos: [stable, kde-unstable]
+    steps:
+      - name: Install git
+        run: pacman -Sy --noconfirm --needed git
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Build, test and package
+        env:
+          GOLDENGLASS_CI_REPOS: ${{ matrix.repos }}
+        run: tools/ci.sh

@@ -16,6 +16,10 @@
 #
 #   podman run --rm -v "$PWD":/src:Z -w /src docker.io/library/archlinux:latest tools/ci.sh
 #
+# Con GOLDENGLASS_CI_REPOS=kde-unstable, contra la próxima versión de Plasma:
+# activa [kde-unstable] y los repos de testing de los que depende (lo usa
+# .github/workflows/plasma-next.yml). Arch solo lo llena durante las betas.
+#
 # Instala paquetes y crea un usuario: solo se ejecuta en CI o en un contenedor.
 
 set -euo pipefail
@@ -30,6 +34,13 @@ if [[ -z ${CI:-} && ! -e /.dockerenv && ! -e /run/.containerenv ]]; then
 fi
 
 step() { printf '\n==> %s\n' "$*"; }
+
+if [[ ${GOLDENGLASS_CI_REPOS:-} == kde-unstable ]]; then
+  step "Repos: kde-unstable, core-testing, extra-testing"
+  # por encima de [core] y en este orden (wiki de Arch, «Official repositories»)
+  sed -i '0,/^\[core\]/s//[kde-unstable]\nInclude = \/etc\/pacman.d\/mirrorlist\n\n[core-testing]\nInclude = \/etc\/pacman.d\/mirrorlist\n\n[extra-testing]\nInclude = \/etc\/pacman.d\/mirrorlist\n\n[core]/' /etc/pacman.conf
+  grep -E '^\[' /etc/pacman.conf
+fi
 
 step "Dependencias de compilación"
 mapfile -t makedeps < <(cd "$ROOT/packaging/goldenglass" && startdir=$PWD && source PKGBUILD && printf '%s\n' "${makedepends[@]}")
