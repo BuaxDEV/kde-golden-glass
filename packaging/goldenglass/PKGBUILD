@@ -122,6 +122,9 @@ package_goldenglass-kstyle() {
   optdepends=('pipewire: listen to the sounds in the Sound Effects settings module')
 
   DESTDIR="$pkgdir" cmake --install build
+  # aviso de pacman si el efecto no es de la versión de KWin instalada
+  install -Dm755 goldenglass/tools/goldenglass-kwin-check "$pkgdir/usr/lib/goldenglass/kwin-check"
+  install -Dm644 goldenglass/packaging/goldenglass/goldenglass-kwin-check.hook -t "$pkgdir/usr/share/libalpm/hooks/"
   install -Dm644 goldenglass/AUTHORS "$pkgdir/usr/share/doc/$pkgname/AUTHORS"
   install -Dm644 goldenglass/UPSTREAM.md "$pkgdir/usr/share/doc/$pkgname/UPSTREAM.md"
   _docs
@@ -151,6 +154,9 @@ package_goldenglass-plasma() {
   cp -r gen/plasma/desktoptheme/GoldenGlass "$data/plasma/desktoptheme/"
   cp -r gen/plasma/look-and-feel/org.goldenglass.{light,dark}.desktop "$data/plasma/look-and-feel/"
   cp -r goldenglass/plasma/shell/org.goldenglass.desktop "$data/plasma/shells/"
+  # sin views/ ni lockscreen/ si el shell no está portado al Plasma instalado
+  install -Dm755 goldenglass/tools/goldenglass-plasma-guard "$pkgdir/usr/lib/goldenglass/plasma-guard"
+  install -Dm644 goldenglass/packaging/goldenglass/goldenglass-plasma-guard.hook -t "$data/libalpm/hooks/"
   cp -r gen/plasma/plasmoids/org.goldenglass.* "$data/plasma/plasmoids/"
   install -dm755 "$data/kwin/scripts"
   cp -r goldenglass/plasma/kwin/scripts/org.goldenglass.shortcuts "$data/kwin/scripts/"

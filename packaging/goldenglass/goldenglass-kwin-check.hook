@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Avisa si el efecto de vidrio no es de la versión de KWin instalada
+# (tools/goldenglass-kwin-check).
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = kwin
+Target = goldenglass-kstyle
+
+[Action]
+Description = Checking the GoldenGlass glass effect against KWin...
+When = PostTransaction
+Exec = /usr/lib/goldenglass/kwin-check

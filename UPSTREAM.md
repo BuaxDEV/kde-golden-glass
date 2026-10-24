@@ -77,7 +77,14 @@ merged into `org.kde.plasma.shell`, `ContainmentItem`, the virtual keyboard
 counts as touching a window). Next merge base: **6.8.1**.
 
 This file must load: if it fails, plasmashell crashes instead of falling back
-to the upstream panel (Plasma 6.8.1), and the session has no desktop.
+to the upstream panel (Plasma 6.8.1), and the session has no desktop. The
+package guards against it: `X-GoldenGlass-PlasmaVersion` in the shell's
+`metadata.json` is the Plasma version `views/` and `lockscreen/` are ported to,
+and a pacman hook (`tools/goldenglass-plasma-guard`) deletes both when
+`plasma-desktop` is another major.minor, so Plasma's own are used until
+`goldenglass-plasma` is rebuilt with a port. CI fails on the same mismatch and
+on any QML module we import that is no longer installed
+(`tools/check_plasma_compat.py`).
 
 ## Porting a new Plasma version (shell)
 
@@ -98,7 +105,7 @@ conflicts, then check that the panel loads (`systemctl --user restart
 plasma-plasmashell`, no `Panel.qml` errors in `journalctl --user`) and the lock
 screen loads (`QT_QPA_PLATFORM=offscreen timeout 8 /usr/lib/kscreenlocker_greet
 --testing --shell org.goldenglass.desktop`, no `Failed to load lockscreen QML`
-in the journal). Update the merge bases above.
+in the journal). Update the merge bases above and `X-GoldenGlass-PlasmaVersion`.
 
 ## KWin glass effect (`kwin-effect/`)
 
@@ -115,7 +122,8 @@ corner radii from the blur region) and reading the glass level from
 It reads the same `Effect-blur` settings as KWin's Blur.
 
 The plugin only loads with the KWin version it was built against
-(`KWIN_PLUGIN_VERSION_STRING`). When KWin updates, rebuild
+(`KWIN_PLUGIN_VERSION_STRING`; a pacman hook, `tools/goldenglass-kwin-check`,
+says so after a KWin update). When KWin updates, rebuild
 `goldenglass-kstyle`; when KWin changes its blur, diff the new upstream
 `src/plugins/blur` against the base commit and port the changes by hand.
 

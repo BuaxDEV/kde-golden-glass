@@ -6,6 +6,9 @@
 #
 #   tools/install.sh            genera e instala (copia)
 #   tools/install.sh --dev      genera e instala con symlinks (iterar sin reinstalar)
+#                               ~/.local manda sobre el paquete y el hook de pacman que
+#                               protege el shell no lo cubre: la sesión usa el árbol de
+#                               trabajo tal cual (rama, cambios a medias).
 #   tools/install.sh --uninstall
 #
 # No aplica nada: para usar el tema, elegir el Global Theme en Preferencias del

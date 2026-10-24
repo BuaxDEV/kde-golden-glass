@@ -1,0 +1,32 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Hook de pacman de goldenglass-plasma (goldenglass-plasma-guard.hook), como
+# root tras instalar o actualizar plasma-desktop o goldenglass-plasma.
+#
+# views/ y lockscreen/ del shell son copias de plasma-desktop portadas a una
+# versión (X-GoldenGlass-PlasmaVersion de metadata.json). Con otro Plasma
+# pueden no cargar, y si views/Panel.qml no carga plasmashell se cae en vez de
+# usar el panel de Plasma. Si la versión no coincide se borran: el shell usa
+# las de org.kde.plasma.desktop (X-Plasma-FallbackPackage) hasta reinstalar
+# goldenglass-plasma portado al Plasma instalado.
+shell=${GOLDENGLASS_SHELL:-/usr/share/plasma/shells/org.goldenglass.desktop}
+[ -f "$shell/metadata.json" ] || exit 0
+
+ported=$(/usr/bin/python3 -I -c 'import json, sys; print(json.load(open(sys.argv[1])).get("X-GoldenGlass-PlasmaVersion", ""))' "$shell/metadata.json")
+# 1:6.8.1-1.1 -> 6.8
+plasma=$(pacman -Q plasma-desktop 2>/dev/null | awk '{print $2}' | sed 's/^[0-9]*://' | cut -d. -f1,2)
+[ -n "$ported" ] && [ -n "$plasma" ] || exit 0
+[ "$ported" = "$plasma" ] && exit 0
+
+removed=
+for dir in views lockscreen; do
+    if [ -d "$shell/contents/$dir" ]; then
+        rm -rf "$shell/contents/$dir"
+        removed="$removed $dir/"
+    fi
+done
+[ -n "$removed" ] || exit 0
+echo "GoldenGlass: el shell está portado a Plasma $ported y está instalado Plasma $plasma."
+echo "  Se usa el panel y la pantalla de bloqueo de Plasma (quitados:$removed): el dock"
+echo "  queda sin placa de vidrio y la barra de menús con el fondo de Plasma."
+echo "  Vuelven al instalar goldenglass-plasma portado a Plasma $plasma (UPSTREAM.md)."

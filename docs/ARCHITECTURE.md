@@ -928,8 +928,8 @@ Refracción en las ventanas de las apps.
 | La especificación de sonidos recurre a `freedesktop` para lo que falta | Los nombres no cubiertos llevan un `<nombre>.disabled` |
 | Activar Plymouth regenera el initramfs con root | Comando explícito o «Aplicar» con pkexec; avisos de `splash` y del hook; si falla el initramfs se mantiene el tema anterior |
 | La fuente del tema entra en cada initramfs | Inter Variable (0,9 MB) en vez de `Inter.ttc` (13 MB) |
-| El dock depende de `views/Panel.qml` copiado de Plasma | Cambio mínimo y documentado en `UPSTREAM.md`; se compara con cada versión de Plasma |
+| El dock depende de `views/Panel.qml` copiado de Plasma; si no carga, plasmashell se cae (pasó con Plasma 6.8) | Cambio mínimo y documentado en `UPSTREAM.md` (merge a tres vías por versión); `X-GoldenGlass-PlasmaVersion` + hook de pacman que quita `views/` y `lockscreen/` con otro Plasma; la CI comprueba módulos QML y versión (`tools/check_plasma_compat.py`) |
 | PanelView fija la región de entrada desde el borde superior de la placa | Aceptado: la ampliación se recoge al salir de la placa (4.13) |
 | El dock unificado pierde funciones de `icontasks` | Mismo `TasksModel`; menú, vistas previas, arrastre y soltar archivos reimplementados (4.13) |
-| La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle`; `goldenglass-glass --check` al iniciar sesión reactiva Blur si el efecto no carga; fork documentado en `UPSTREAM.md` |
+| La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle` (un hook de pacman lo avisa al actualizar KWin); `goldenglass-glass --check` al iniciar sesión reactiva Blur si el efecto no carga; fork documentado en `UPSTREAM.md` |
 | Coste de GPU de la refracción | Solo superficies de Plasma; dos muestras más por píxel solo en la banda del borde; interruptor en el módulo Vidrio |
