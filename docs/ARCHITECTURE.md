@@ -34,8 +34,8 @@ los tokens parten de valores iniciales que se calibran contra capturas.
 
 ## 2. Plataforma soportada
 
-- **Plasma ≥ 6.7, solo Wayland.** Qt 6. Sin soporte X11.
-- Desarrollo sobre CachyOS (Plasma 6.7.5, Qt 6.12, KWin 6.7.5).
+- **Plasma ≥ 6.8, solo Wayland.** Qt 6. Sin soporte X11.
+- Desarrollo sobre CachyOS (Plasma 6.8.1, Qt 6.12, KWin 6.8.1).
 
 ## 3. Principio rector: tokens de diseño como única fuente de verdad
 
@@ -269,7 +269,7 @@ dentro de «Vidrio».
   abajo). Desde Plasma 6 vive en el **paquete de shell**, no en el Global Theme:
   - `plasma/shell/org.goldenglass.desktop` solo trae `lockscreen/` y hereda el
     resto de `org.kde.plasma.desktop` (`X-Plasma-FallbackPackage`).
-  - `lockscreen/` es la de plasma-desktop 6.7.5 con cambios mínimos (ver
+  - `lockscreen/` es la de plasma-desktop 6.8.1 con cambios mínimos (ver
     `UPSTREAM.md`).
   - Efecto: plasmashell guarda el layout en
     `plasma-org.goldenglass.desktop-appletsrc`. El layout previo del usuario no se
@@ -908,7 +908,7 @@ API interna de KWin y de Plasma, al final.
 
 ## 8. Fuera de alcance
 
-X11 y Plasma < 6.7. Gestores de inicio de sesión distintos de SDDM y Plasma
+X11 y Plasma < 6.8. Gestores de inicio de sesión distintos de SDDM y Plasma
 Login Manager (GDM, LightDM…). Un fork del greeter de Plasma Login Manager.
 Refracción en las ventanas de las apps.
 
@@ -921,7 +921,7 @@ Refracción en las ventanas de las apps.
 | Roturas por actualizaciones de Qt/KDE (rolling) | PKGBUILD con rebuild; CI contra la versión actual de Arch |
 | Alias de fuente no resuelto por Qt | Plan B descrito en 4.6 |
 | libadwaita ignora temas | Solo colores; documentado |
-| Los plasmoids usan módulos QML privados de Plasma (sin API estable) | Mínimo Plasma 6.7; probar en el sandbox tras cada actualización de Plasma |
+| Los plasmoids usan módulos QML privados de Plasma (sin API estable) | Mínimo Plasma 6.8; probar en el sandbox tras cada actualización de Plasma |
 | Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` (barra y dock comparten SVG) | `radius.dock ≤ menubar_height / 2` (14 px); el generador lo valida |
 | Plasma Login Manager no admite temas: el diseño propio solo se ve con SDDM | En PLM se aplica fondo y sincronización (el módulo lo explica); si KDE añade temas, se porta el QML de SDDM |
 | Copiar ajustes de un usuario al home de `plasmalogin` como root | Lectura como el usuario y escritura como `plasmalogin` en procesos hijo sin privilegios; probado con un enlace a `/etc/shadow` |
