@@ -34,6 +34,7 @@ ColumnLayout {
     PlasmaComponents3.Label {
         Layout.alignment: Qt.AlignHCenter
         text: previews.appName
+        textFormat: Text.PlainText
         font.weight: Font.DemiBold
     }
 
@@ -90,6 +91,7 @@ ColumnLayout {
                     Layout.preferredWidth: previews.thumbWidth
                     horizontalAlignment: Text.AlignHCenter
                     text: entry.modelData.title
+                    textFormat: Text.PlainText
                     elide: Text.ElideRight
                     font: Kirigami.Theme.smallFont
                 }
