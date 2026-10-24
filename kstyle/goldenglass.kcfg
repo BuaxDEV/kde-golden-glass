@@ -21,6 +21,14 @@
       <default>true</default>
     </entry>
 
+    <!-- GoldenGlass: apps sin barra de título de KWin (app_id de Wayland): el
+         estilo pinta los semáforos sobre su barra lateral. Compartido con el
+         estilo; solo en las ventanas con menú (las principales). -->
+    <entry name="IntegratedTitleBarApps" type="StringList">
+      <label>Applications whose main windows draw the window buttons in their toolbar</label>
+      <default code="true">QString::fromLatin1(GoldenGlass::Tokens::IntegratedTitleBarApps).split(QLatin1Char(','), Qt::SkipEmptyParts)</default>
+    </entry>
+
     <!-- scrollbar transient -->
     <entry name="ScrollBarTransient" type="Bool">
       <default>false</default>

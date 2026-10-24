@@ -260,6 +260,13 @@ bool Decoration::init()
     connect(c, &KDecoration3::DecoratedWindow::maximizedHorizontallyChanged, this, &Decoration::recalculateBorders);
     connect(c, &KDecoration3::DecoratedWindow::maximizedVerticallyChanged, this, &Decoration::recalculateBorders);
     connect(c, &KDecoration3::DecoratedWindow::shadedChanged, this, &Decoration::recalculateBorders);
+    // the menu bar tells the main windows of the integrated title bar apps
+    // apart from their dialogs (see SettingsProvider::internalSettings)
+    connect(c, &KDecoration3::DecoratedWindow::hasApplicationMenuChanged, this, [this]() {
+        reconfigure();
+        updateTitleBar();
+        updateButtonsGeometry();
+    });
     connect(c, &KDecoration3::DecoratedWindow::captionChanged, this, [this]() {
         // update the caption area
         update(titleBar());
@@ -614,8 +621,10 @@ if (m_internalSettings->floatingTitlebar()){
     } else if (hasNoSideBorders() && !isMaximizedHorizontally()) {
         extSides = extSize;
     }
+    // without title bar nor top border, keep the top edge resizable
+    const qreal extTop = (hideTitleBar() && borderTop() <= 0 && !isMaximizedVertically()) ? extSize : 0;
 
-    setResizeOnlyBorders(QMarginsF(extSides, 0, extSides, extBottom));
+    setResizeOnlyBorders(QMarginsF(extSides, extTop, extSides, extBottom));
 #if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
     qreal bottomLeftRadius = 0;
     qreal bottomRightRadius = 0;
@@ -632,7 +641,15 @@ if (m_internalSettings->floatingTitlebar()){
     }
 #endif
 #if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
-    setBorderRadius(KDecoration3::BorderRadius(0, 0, bottomRightRadius, bottomLeftRadius));
+    // without title bar the client reaches the top: round its top corners too,
+    // except where they touch the screen edges (as the bottom ones)
+    qreal topLeftRadius = 0;
+    qreal topRightRadius = 0;
+    if (hideTitleBar() && m_internalSettings->roundedCorners() && !isTopEdge()) {
+        topLeftRadius = isLeftEdge() ? 0 : m_scaledCornerRadius;
+        topRightRadius = isRightEdge() ? 0 : m_scaledCornerRadius;
+    }
+    setBorderRadius(KDecoration3::BorderRadius(topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius));
 #endif
     if (isMaximized() || !outlinesEnabled()) {
 #if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)

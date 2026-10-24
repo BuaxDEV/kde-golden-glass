@@ -286,6 +286,18 @@ QRegion BlurHelper::blurRegion(QWidget *widget) const
                 // moved to blurSettingsDialogRegion
             }
 
+            // GoldenGlass (Finder): the column header continues the toolbar
+            // glass (goldenglassfinder.cpp records its height)
+            if (StyleConfigData::dolphinSidebarOpacity() < 100) {
+                const QList<QAbstractScrollArea *> containers = widget->findChildren<QAbstractScrollArea *>();
+                for (QAbstractScrollArea *container : containers) {
+                    const int headerHeight = container->property("_goldenglass_finderHeader").toInt();
+                    if (headerHeight > 0 && container->isVisible() && container->inherits("KItemListContainer")) {
+                        region += QRect(container->mapTo(widget, QPoint(0, 0)), QSize(container->width(), headerHeight));
+                    }
+                }
+            }
+
             // Dolphin main view
             if (StyleConfigData::dolphinViewOpacity() < 100) {
                 QList<QAbstractScrollArea *> itemContainers = widget->findChildren<QAbstractScrollArea *>();

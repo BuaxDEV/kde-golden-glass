@@ -10,6 +10,7 @@ tokens/goldenglass.toml. CMake la genera al configurar (ver CMakeLists.txt).
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import plasma_theme
@@ -46,6 +47,7 @@ def header(tokens: dict) -> str:
     tl = tokens["traffic_lights"]
     shadow = tokens["shadow"]["active"]
     glass = round(plasma_theme.glass_alpha(tokens) * 100)
+    finder = tokens["finder"]
     align = tokens["decoration"]["title_alignment"]
     if align not in TITLE_ALIGNMENTS:
         raise SystemExit(f"decoration.title_alignment inválido: {align!r} (opciones: {', '.join(TITLE_ALIGNMENTS)})")
@@ -89,6 +91,35 @@ def header(tokens: dict) -> str:
         ("DockShowRecent", bool(tokens["dock"]["show_recent"]), "apps recientes en el dock"),
         ("Menús", None, None),
         ("MenuIcons", bool(tokens["menu"]["show_icons"]), "iconos junto a los comandos de los menús"),
+        ("Finder (Dolphin con la barra de título integrada; px lógicos, ms)", None, None),
+        ("IntegratedTitleBarApps", ",".join(finder["apps"]), "app_id separados por comas"),
+        ("FinderToolBarHeight", int(finder["toolbar_height"]), "primera fila: semáforos + toolbar"),
+        ("FinderCapsuleHeight", int(finder["capsule_height"]), "alto de las cápsulas"),
+        ("FinderCapsuleGap", int(finder["capsule_gap"]), "entre cápsulas"),
+        ("FinderButtonWidth", int(finder["button_width"]), "cada botón de una cápsula"),
+        ("FinderIconSize", int(finder["icon_size"]), "glifos de la toolbar"),
+        ("FinderMenuArrow", int(finder["menu_arrow"]), "chevron de los botones con menú"),
+        ("FinderTitleScale", float(finder["title_scale"]), "título respecto al texto normal"),
+        ("FinderSelectedInset", int(finder["selected_inset"]), "píldora del control segmentado"),
+        ("FinderPressScale", float(finder["press_scale"]), "escala al pulsar"),
+        ("FinderPressMs", int(finder["press_ms"]), "pulsación"),
+        ("FinderReleaseMs", int(finder["release_ms"]), "rebote al soltar"),
+        ("FinderReleaseOvershoot", float(finder["release_overshoot"]), "rebote (Easing.OutBack)"),
+        ("FinderSlideMs", int(finder["slide_ms"]), "píldora del control segmentado"),
+        ("FinderSlideOvershoot", float(finder["slide_overshoot"]), "resorte de esa píldora"),
+        ("FinderDividerHeight", int(finder["divider_height"]), "líneas dentro de las cápsulas"),
+        ("FinderHeaderPadding", int(finder["header_padding"]), "margen del texto de la cabecera"),
+        ("FinderHeaderArrowWidth", int(finder["header_arrow_width"]), "hueco del chevron de la cabecera"),
+        ("FinderHoverMs", int(finder["hover_ms"]), "resaltado al pasar el ratón"),
+        ("FinderSidebarMargin", int(finder["sidebar_margin"]), "borde de la barra lateral → selección"),
+        ("FinderSidebarIconPadding", int(finder["sidebar_icon_padding"]), "selección → icono"),
+        ("FinderSidebarRowHeight", int(finder["sidebar_row_height"]), "paso entre filas de la barra lateral"),
+        ("FinderSidebarSelectionRadius", int(finder["sidebar_selection_radius"]), "esquinas de esa selección"),
+        ("FinderSidebarSlideMs", int(finder["sidebar_slide_ms"]), "deslizamiento de esa selección"),
+        ("FinderRowInset", int(finder["row_inset"]), "franjas y selección de la lista"),
+        ("FinderRowRadius", int(finder["row_radius"]), "esquinas de franjas y selección"),
+        ("FinderListIconSize", int(finder["list_icon_size"]), "iconos de la lista"),
+        ("FinderSearchWidth", int(finder["search_width"]), "campo de búsqueda en la toolbar"),
         ("Semáforos y colores fijos (px, 0xAARRGGBB)", None, None),
         ("TrafficLightDiameter", tl["diameter"], "diámetro"),
         ("TrafficLightGap", tl["gap"], "separación entre bordes"),
@@ -110,6 +141,9 @@ def header(tokens: dict) -> str:
         ("SidebarDark", tokens["dark"]["sidebar"]),
         ("SeparatorLight", tokens["light"]["separator"]),
         ("SeparatorDark", tokens["dark"]["separator"]),
+        *((f"Finder{key.title().replace('_', '')}{variant.title()}", tokens[variant][f"finder_{key}"])
+          for key in ("capsule", "capsule_border", "hover", "selected", "stripe", "sidebar_selected")
+          for variant in ("light", "dark")),
     ]
 
     out = [
@@ -128,6 +162,8 @@ def header(tokens: dict) -> str:
         else:
             if isinstance(value, bool):
                 out.append(f"inline constexpr bool {name} = {str(value).lower()}; // {comment}")
+            elif isinstance(value, str):
+                out.append(f"inline constexpr char {name}[] = {json.dumps(value)}; // {comment}")
             elif isinstance(value, float):
                 out.append(f"inline constexpr double {name} = {value!r}; // {comment}")
             else:

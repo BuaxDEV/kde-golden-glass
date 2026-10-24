@@ -22,6 +22,7 @@
 #include "goldenglass.h"
 #include "goldenglassanimations.h"
 #include "goldenglassblurhelper.h"
+#include "goldenglassfinder.h"
 #include "goldenglassframeshadow.h"
 #include "goldenglassmdiwindowshadow.h"
 #include "goldenglassmnemonics.h"
@@ -210,6 +211,19 @@ Style::Style()
                  this,
                  SLOT(configurationChanged()));
     this->addEventFilter(qApp);
+
+    _finder = new Finder(
+        *_helper,
+        [this](const QWidget *window) {
+            return _translucentWidgets.contains(const_cast<QWidget *>(window));
+        },
+        [this](QWidget *window) {
+            if (_translucentWidgets.contains(window)) {
+                _blurHelper->forceUpdate(window);
+            }
+        },
+        this);
+
     // call the slot directly; this initial call will set up things that also
     // need to be reset when the system palette changes
     loadConfiguration();
@@ -252,6 +266,7 @@ void Style::polish(QApplication *app)
         _translucentWidgets.clear();
 
     _toolsAreaManager->registerApplication(app);
+    _finder->polishApplication(app);
 
     // base class polishing
     ParentStyleClass::polish(app);
@@ -646,8 +661,17 @@ void Style::polish(QWidget *widget)
         }
     }
 
+    _finder->polish(widget);
+
     // base class polishing
     ParentStyleClass::polish(widget);
+}
+
+//______________________________________________________________
+void Style::polish(QPalette &palette)
+{
+    ParentStyleClass::polish(palette);
+    _finder->polishPalette(palette);
 }
 
 //______________________________________________________________
@@ -747,6 +771,7 @@ void Style::unpolish(QWidget *widget)
     _splitterFactory->unregisterWidget(widget);
     _blurHelper->unregisterWidget(widget);
     _toolsAreaManager->unregisterWidget(widget);
+    _finder->unpolish(widget);
 
     // remove event filter
     if (qobject_cast<QAbstractScrollArea *>(widget) || qobject_cast<QDockWidget *>(widget) || qobject_cast<QMdiSubWindow *>(widget)
@@ -898,12 +923,12 @@ int Style::pixelMetric(PixelMetric metric, const QStyleOption *option, const QWi
     case PM_ToolBarHandleExtent:
         return Metrics::ToolBar_HandleExtent;
     case PM_ToolBarSeparatorExtent:
-        return Metrics::ToolBar_SeparatorWidth;
+        return _finder->isFinderToolBar(widget) ? Tokens::FinderCapsuleGap : Metrics::ToolBar_SeparatorWidth;
     case PM_ToolBarExtensionExtent:
         return pixelMetric(PM_SmallIconSize, option, widget) + 2 * Metrics::ToolButton_MarginWidth;
 
     case PM_ToolBarItemMargin:
-        return 2;
+        return _finder->isFinderToolBar(widget) ? _finder->toolBarItemMargin() : 2;
     case PM_ToolBarItemSpacing:
         return Metrics::ToolBar_ItemSpacing;
 
@@ -1207,6 +1232,9 @@ QSize Style::sizeFromContents(ContentsType element, const QStyleOption *option, 
     case CT_PushButton:
         return pushButtonSizeFromContents(option, size, widget);
     case CT_ToolButton:
+        if (_finder->isFinderToolButton(widget)) {
+            return _finder->toolButtonSize(qstyleoption_cast<const QStyleOptionToolButton *>(option), widget);
+        }
         return toolButtonSizeFromContents(option, size, widget);
     case CT_MenuBar:
         return defaultSizeFromContents(option, size, widget);
@@ -1276,6 +1304,58 @@ QStyle::SubControl Style::hitTestComplexControl(ComplexControl control, const QS
 //______________________________________________________________
 void Style::drawPrimitive(PrimitiveElement element, const QStyleOption *option, QPainter *painter, const QWidget *widget) const
 {
+    // Dolphin as Finder
+    if (_finder->isActive()) {
+        switch (element) {
+        case PE_PanelItemViewItem:
+            if (_finder->drawItemViewItem(qstyleoption_cast<const QStyleOptionViewItem *>(option), painter, widget)) {
+                return;
+            }
+            break;
+        case PE_IndicatorToolBarSeparator:
+            // the gap between capsules
+            if (widget && _finder->isFinderToolBar(widget->parentWidget())) {
+                return;
+            }
+            break;
+        case PE_PanelLineEdit:
+            if (_finder->drawSearchField(option, painter, widget, false)) {
+                return;
+            }
+            break;
+        case PE_FrameLineEdit:
+            if (_finder->drawSearchField(option, painter, widget, true)) {
+                return;
+            }
+            // the location is a title until it is edited (Ctrl+L)
+            if (_finder->isFinderNavigator(widget)) {
+                const auto comboBox = widget->findChild<QComboBox *>();
+                if (!comboBox || !comboBox->isVisible()) {
+                    return;
+                }
+            }
+            break;
+        case PE_PanelButtonCommand:
+            if (_finder->drawNavigatorButton(widget)) {
+                return;
+            }
+            break;
+        case PE_IndicatorDockWidgetResizeHandle:
+            if (_finder->drawDockSeparator(option, painter, widget)) {
+                return;
+            }
+            break;
+        case PE_FrameFocusRect:
+            // Finder marks the current row with the selection only
+            if (widget && widget->parentWidget() && widget->parentWidget()->inherits("KItemListContainerViewport")) {
+                return;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
     StylePrimitive fcn;
     switch (element) {
     case PE_PanelButtonCommand:
@@ -1495,6 +1575,16 @@ bool Style::drawWidgetPrimitive(const QStyleOption *option, QPainter *painter, c
 //______________________________________________________________
 void Style::drawControl(ControlElement element, const QStyleOption *option, QPainter *painter, const QWidget *widget) const
 {
+    // Dolphin as Finder
+    if (_finder->isActive()) {
+        if (element == CE_ToolBar && _finder->drawToolBarBackground(option, painter, widget)) {
+            return;
+        }
+        if (element == CE_Header && _finder->drawHeader(qstyleoption_cast<const QStyleOptionHeader *>(option), painter, widget)) {
+            return;
+        }
+    }
+
     StyleControl fcn;
 
 #if GOLDENGLASS_HAVE_KSTYLE
@@ -1611,6 +1701,12 @@ void Style::drawControl(ControlElement element, const QStyleOption *option, QPai
 //______________________________________________________________
 void Style::drawComplexControl(ComplexControl element, const QStyleOptionComplex *option, QPainter *painter, const QWidget *widget) const
 {
+    // Dolphin as Finder: toolbar buttons in glass capsules
+    if (element == CC_ToolButton && _finder->isActive()
+        && _finder->drawToolButton(qstyleoption_cast<const QStyleOptionToolButton *>(option), painter, widget)) {
+        return;
+    }
+
     StyleComplexControl fcn;
     switch (element) {
     case CC_GroupBox:
@@ -2154,6 +2250,11 @@ bool Style::eventFilterDockWidget(QDockWidget *dockWidget, QEvent *event)
             }
             painter.fillRect(rect, backgroundColor);
 
+            // Finder has no line between the sidebar and the content
+            if (_finder->isActive()) {
+                return false;
+            }
+
             // the hairline goes on the side facing the content
             bool contentOnLeft = false;
             if (const QWidget *tabWidget = dockWidget->window()->findChild<const QWidget *>("tabWidget", Qt::FindDirectChildrenOnly)) {
@@ -2365,6 +2466,9 @@ void Style::loadConfiguration()
 
     // load helper configuration
     _helper->loadConfig();
+
+    // Dolphin as Finder
+    _finder->loadConfiguration();
 
     // update blurhelper
     _blurHelper->setTranslucentTitlebar(_helper->titleBarColor(true).alphaF() < 1.0 ? true : false);
@@ -4042,6 +4146,11 @@ QSize Style::itemViewItemSizeFromContents(const QStyleOption *option, const QSiz
 {
     // call base class
     const QSize size(ParentStyleClass::sizeFromContents(CT_ItemViewItem, option, contentsSize, widget));
+
+    // Dolphin as Finder: places keep Finder's row pitch
+    if (const int height = _finder->sidebarItemHeight(widget); height > 0) {
+        return QSize(size.width() + 2 * Metrics::ItemView_ItemMarginWidth, height);
+    }
     return expandSize(size, Metrics::ItemView_ItemMarginWidth);
 }
 
@@ -5221,8 +5330,8 @@ bool Style::drawIndicatorBranchPrimitive(const QStyleOption *option, QPainter *p
         _helper->renderArrow(painter, arrowRect, arrowColor, orientation);
     }
 
-    // tree branches
-    if (!StyleConfigData::viewDrawTreeBranchLines())
+    // tree branches (Finder has only the disclosure arrows)
+    if (!StyleConfigData::viewDrawTreeBranchLines() || _finder->isActive())
         return true;
 
     const auto center(rect.center());

@@ -63,6 +63,7 @@ class WidgetExplorer;
 class WindowManager;
 class BlurHelper;
 class ToolsAreaManager;
+class Finder;
 
 //* convenience typedef for base class
 #if !GOLDENGLASS_HAVE_KSTYLE
@@ -96,6 +97,7 @@ public:
 
     //* widget polishing
     void polish(QWidget *) override;
+    void polish(QPalette &) override;
 
     //* widget unpolishing
     void unpolish(QWidget *) override;
@@ -572,6 +574,9 @@ private:
 
     //* signal manager for the tools area
     ToolsAreaManager *_toolsAreaManager = nullptr;
+
+    //* Dolphin as Finder (goldenglassfinder.cpp)
+    Finder *_finder = nullptr;
 
     //* widget explorer
     WidgetExplorer *_widgetExplorer = nullptr;
