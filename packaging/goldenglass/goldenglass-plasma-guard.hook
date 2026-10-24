@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Usa el panel y la pantalla de bloqueo de Plasma si el shell de GoldenGlass no
+# está portado al Plasma instalado (tools/goldenglass-plasma-guard).
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = plasma-desktop
+Target = goldenglass-plasma
+
+[Action]
+Description = Checking the GoldenGlass shell against Plasma...
+When = PostTransaction
+Exec = /usr/lib/goldenglass/plasma-guard

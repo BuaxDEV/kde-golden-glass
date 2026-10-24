@@ -1,0 +1,20 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Hook de pacman de goldenglass-kstyle (goldenglass-kwin-check.hook), tras
+# instalar o actualizar kwin o goldenglass-kstyle.
+#
+# KWin solo carga un efecto compilado para su versión exacta
+# (KWIN_PLUGIN_VERSION_STRING). Si no coincide, avisa: hasta recompilar se usa
+# el Blur de KWin (goldenglass-glass --check al iniciar sesión).
+effect=${GOLDENGLASS_EFFECT:-/usr/lib/qt6/plugins/kwin/effects/plugins/goldenglass_glass.so}
+[ -f "$effect" ] || exit 0
+
+built=$(grep -ao 'org\.kde\.kwin\.EffectPluginFactory[0-9.]*' "$effect" | head -n1 | sed 's/.*Factory//')
+# 1:6.8.1-2.1 -> 6.8.1
+kwin=$(pacman -Q kwin 2>/dev/null | awk '{print $2}' | sed 's/^[0-9]*://; s/-[^-]*$//')
+[ -n "$built" ] && [ -n "$kwin" ] || exit 0
+[ "$built" = "$kwin" ] && exit 0
+
+echo "GoldenGlass: el efecto de vidrio está compilado para KWin $built y está instalado KWin $kwin."
+echo "  KWin no lo cargará (se usa su Blur) hasta recompilar goldenglass-kstyle:"
+echo "  cd packaging/goldenglass && makepkg -si"

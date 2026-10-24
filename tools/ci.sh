@@ -5,9 +5,10 @@
 #
 #   1. dependencias de compilación del PKGBUILD (pacman)
 #   2. comprobaciones rápidas: Python, bash, traducciones
-#   3. generadores (tools/gen_tokens.py)
-#   4. C++: compilación y pruebas (ctest)
-#   5. makepkg del commit actual: los paquetes quedan en ci-artifacts/
+#   3. compatibilidad con el Plasma actual de Arch (tools/check_plasma_compat.py)
+#   4. generadores (tools/gen_tokens.py)
+#   5. C++: compilación y pruebas (ctest)
+#   6. makepkg del commit actual: los paquetes quedan en ci-artifacts/
 #
 # Trabaja sobre un clon en /tmp (makepkg no corre como root y así no se
 # tocan los permisos del repositorio montado). Lo usa .github/workflows/ci.yml;
@@ -49,6 +50,15 @@ as_builder() { runuser -u "$BUILDER" -- env HOME="/home/$BUILDER" QT_QPA_PLATFOR
 step "Comprobaciones rápidas"
 as_builder bash -c "cd '$WORK/goldenglass' && python -m py_compile tools/*.py && for f in tools/*.sh; do bash -n \"\$f\"; done \
   && find plasma po login -name '*.po' -print0 | xargs -0 -n1 msgfmt --check -o /dev/null"
+
+step "Compatibilidad con Plasma (tools/check_plasma_compat.py)"
+# los paquetes que traen los módulos QML que importamos (pacman -F): un módulo
+# que ya no existe no sale aquí y la comprobación lo marca
+pacman -Fy --noconfirm >/dev/null
+mapfile -t qmlpkgs < <(as_builder python "$WORK/goldenglass/tools/check_plasma_compat.py" --qmldirs \
+  | xargs pacman -Fq 2>/dev/null | sort -u)
+pacman -S --noconfirm --needed plasma-desktop "${qmlpkgs[@]}"
+as_builder python "$WORK/goldenglass/tools/check_plasma_compat.py"
 
 step "Generadores (tools/gen_tokens.py)"
 as_builder bash -c "cd '$WORK/goldenglass' && python tools/gen_tokens.py >/dev/null"
