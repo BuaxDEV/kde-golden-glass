@@ -52,24 +52,53 @@ support, and the CMake package config.
 unmodified copy of `/usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/`
 from **plasma-desktop 6.7.5** (GPL-2.0-or-later / LGPL-2.0-or-later, original
 headers kept). The copy is commit `e3a0932`; GoldenGlass changes are on top of
-it (`git diff e3a0932 -- plasma/shell`). `GgClock.qml` is new.
+it (`git diff e3a0932 -- plasma/shell`). GoldenGlass changes are only in
+`LockScreenUi.qml` (the clock and the height of the stack view); `GgClock.qml`
+is new.
 
-When Plasma updates its lock screen, diff the new upstream files against the
-installed ones and port the changes by hand.
+Ported since the copy: **plasma-desktop 6.8.1** (new authentication flow in
+`LockScreenUi.qml` and `MainBlock.qml`). Next merge base: **6.8.1**.
 
 ## Panel view (`views/Panel.qml`)
 
 `plasma/shell/org.goldenglass.desktop/contents/views/Panel.qml` started as an
 unmodified copy of `/usr/share/plasma/shells/org.kde.plasma.desktop/contents/views/Panel.qml`
 from **plasma-desktop 6.7.5** (GPL-2.0-or-later, original header kept). The
-copy is its own commit; GoldenGlass changes are on top of it
+copy is commit `2fc7611`; GoldenGlass changes are on top of it
 (`git log -- plasma/shell/org.goldenglass.desktop/contents/views/Panel.qml`):
 the dock slab (`goldenglassDockSlab`: background, blur mask and shadow follow
 the glass slab of `org.goldenglass.dock`; the containment keeps its normal
-place) and `goldenglassSetThickness()`. Every other panel behaves as upstream.
+place), `goldenglassSetThickness()` and the menu bar (no background unless
+enabled, dimmed on the screen without focus). Every other panel behaves as
+upstream.
 
-When Plasma updates its panel view, diff the new upstream file against the
-installed one and port the changes by hand.
+Ported since the copy: **plasma-desktop 6.8.1** (`org.kde.plasma.shell.panel`
+merged into `org.kde.plasma.shell`, `ContainmentItem`, the virtual keyboard
+counts as touching a window). Next merge base: **6.8.1**.
+
+This file must load: if it fails, plasmashell crashes instead of falling back
+to the upstream panel (Plasma 6.8.1), and the session has no desktop.
+
+## Porting a new Plasma version (shell)
+
+Three-way merge each copied file: the upstream file of the last merge base, the
+new upstream file and ours. The upstream files are in the cached packages:
+
+```sh
+mkdir -p /tmp/pd/{old,new}
+bsdtar -xf /var/cache/pacman/pkg/plasma-desktop-<base>-*.pkg.tar.zst -C /tmp/pd/old usr/share/plasma/shells
+bsdtar -xf /var/cache/pacman/pkg/plasma-desktop-<new>-*.pkg.tar.zst -C /tmp/pd/new usr/share/plasma/shells
+up=usr/share/plasma/shells/org.kde.plasma.desktop/contents
+git merge-file plasma/shell/org.goldenglass.desktop/contents/views/Panel.qml \
+  /tmp/pd/old/$up/views/Panel.qml /tmp/pd/new/$up/views/Panel.qml
+```
+
+Same for each file in `lockscreen/` (except `GgClock.qml`). Resolve the
+conflicts, then check that the panel loads (`systemctl --user restart
+plasma-plasmashell`, no `Panel.qml` errors in `journalctl --user`) and the lock
+screen loads (`QT_QPA_PLATFORM=offscreen timeout 8 /usr/lib/kscreenlocker_greet
+--testing --shell org.goldenglass.desktop`, no `Failed to load lockscreen QML`
+in the journal). Update the merge bases above.
 
 ## KWin glass effect (`kwin-effect/`)
 

@@ -26,7 +26,7 @@ SDDM (`tools/preview_plymouth.sh`, `tools/preview_login.sh`).
 
 ## Requisitos
 
-- Plasma ≥ 6.7 en Wayland, Qt 6
+- Plasma ≥ 6.8 en Wayland, Qt 6
 - Python ≥ 3.11 con numpy y Pillow (generador de tokens y del fondo de pantalla)
 - Recomendado: `inter-font` (fuente de respaldo si no tienes SF Pro)
 
