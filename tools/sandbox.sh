@@ -10,6 +10,7 @@
 #   GG_SANDBOX_HOOK=script.sh tools/sandbox.sh  # script propio dentro de la sesión (OUT, VARIANT, ROOT)
 #   GG_SANDBOX_WIDTH=3840 GG_SANDBOX_HEIGHT=2160 GG_SANDBOX_SCALE=1.5 tools/sandbox.sh  # virtual output size and scale
 #   GG_SANDBOX_OUTPUTS=2 tools/sandbox.sh       # virtual outputs, each of that size and scale
+#   GG_SANDBOX_SYSTEMD=1 tools/sandbox.sh       # a systemd user manager of its own on the private bus
 #
 # Deja capturas en build/sandbox/: desktop, app, spotlight, lockscreen,
 # lockscreen-ui y splash. El estilo y la decoración se compilan desde build/cmake.
@@ -28,6 +29,12 @@
 #    after it; on exit every process carrying either mark is closed (activated
 #    services outlive the bus, and kwin_wayland's environ is unreadable because
 #    of its file capabilities).
+#  - With GG_SANDBOX_SYSTEMD=1 apps are launched the way a Plasma session does
+#    (KIO asks org.freedesktop.systemd1 for a unit per app): a second systemd
+#    --user serves the private bus. It loads no service of the user, only the
+#    XDG autostart units its generator writes, which nothing starts. It runs in
+#    one delegated scope of the real user manager, gg-sandbox-<GG_SANDBOX_ID>.scope,
+#    which is the only unit the sandbox creates there and is stopped on exit.
 
 set -euo pipefail
 
@@ -50,6 +57,12 @@ is_sandbox_process() {
   local pid=$1 id=$2
   { tr '\0' '\n' <"/proc/$pid/environ"; } 2>/dev/null | grep -qxF "GG_SANDBOX_ID=$id" && return 0
   { tr '\0' '\n' <"/proc/$pid/cmdline"; } 2>/dev/null | grep -qxF -- "$(sandbox_socket "$id")"
+}
+
+user_manager_scope() { printf 'gg-sandbox-%s.scope' "$1"; }
+
+on_real_manager() {
+  env -u DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR="$GG_SANDBOX_REAL_RUNTIME_DIR" "$@"
 }
 
 reap() {
@@ -82,6 +95,7 @@ if [[ -z ${GG_SANDBOX_INNER:-} ]]; then
   export XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true KDE_SESSION_VERSION=6
   # Directorio de sockets propio (ruta corta: los sockets Unix admiten ~108
   # caracteres): los servicios no ven los de la sesión real (PipeWire, portales…).
+  export GG_SANDBOX_REAL_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
   XDG_RUNTIME_DIR="$(mktemp -d /tmp/gg-runtime.XXXXXX)"
   export XDG_RUNTIME_DIR
   unset WAYLAND_DISPLAY DISPLAY DBUS_SESSION_BUS_ADDRESS
@@ -110,7 +124,16 @@ if [[ -z ${GG_SANDBOX_INNER:-} ]]; then
       >"$XDG_DATA_HOME/dbus-1/services/$svc.service"
   done
 
-  trap 'reap "$GG_SANDBOX_ID"; rm -rf -- "$XDG_RUNTIME_DIR"' EXIT
+  cleanup() {
+    reap "$GG_SANDBOX_ID"
+    if [[ ${GG_SANDBOX_SYSTEMD:-0} == 1 ]]; then
+      on_real_manager systemctl --user stop "$(user_manager_scope "$GG_SANDBOX_ID")" 2>/dev/null || true
+      # systemd leaves mode-000 placeholders in its runtime directory
+      chmod -R u+rwx -- "$XDG_RUNTIME_DIR" 2>/dev/null || true
+    fi
+    rm -rf -- "$XDG_RUNTIME_DIR"
+  }
+  trap cleanup EXIT
   status=0
   dbus-run-session -- env GG_SANDBOX_INNER=1 "$0" "$@" </dev/null >"$OUT/session.log" 2>&1 || status=$?
   grep '^\[sandbox\]' "$OUT/session.log" || true
@@ -143,6 +166,40 @@ sed -i 's/property bool uiVisible: false/property bool uiVisible: true/' "$LOCK_
 log "aplicando org.goldenglass.$VARIANT.desktop"
 QT_QPA_PLATFORM=offscreen plasma-apply-lookandfeel -a "org.goldenglass.$VARIANT.desktop" --resetLayout || true
 
+user_manager_on_bus() {
+  busctl --user call org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus NameHasOwner s \
+    org.freedesktop.systemd1 2>/dev/null | grep -q true
+}
+
+# Only the targets and slices that transient app units depend on, and the
+# autostart units of the generator (started only on request). The manager joins the API bus only once dbus.socket listens
+# and dbus.service runs, so both get inert stand-ins: the bus is the private one
+# already there.
+USER_MANAGER_UNITS=(basic.target sockets.target timers.target paths.target shutdown.target exit.target
+  systemd-exit.service app.slice background.slice session.slice)
+start_user_manager() {
+  local units="$XDG_RUNTIME_DIR/gg-units" unit
+  mkdir -p -- "$units"
+  for unit in "${USER_MANAGER_UNITS[@]}"; do
+    cp -- "/usr/lib/systemd/user/$unit" "$units/"
+  done
+  printf '[Unit]\nRequires=basic.target\nAfter=basic.target\nWants=dbus.socket dbus.service\n' >"$units/default.target"
+  printf '[Unit]\nDefaultDependencies=no\n[Socket]\nListenStream=%s/gg-units/unused-bus\n' \
+    "$XDG_RUNTIME_DIR" >"$units/dbus.socket"
+  printf '[Unit]\nDefaultDependencies=no\n[Service]\nExecStart=/usr/bin/sleep infinity\n' >"$units/dbus.service"
+  on_real_manager systemd-run --user --scope --quiet --collect -p Delegate=yes \
+    --unit "$(user_manager_scope "$GG_SANDBOX_ID")" -- \
+    env XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" \
+    SYSTEMD_UNIT_PATH="$units:$XDG_RUNTIME_DIR/systemd/generator.late" /usr/lib/systemd/systemd --user >"$OUT/systemd.log" 2>&1 &
+  for _ in $(seq 100); do user_manager_on_bus && return 0; sleep 0.1; done
+  log "FALLO systemd --user del sandbox (ver build/sandbox/systemd.log)"
+  return 1
+}
+if [[ ${GG_SANDBOX_SYSTEMD:-0} == 1 ]]; then
+  log "arrancando systemd --user propio ($(user_manager_scope "$GG_SANDBOX_ID"))"
+  start_user_manager || exit 1
+fi
+
 SOCK="$(sandbox_socket "$GG_SANDBOX_ID")"
 log "arrancando KWin virtual ${WIDTH}x${HEIGHT} (escala $SCALE, $OUTPUTS salidas)"
 kwin_wayland --virtual --width "$WIDTH" --height "$HEIGHT" --output-count "$OUTPUTS" --socket "$SOCK" \
@@ -152,7 +209,11 @@ for _ in $(seq 100); do [[ -S $XDG_RUNTIME_DIR/$SOCK ]] && break; sleep 0.1; don
 export WAYLAND_DISPLAY="$SOCK" QT_QPA_PLATFORM=wayland
 # Como startplasma: los servicios que active el bus desde ahora usan esta
 # pantalla (sin esto abortan, o usarían la de la sesión real).
-dbus-update-activation-environment WAYLAND_DISPLAY QT_QPA_PLATFORM
+if [[ ${GG_SANDBOX_SYSTEMD:-0} == 1 ]]; then
+  dbus-update-activation-environment --systemd WAYLAND_DISPLAY QT_QPA_PLATFORM
+else
+  dbus-update-activation-environment WAYLAND_DISPLAY QT_QPA_PLATFORM
+fi
 # kwin_wayland --scale enlarges the virtual output instead of scaling it: the
 # output scale goes through output management, as from System Settings.
 if [[ $SCALE != 1 ]]; then
