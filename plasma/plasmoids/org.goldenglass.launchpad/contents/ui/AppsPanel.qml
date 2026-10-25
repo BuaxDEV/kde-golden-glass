@@ -887,7 +887,6 @@ PlasmaCore.Dialog {
                 font.weight: Font.Medium
                 elide: Text.ElideRight
                 maximumLineCount: 1
-                textFormat: Text.PlainText
             }
         }
 

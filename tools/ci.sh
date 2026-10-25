@@ -6,7 +6,7 @@
 #   1. dependencias de compilación del PKGBUILD (pacman)
 #   2. comprobaciones rápidas: Python (ruff), shell (shellcheck), traducciones
 #   3. compatibilidad con el Plasma actual de Arch (tools/check_plasma_compat.py)
-#   4. generadores (tools/gen_tokens.py)
+#   4. generadores (tools/gen_tokens.py) y qmllint de lo generado
 #   5. C++: compilación y pruebas (ctest)
 #   6. makepkg del commit actual: los paquetes quedan en ci-artifacts/
 #
@@ -86,6 +86,27 @@ as_builder python "$WORK/goldenglass/tools/check_plasma_compat.py"
 
 step "Generadores (tools/gen_tokens.py)"
 as_builder bash -c "cd '$WORK/goldenglass' && python tools/gen_tokens.py >/dev/null"
+
+step "QML (qmllint)"
+# Sobre lo generado (build/plasma, build/login: plasmoids con tokens.js y
+# plantillas ya rellenas), el shell y los módulos de Ajustes. Solo categorías
+# que son errores de verdad, como error. Quedan fuera por ruido: unqualified,
+# missing-property, unresolved-type e import (tipos dinámicos de Plasma:
+# plasmoid, Loader.item, modelos) y, por las copias de upstream (views/,
+# lockscreen/), comma, read-only-property e id-shadows-member. Para exigir
+# otra categoría basta con añadirla a la lista.
+qmlcats=(
+  syntax syntax.duplicate-ids syntax.id-quotation
+  duplicate-property-binding duplicated-name duplicate-enum-entries duplicate-inline-component
+  alias-cycle inheritance-cycle unresolved-alias missing-enum-entry invalid-lint-directive
+  assignment-in-condition unreachable-code var-used-before-declaration function-used-before-declaration
+  eval with
+  Quick.anchor-combinations Quick.color Quick.layout-positioning Quick.property-changes-parsed
+)
+qmlargs=()
+for c in "${qmlcats[@]}"; do qmlargs+=("--$c" error); done
+as_builder bash -c "cd '$WORK/goldenglass' && find build/plasma build/login plasma/shell kcm -name '*.qml' -print0 \
+  | xargs -0 /usr/lib/qt6/bin/qmllint --ignore-settings --only-explicit-categories ${qmlargs[*]}"
 
 step "C++: compilación y pruebas"
 as_builder bash -c "cd '$WORK/goldenglass' && cmake -S . -B build/cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON >/dev/null \
