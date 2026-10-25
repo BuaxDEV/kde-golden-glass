@@ -143,12 +143,22 @@ field_padding_h = 10
 # ---------------------------------------------------------------------------
 [shadow]
 color = "#000000"    # sombras de ventanas (decoración) y de menús (estilo)
+outline_alpha = 0.4  # contorno oscuro de la ventana en la sombra (se multiplica por la fuerza)
 
 # Valores de fábrica de la decoración: tamaño (px, se redondea a la opción
 # ShadowSize más cercana) y fuerza (ShadowStrength)
 [shadow.active]
 size = 64
 strength = 0.45
+
+# Ventanas sin foco: sombra más corta y suave, como macOS 27 (referencia no
+# verificada: un tercio a la mitad del radio y ~55 % de la opacidad de la
+# activa). Nunca mayor que la activa: gen_tokens lo rechaza y la decoración
+# usa min(inactiva, activa) con los valores del usuario. Sin interfaz: solo
+# goldenglassrc [Common] InactiveShadowSize / InactiveShadowStrength.
+[shadow.inactive]
+size = 32        # calibrar (ShadowMedium)
+strength = 0.25  # calibrar
 
 # Cada opción de ShadowSize (las de Breeze): dos sombras superpuestas, una
 # principal centrada (radius, alpha) y otra más corta (ambient_*), y el

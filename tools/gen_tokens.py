@@ -187,6 +187,29 @@ def validate(tokens: dict) -> None:
                 Color.parse(value)
             except ValueError as e:
                 raise SystemExit(f"[{variant}].{key}: {e}") from None
+    validate_shadow(tokens["shadow"])
+
+
+def validate_shadow(shadow: dict) -> None:
+    """Sombras de ventana: la inactiva no puede ser mayor que la activa."""
+    for state in ("active", "inactive"):
+        if not isinstance(shadow.get(state), dict):
+            raise SystemExit(f"falta la sección [shadow.{state}] en los tokens")
+        for key in ("size", "strength"):
+            value = shadow[state].get(key)
+            if isinstance(value, bool) or not isinstance(value, int | float):
+                raise SystemExit(f"[shadow.{state}].{key} debe ser un número (es {value!r})")
+        if not 0 <= shadow[state]["strength"] <= 1:
+            raise SystemExit(f"[shadow.{state}].strength fuera de 0..1: {shadow[state]['strength']}")
+    active, inactive = shadow["active"], shadow["inactive"]
+    for key in ("size", "strength"):
+        if inactive[key] > active[key]:
+            raise SystemExit(
+                f"[shadow.inactive].{key} = {inactive[key]} es mayor que [shadow.active].{key} = {active[key]}: "
+                "la sombra de las ventanas sin foco no puede superar a la de la activa")
+    alpha = shadow.get("outline_alpha")
+    if isinstance(alpha, bool) or not isinstance(alpha, int | float) or not 0 <= alpha <= 1:
+        raise SystemExit(f"[shadow].outline_alpha debe estar en 0..1 (es {alpha!r})")
 
     _validate_accessibility(tokens["accessibility"])
 
