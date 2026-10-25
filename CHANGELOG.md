@@ -69,6 +69,14 @@
   conserva para cuando lo desactives; mientras tanto el slider y «Refracción»
   quedan deshabilitados. También desde la terminal: `goldenglass-glass
   --reduce-transparency on|off`.
+- **Mostrar bordes** en Ajustes del sistema › Vidrio › Accesibilidad, como en
+  macOS 27: un borde fino del color del texto en los botones, los campos de
+  texto, los botones de las toolbars (que muestran su forma sin pasar el
+  ratón), las cápsulas de Dolphin, las ventanas (contorno y sombra) y el vidrio
+  de la barra de menús, el dock, los popups y Spotlight. Funciona con cualquier
+  nivel de vidrio y junto a «Reducir transparencia». También desde la
+  terminal: `goldenglass-glass --show-borders on|off`. Las apps GTK llegarán
+  más adelante (tokens `[accessibility.borders]`, por calibrar).
 - **La refracción sigue de verdad al nivel de vidrio:** el efecto de KWin no
   se enteraba de los cambios de nivel hasta reiniciar la sesión;
   `goldenglass-glass` ahora se lo pide directamente.
@@ -91,6 +99,8 @@
   vivo: sus capacidades impiden leer su entorno) y admite
   `GG_SANDBOX_WIDTH`, `GG_SANDBOX_HEIGHT` y `GG_SANDBOX_SCALE` para probar en
   4K y con escalas fraccionarias.
+- `tools/preview_style.py --show-borders` muestra el estilo de apps con
+  «Mostrar bordes», y la vista previa incluye una toolbar.
 - Los plasmoids leen la accesibilidad con un único singleton,
   `Accessibility.qml` (`MotionReduce.qml` pasa a ser
   `AccessibilityReader.qml`); `goldenglass-glass` aplica todo con `apply()`,
