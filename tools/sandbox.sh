@@ -8,6 +8,7 @@
 #   tools/sandbox.sh [light|dark]
 #   GG_SANDBOX_APP=dolphin tools/sandbox.sh   # app para la captura «app» (por defecto systemsettings)
 #   GG_SANDBOX_HOOK=script.sh tools/sandbox.sh  # script propio dentro de la sesión (OUT, VARIANT, ROOT)
+#   GG_SANDBOX_WIDTH=3840 GG_SANDBOX_HEIGHT=2160 GG_SANDBOX_SCALE=1.5 tools/sandbox.sh  # virtual output size and scale
 #
 # Deja capturas en build/sandbox/: desktop, app, spotlight, lockscreen,
 # lockscreen-ui y splash. El estilo y la decoración se compilan desde build/cmake.
@@ -33,8 +34,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VARIANT="${1:-light}"
 OUT="$ROOT/build/sandbox"
 HOME_DIR="$OUT/home"
-WIDTH=1600
-HEIGHT=1000
+WIDTH="${GG_SANDBOX_WIDTH:-1600}"
+HEIGHT="${GG_SANDBOX_HEIGHT:-1000}"
+SCALE="${GG_SANDBOX_SCALE:-1}"
 
 case "$VARIANT" in light|dark) ;; *) echo "uso: $0 [light|dark]" >&2; exit 2 ;; esac
 
@@ -140,7 +142,7 @@ log "aplicando org.goldenglass.$VARIANT.desktop"
 QT_QPA_PLATFORM=offscreen plasma-apply-lookandfeel -a "org.goldenglass.$VARIANT.desktop" --resetLayout || true
 
 SOCK="$(sandbox_socket "$GG_SANDBOX_ID")"
-log "arrancando KWin virtual ${WIDTH}x${HEIGHT}"
+log "arrancando KWin virtual ${WIDTH}x${HEIGHT} (escala $SCALE)"
 kwin_wayland --virtual --width "$WIDTH" --height "$HEIGHT" --socket "$SOCK" --no-lockscreen &
 for _ in $(seq 100); do [[ -S $XDG_RUNTIME_DIR/$SOCK ]] && break; sleep 0.1; done
 [[ -S $XDG_RUNTIME_DIR/$SOCK ]] || { log "KWin no arrancó (ver build/sandbox/session.log)"; exit 1; }
@@ -148,6 +150,11 @@ export WAYLAND_DISPLAY="$SOCK" QT_QPA_PLATFORM=wayland
 # Como startplasma: los servicios que active el bus desde ahora usan esta
 # pantalla (sin esto abortan, o usarían la de la sesión real).
 dbus-update-activation-environment WAYLAND_DISPLAY QT_QPA_PLATFORM
+# kwin_wayland --scale enlarges the virtual output instead of scaling it: the
+# output scale goes through output management, as from System Settings.
+if [[ $SCALE != 1 ]]; then
+  kscreen-doctor "output.1.scale.$SCALE" >/dev/null 2>&1 || log "FALLO escala $SCALE"
+fi
 
 log "arrancando plasmashell"
 plasmashell --no-respawn &
