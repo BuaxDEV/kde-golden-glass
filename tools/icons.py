@@ -14,10 +14,15 @@ usan las clases ColorScheme-Accent/-Text, que KIconLoader sustituye por los
 colores actuales (también al seleccionar). Los colores dentro de <style> son
 solo el valor de reserva (tokens del tema claro).
 
-Salida:
+Salida (cada tema lo describe un ThemeSpec):
   build/icons/GoldenGlass/        tema claro (Inherits=WhiteSur,breeze,hicolor)
   build/icons/GoldenGlass-Dark/   mismas carpetas (enlaces), hereda las
                                   variantes oscuras (WhiteSur-dark,breeze-dark)
+  build/icons/GoldenGlass-{Clear,Tinted}{,-Dark}/
+                                  solo apps en otro estilo (icons_style.py);
+                                  heredan el tema de fábrica de su apariencia
+  build/icons/icon-tile.json, icon-style.json
+                                  tokens para las herramientas instaladas
 
 Uso directo para iterar el diseño:
   python3 tools/icons.py --preview build/icons-preview.png
@@ -31,7 +36,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from icons_style import Style
+from icons_style import STYLE_JSON, XLINK_NS, Style, theme_id, theme_name
 
 
 class Base(Enum):
@@ -56,10 +61,24 @@ class ThemeSpec:
     hidden: bool = False            # Hidden=true: left out of the icon theme list of System Settings
 
 
+def _default_spec(dark: bool, inherits: tuple[str, ...]) -> ThemeSpec:
+    light = theme_id(Style.DEFAULT, dark=False)
+    return ThemeSpec(theme_id(Style.DEFAULT, dark), theme_name(Style.DEFAULT, dark), inherits, dark,
+                     base=Base.LINKED if dark else Base.DRAWN, base_theme=light if dark else None)
+
+
+def _styled_spec(style: Style, dark: bool) -> ThemeSpec:
+    """Apps-only theme over the default theme of the same appearance. Hidden: the
+    «Estilo de iconos» module picks it, not the icon theme list."""
+    parent = theme_id(Style.DEFAULT, dark)
+    return ThemeSpec(theme_id(style, dark), theme_name(style, dark), (parent,), dark, style,
+                     Base.INHERITED, parent, hidden=True)
+
+
 THEME_SPECS: tuple[ThemeSpec, ...] = (
-    ThemeSpec("GoldenGlass", "GoldenGlass", ("WhiteSur", "breeze", "hicolor"), dark=False),
-    ThemeSpec("GoldenGlass-Dark", "GoldenGlass Dark", ("WhiteSur-dark", "breeze-dark", "breeze", "hicolor"),
-              dark=True, base=Base.LINKED, base_theme="GoldenGlass"),
+    _default_spec(dark=False, inherits=("WhiteSur", "breeze", "hicolor")),
+    _default_spec(dark=True, inherits=("WhiteSur-dark", "breeze-dark", "breeze", "hicolor")),
+    *(_styled_spec(style, dark) for style in (Style.CLEAR, Style.TINTED) for dark in (False, True)),
 )
 THEMES: dict[str, ThemeSpec] = {spec.id: spec for spec in THEME_SPECS}
 SMALL = (16, 22, 24)
@@ -172,7 +191,8 @@ def _svg(size: int, body: str, fallback: dict[str, str], canvas: int | None = No
     style = (f'.ColorScheme-Text{{color:{fallback["text"]};}}'
              f'.ColorScheme-Accent{{color:{fallback["accent"]};}}')
     c = canvas or size
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {c} {c}">'
+    xlink = f' xmlns:xlink="{XLINK_NS}"' if "xlink:href" in body else ""
+    return (f'<svg xmlns="http://www.w3.org/2000/svg"{xlink} width="{size}" height="{size}" viewBox="0 0 {c} {c}">'
             f'<defs><style type="text/css" id="current-color-scheme">{style}</style></defs>'
             f"{body}</svg>\n")
 
@@ -510,6 +530,7 @@ def build(tokens: dict, out: Path) -> list[Path]:
         theme_root = base / spec.id
         if spec.base is Base.INHERITED:
             # same app names as its base: the base's guards protect them too
+            theme_root.mkdir(parents=True, exist_ok=True)
             _link(f"../{spec.base_theme}/{GUARDS}", theme_root / GUARDS)
             continue
         apps = [e for e in own[spec.id] if _is_app(e)]
@@ -533,7 +554,8 @@ def build(tokens: dict, out: Path) -> list[Path]:
                 _link(f"../{spec.base_theme}/{ctx}", theme_root / ctx)
     # Datos para goldenglass-wrap-icons en el equipo del usuario (sin TOML ni ggcommon)
     tile_json = icons_apps.write_tile_json(tokens, base / icons_apps.TILE_JSON)
-    return [*(base / spec.id for spec in THEME_SPECS), tile_json]
+    style_json = icons_apps.write_style_json(tokens, base / STYLE_JSON)
+    return [*(base / spec.id for spec in THEME_SPECS), tile_json, style_json]
 
 
 def preview(tokens: dict, path: Path, dark: bool = False) -> None:
