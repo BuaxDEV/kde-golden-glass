@@ -58,6 +58,9 @@
 #   [[system.desktop_file]]                  .desktop que debe existir (y, con «keys», valer esto
 #   file, search, keys = { Clave = "valor" }, used_by       en [Desktop Entry]; true/false sin
 #                                            distinguir mayúsculas)
+#   [[system.dbus_object]]                   objeto D-Bus de un proceso de Plasma que GoldenGlass
+#   binary, interface, path, methods,        sustituye en ejecución. Sin XML: se buscan sus nombres
+#   signals, used_by                         como cadenas en el binario (en el PATH)
 
 # --- org.kde.taskmanager ---------------------------------------------------------------
 
@@ -300,3 +303,22 @@ used_by = "Spotlight (docs/MACOS27-PLAN.md §4.12): activación D-Bus de KRunner
 file = "plasma-runner-baloosearch.desktop"
 search = ["krunner/dbusplugins", "kservices6", "applications"]
 used_by = "Spotlight (docs/MACOS27-PLAN.md §4.12): búsqueda de archivos con Baloo"
+
+# --- Sistema: el OSD de plasmashell que toma el HUD (docs/MACOS27-PLAN.md §4.10) -------------
+# qmlplugin/osdservice.h copia esta interfaz (shell/osd.h de plasma-workspace); en
+# ejecución, OsdInterceptor solo sustituye el objeto si exporta exactamente las
+# mismas firmas. Aquí se avisa antes, en la CI, si Plasma la cambia.
+
+[[system.dbus_object]]
+binary = "plasmashell"
+interface = "org.kde.osdService"
+path = "/org/kde/osdService"
+methods = [
+  "brightnessChanged", "screenBrightnessChanged", "keyboardBrightnessChanged", "volumeChanged",
+  "microphoneVolumeChanged", "mediaPlayerVolumeChanged", "kbdLayoutChanged", "virtualDesktopChanged",
+  "touchpadEnabledChanged", "wifiEnabledChanged", "bluetoothEnabledChanged", "wwanEnabledChanged",
+  "virtualKeyboardEnabledChanged", "powerManagementInhibitedChanged", "powerProfileChanged", "showText",
+  "hide",
+]
+signals = ["osdProgress", "osdText"]
+used_by = "HUD de volumen y brillo (qmlplugin/osdinterceptor.h, Hud.qml del Centro de control)"
