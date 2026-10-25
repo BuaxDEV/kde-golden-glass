@@ -73,11 +73,12 @@ SYSTEM_BIN="$BIN_DIR/goldenglass-system"
 DOCK_BIN="$BIN_DIR/goldenglass-dock"
 WINDOWS_BIN="$BIN_DIR/goldenglass-windows"
 WINDOWS_AUTOSTART="$CONF/autostart/goldenglass-windows.desktop"
+SHELL_UPDATES_AUTOSTART="$CONF/autostart/goldenglass-shell-updates.desktop"
 
 if [[ $mode == uninstall ]]; then
   pkill -u "$USER" -f "$ROOT/tools/gtk_sync.py" 2>/dev/null || true
   python3 "$ROOT/tools/gtk_sync.py" --restore 2>/dev/null || true
-  rm -fv -- "$AUTOSTART" "$WINDOWS_AUTOSTART"
+  rm -fv -- "$AUTOSTART" "$WINDOWS_AUTOSTART" "$SHELL_UPDATES_AUTOSTART"
   # deja la configuración del usuario como estaba antes de goldenglass-system
   python3 "$ROOT/tools/system.py" disable sounds chime || true
   rm -fv -- "$SYSTEM_BIN" "$DOCK_BIN" "$WINDOWS_BIN"
@@ -149,6 +150,18 @@ Comment=Sets the GoldenGlass window effects of KWin that the user left unset
 Exec=python3 "$ROOT/tools/windows.py" --check
 OnlyShowIn=KDE;
 X-KDE-autostart-phase=1
+NoDisplay=true
+EOF
+# plasmashell skips the shell's update scripts under XDG_DATA_HOME (e.g. the
+# 24 px menu bar migration); they run once at login, after the desktop is up.
+cat >"$SHELL_UPDATES_AUTOSTART" <<EOF
+[Desktop Entry]
+Type=Application
+Name=GoldenGlass shell updates
+Comment=Runs the update scripts of the GoldenGlass shell installed in the home directory
+Exec=python3 "$ROOT/tools/run_shell_updates.py"
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=2
 NoDisplay=true
 EOF
 
