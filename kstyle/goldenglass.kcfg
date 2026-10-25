@@ -125,10 +125,6 @@
       <default>true</default>
     </entry>
 
-    <entry name="AnimationSteps" type="Int">
-      <default>30</default>
-    </entry>
-
     <entry name="AnimationsDuration" type="Int">
       <default code="true">GoldenGlass::Tokens::StyleAnimationsDuration</default>
     </entry>
