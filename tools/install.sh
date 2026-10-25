@@ -11,6 +11,10 @@
 #                               trabajo tal cual (rama, cambios a medias).
 #   tools/install.sh --uninstall
 #
+# Lanzadores (goldenglass-system, goldenglass-dock): van a $GOLDENGLASS_BIN_DIR
+# (por defecto ~/.local/bin); --uninstall los quita de ahí. tools/sandbox.sh lo
+# fija dentro de su directorio para no escribir en el HOME real.
+#
 # No aplica nada: para usar el tema, elegir el Global Theme en Preferencias del
 # Sistema › Colores y temas, o `plasma-apply-lookandfeel -a org.goldenglass.light.desktop`.
 
@@ -64,8 +68,9 @@ refresh_caches() {
 }
 
 AUTOSTART="$CONF/autostart/goldenglass-gtk-sync.desktop"
-SYSTEM_BIN="$HOME/.local/bin/goldenglass-system"
-DOCK_BIN="$HOME/.local/bin/goldenglass-dock"
+BIN_DIR="${GOLDENGLASS_BIN_DIR:-$HOME/.local/bin}"
+SYSTEM_BIN="$BIN_DIR/goldenglass-system"
+DOCK_BIN="$BIN_DIR/goldenglass-dock"
 
 if [[ $mode == uninstall ]]; then
   pkill -u "$USER" -f "$ROOT/tools/gtk_sync.py" 2>/dev/null || true
