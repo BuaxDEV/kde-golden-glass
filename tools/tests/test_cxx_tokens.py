@@ -47,6 +47,19 @@ def test_shadow_strength(tokens, alpha, strength):
     assert constant(cxx_tokens.header(tokens), "ShadowStrength") == str(strength)
 
 
+def test_shadow_size_table(tokens):
+    # una entrada por opción de ShadowSize (salvo ShadowNone), con sus seis valores
+    header = cxx_tokens.header(tokens)
+    for option, key in (("Small", "small"), ("Medium", "medium"), ("Large", "large"), ("VeryLarge", "very_large")):
+        s = tokens["shadow"]["sizes"][key]
+        assert constant(header, f"Shadow{option}Offset") == str(s["offset"])
+        assert constant(header, f"Shadow{option}Radius") == str(s["radius"])
+        assert float(constant(header, f"Shadow{option}Alpha")) == s["alpha"]
+        assert constant(header, f"Shadow{option}AmbientOffset") == str(s["ambient_offset"])
+        assert constant(header, f"Shadow{option}AmbientRadius") == str(s["ambient_radius"])
+        assert float(constant(header, f"Shadow{option}AmbientAlpha")) == s["ambient_alpha"]
+
+
 def test_colors_are_argb(tokens):
     tokens["traffic_lights"]["close"] = "#FF5F57"
     tokens["traffic_lights"]["zoom"] = "#11223344"

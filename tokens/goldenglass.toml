@@ -144,13 +144,46 @@ field_padding_h = 10
 [shadow]
 color = "#000000"    # sombras de ventanas (decoración) y de menús (estilo)
 
+# Valores de fábrica de la decoración: tamaño (px, se redondea a la opción
+# ShadowSize más cercana) y fuerza (ShadowStrength)
 [shadow.active]
 size = 64
 strength = 0.45
 
-[shadow.inactive]
-size = 40
-strength = 0.25
+# Cada opción de ShadowSize (las de Breeze): dos sombras superpuestas, una
+# principal centrada (radius, alpha) y otra más corta (ambient_*), y el
+# conjunto bajado offset px. Las opacidades se multiplican por ShadowStrength.
+[shadow.sizes.small]
+offset = 4
+radius = 16
+alpha = 1.0
+ambient_offset = -2
+ambient_radius = 8
+ambient_alpha = 0.4
+
+[shadow.sizes.medium]
+offset = 8
+radius = 32
+alpha = 0.9
+ambient_offset = -4
+ambient_radius = 16
+ambient_alpha = 0.3
+
+[shadow.sizes.large]
+offset = 12
+radius = 48
+alpha = 0.8
+ambient_offset = -6
+ambient_radius = 24
+ambient_alpha = 0.2
+
+[shadow.sizes.very_large]
+offset = 16
+radius = 64
+alpha = 0.7
+ambient_offset = -8
+ambient_radius = 32
+ambient_alpha = 0.1
 
 # ---------------------------------------------------------------------------
 # Animaciones de los controles de las apps (estilo) y de los botones de la

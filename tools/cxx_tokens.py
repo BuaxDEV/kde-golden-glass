@@ -36,6 +36,21 @@ def _shadow_strength(alpha: float) -> int:
     return max(25, min(255, round(alpha * 255)))
 
 
+def _shadow_size(tokens: dict, option: str) -> list[tuple]:
+    """Constantes de una opción de ShadowSize: ShadowSmallRadius, … (px, 0..1)."""
+    name = option.removeprefix("Shadow")
+    key = "".join("_" + c.lower() if c.isupper() else c for c in name).lstrip("_")
+    s = tokens["shadow"]["sizes"][key]
+    return [
+        (f"Shadow{name}Offset", int(s["offset"]), f"shadow.sizes.{key}: desplazamiento vertical del conjunto"),
+        (f"Shadow{name}Radius", int(s["radius"]), "sombra principal: radio"),
+        (f"Shadow{name}Alpha", float(s["alpha"]), "sombra principal: opacidad"),
+        (f"Shadow{name}AmbientOffset", int(s["ambient_offset"]), "segunda sombra: desplazamiento vertical"),
+        (f"Shadow{name}AmbientRadius", int(s["ambient_radius"]), "segunda sombra: radio"),
+        (f"Shadow{name}AmbientAlpha", float(s["ambient_alpha"]), "segunda sombra: opacidad"),
+    ]
+
+
 def _camel(key: str) -> str:
     """search_handle_end → SearchHandleEnd."""
     return "".join(word.title() for word in key.split("_"))
@@ -85,6 +100,7 @@ def header(tokens: dict) -> str:
         ("ShadowSize", _shadow_size_index(shadow["size"]),
          f"{SHADOW_SIZES[_shadow_size_index(shadow['size'])]} ({shadow['size']} px)"),
         ("ShadowStrength", _shadow_strength(shadow["strength"]), f"{shadow['strength']} de opacidad"),
+        *(item for size in SHADOW_SIZES[1:] for item in _shadow_size(tokens, size)),
         ("Animaciones (estilo y decoración)", None, None),
         ("AnimationsDuration", int(tokens["animation"]["controls_ms"]), "controles de las apps y botones de la ventana (ms)"),
         ("Decoración", None, None),
