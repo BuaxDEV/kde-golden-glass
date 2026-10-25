@@ -7,19 +7,35 @@
 # la barra de menús (MenuBarSettings).
 include(ECMQmlModule)
 
-ecm_add_qml_module(goldenglassglassplugin
-    URI org.goldenglass.glass
-    GENERATE_PLUGIN_SOURCE
+# Fuentes y bibliotecas del módulo, una por línea (cada PR añade las suyas):
+# las usan el plugin y la biblioteca estática de las pruebas (tests/).
+set(GOLDENGLASS_QMLPLUGIN_SOURCES
+    glassregion.cpp
+    glassregion.h
+    menubarsettings.cpp
+    menubarsettings.h
 )
-
-target_sources(goldenglassglassplugin PRIVATE glassregion.cpp glassregion.h menubarsettings.cpp menubarsettings.h)
-# goldenglassroundedregion.h (solo cabecera, compartida con el estilo)
-target_include_directories(goldenglassglassplugin PRIVATE ${CMAKE_SOURCE_DIR}/libgoldenglasscommon)
-
-target_link_libraries(goldenglassglassplugin PRIVATE
+set(GOLDENGLASS_QMLPLUGIN_LIBS
     Qt6::Quick
     KF6::WindowSystem
     KF6::ConfigCore
 )
 
+ecm_add_qml_module(goldenglassglassplugin
+    URI org.goldenglass.glass
+    GENERATE_PLUGIN_SOURCE
+)
+
+target_sources(goldenglassglassplugin PRIVATE ${GOLDENGLASS_QMLPLUGIN_SOURCES})
+# goldenglassroundedregion.h (solo cabecera, compartida con el estilo)
+target_include_directories(goldenglassglassplugin PRIVATE ${CMAKE_SOURCE_DIR}/libgoldenglasscommon)
+
+target_link_libraries(goldenglassglassplugin PRIVATE ${GOLDENGLASS_QMLPLUGIN_LIBS})
+
 ecm_finalize_qml_module(goldenglassglassplugin DESTINATION ${KDE_INSTALL_QMLDIR})
+
+# Pruebas del módulo (ctest): ver tests/CMakeLists.txt
+include(CTest)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

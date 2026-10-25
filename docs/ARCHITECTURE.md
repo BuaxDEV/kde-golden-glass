@@ -488,6 +488,32 @@ dentro de «Vidrio».
 - **Modo automático:** se apoya en el cambio día/noche nativo de Plasma entre los
   dos Global Themes. Los wallpapers usan `images_dark/` para cambiar solos.
 
+#### Pruebas del módulo QML — `qmlplugin/tests/`
+
+Infraestructura común de las pruebas C++ de `qmlplugin/` (ctest, con
+`BUILD_TESTING`). `GOLDENGLASS_QMLPLUGIN_SOURCES` se compila una vez como
+biblioteca estática (`goldenglass_qmlplugin_core`) que enlazan todas las
+pruebas, sin cambiar lo que instala el plugin.
+`goldenglass_add_qmlplugin_test(nombre [SOURCES ...] [LIBS ...] [DBUS])` crea
+el ejecutable, lo registra con `QT_QPA_PLATFORM=offscreen` y, con `DBUS`, lo
+ejecuta bajo `dbus-run-session` (un bus de sesión propio y descartable, con
+`GOLDENGLASS_TEST_BUS=1`). `testbus.h` aporta:
+
+- `GOLDENGLASS_TEST_MAIN(Clase)`, que sustituye a `QTEST_MAIN` y es
+  obligatorio: manda HOME y los XDG_* a un directorio temporal y activa
+  `QStandardPaths::setTestModeEnabled`, así que ninguna prueba toca la
+  configuración real;
+- `GG_REQUIRE_SESSION_BUS()`: `QSKIP` si no hay bus propio (sin
+  `dbus-run-session`, o ejecutando el binario a mano); ctest lo marca como
+  «Skipped». Nunca se usa el bus de la sesión del usuario: sin bus propio las
+  pruebas corren con `DBUS_SESSION_BUS_ADDRESS=disabled:`;
+- `FakeService` (servicio y objetos falsos en una conexión separada, para
+  systemd1, osdService, krunner…), `call()` (llamada D-Bus que no bloquea el
+  bucle de eventos) y `waitForSignal()`.
+
+`check()` del PKGBUILD y la CI (`tools/ci.sh`) instalan `dbus` como
+`checkdepends`; `ctest` no necesita envoltorio.
+
 ### 4.6 Tipografía — `fontconfig/`
 - SF Pro **no se redistribuye** (licencia de Apple).
 - Alias de fontconfig `GoldenGlass Sans` → SF Pro → SF Pro Text → Inter, y
@@ -974,7 +1000,8 @@ dentro de «Vidrio».
     categorías que son errores; la lista está en `tools/ci.sh`).
 
   Al final hace `makepkg` del commit, que compila el C++ y pasa ctest
-  (`check()`) una sola vez; los paquetes quedan como artefacto.
+  (`check()`, con las pruebas D-Bus de `qmlplugin/tests` bajo
+  `dbus-run-session`) una sola vez; los paquetes quedan como artefacto.
 
   El mismo script se ejecuta en local con `podman run --rm -v
   "$PWD":/src:Z -w /src docker.io/library/archlinux:latest tools/ci.sh`.
