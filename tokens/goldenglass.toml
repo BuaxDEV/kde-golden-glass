@@ -218,6 +218,21 @@ kirigami_long_ms = 200
 reduced_fade_ms = 150
 
 # ---------------------------------------------------------------------------
+# Efectos de ventana de KWin (goldenglass-windows): valores de fábrica que se
+# escriben en kwinrc solo si el usuario no los tocó (docs/ARCHITECTURE.md
+# «Efectos de ventana»)
+# ---------------------------------------------------------------------------
+[kwin]
+# Efecto «Escalar» al abrir y cerrar ventanas: la ventana nace a open_scale
+# de su tamaño y se va hacia close_scale (KWin trae 0.8 en los dos). Calibrar.
+open_scale = 0.92
+close_scale = 0.95
+# duración a velocidad normal: KWin la multiplica por la velocidad de animación global
+window_anim_ms = 220
+# con «Reducir movimiento», efecto de minimizar: "none" (ninguno), "squash" o "magiclamp"
+reduce_motion_minimize = "none"
+
+# ---------------------------------------------------------------------------
 # Decoración de ventanas
 # ---------------------------------------------------------------------------
 [decoration]

@@ -18,6 +18,7 @@ Salidas (en build/, no versionado):
   build/sounds/GoldenGlass/               (tema de sonidos; se cachea)
   build/plymouth/goldenglass{,-light}/    (temas de Plymouth; se cachea)
   build/login/sddm/GoldenGlass/           (tema de SDDM)
+  build/kwin/windows.json                 (factory values for goldenglass-windows)
 
 Uso:
   python3 tools/gen_tokens.py [--tokens RUTA] [--out DIR]
@@ -48,6 +49,7 @@ import plymouth  # noqa: E402
 import shell  # noqa: E402
 import sounds  # noqa: E402
 import wallpaper  # noqa: E402
+import windows  # noqa: E402
 from ggcommon import Color, load_tokens  # noqa: E402
 
 VARIANTS = {
@@ -160,7 +162,7 @@ def build_colors(tokens: dict, variant: str) -> str:
 REQUIRED_SECTIONS = (
     "meta", "radius", "focus_ring", "glass", "plasma", "shadow", "decoration", "menu", "finder",
     "font", "apps", "icon_tile", "scroll", "traffic_lights", "dock", "control_center", "motion", "boot", "login",
-    "sounds", "accessibility", "light", "dark",
+    "sounds", "accessibility", "kwin", "light", "dark",
 )
 
 # [accessibility]: valores de fábrica de goldenglassrc [Accessibility] y la
@@ -181,6 +183,20 @@ def validate_motion(motion: dict) -> None:
         if not _is_number(value) or value < 0 or (value == 0 and not zero_ok):
             limit = "≥ 0" if zero_ok else "> 0"
             raise SystemExit(f"[motion].{key} debe ser un número {limit} (ms), no {value!r}")
+
+
+def validate_kwin(kwin: dict) -> None:
+    for key in ("open_scale", "close_scale"):
+        value = kwin.get(key)
+        if not _is_number(value) or not 0 < value <= 1:
+            raise SystemExit(f"[kwin].{key} must be a number in (0, 1], not {value!r}")
+    duration = kwin.get("window_anim_ms")
+    if not isinstance(duration, int) or isinstance(duration, bool) or duration <= 0:
+        raise SystemExit(f"[kwin].window_anim_ms must be a whole number of ms > 0, not {duration!r}")
+    minimize = kwin.get("reduce_motion_minimize")
+    if minimize not in windows.REDUCE_MOTION_MINIMIZE:
+        raise SystemExit(f"[kwin].reduce_motion_minimize must be one of {', '.join(windows.REDUCE_MOTION_MINIMIZE)}, "
+                         f"not {minimize!r}")
 
 
 ICON_TILE_PAIRS = ("white", "graphite", "paper", "wrap_paper")
@@ -236,6 +252,7 @@ def validate(tokens: dict) -> None:
     if not_tables:
         raise SystemExit(f"estas claves de los tokens deben ser secciones: {', '.join(not_tables)}")
     validate_motion(tokens["motion"])
+    validate_kwin(tokens["kwin"])
 
     validate_icon_tile(tokens["icon_tile"])
 
@@ -329,6 +346,7 @@ def main(argv: list[str] | None = None) -> int:
     written += sounds.build(tokens, args.out)
     written += plymouth.build(tokens, args.out)
     written += login.build(tokens, args.out)
+    written.append(windows.write_json(tokens, args.out / "kwin" / windows.TOKENS_JSON))
 
     for p in written:
         print(f"  {p.relative_to(ROOT) if p.is_relative_to(ROOT) else p}")
