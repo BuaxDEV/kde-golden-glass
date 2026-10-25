@@ -27,6 +27,9 @@ uniform float dispersion;
 uniform float specular;
 uniform float tint;
 uniform float clarity;
+uniform float rimWidth;    // ancho del filo de luz (fracción de edge)
+uniform float rimBottom;   // brillo del filo donde la normal mira hacia abajo
+uniform float rimTopGain;  // lo que suma donde mira hacia arriba (1 - rimBottom)
 
 in vec2 uv;
 in vec2 vertex;
@@ -86,9 +89,9 @@ void main(void)
     color.rgb = clamp(color.rgb + (0.5 - luminance) * tint, 0.0, 1.0);
 
     // filo de luz: estrecho, y más fuerte donde la normal mira hacia arriba
-    float rim = edge > 0.0 ? 1.0 - smoothstep(0.0, edge * 0.3, -d) : 0.0;
+    float rim = edge > 0.0 ? 1.0 - smoothstep(0.0, edge * rimWidth, -d) : 0.0;
     float top = clamp(-n.y, 0.0, 1.0);
-    color.rgb = min(color.rgb + specular * rim * (0.35 + 0.65 * top), 1.0);
+    color.rgb = min(color.rgb + specular * rim * (rimBottom + rimTopGain * top), 1.0);
 
     color *= opacity;
 

@@ -77,6 +77,9 @@ dispersion = 0.35    # separación de colores (fracción de strength)
 clarity = 0.5        # en el borde, cuánto se ve el fondo nítido (no difuminado)
 specular = 0.12      # brillo del filo (más arriba que abajo)
 tint = 0.10          # acerca la luminancia del fondo a la media (legibilidad)
+edge_max_fraction = 0.3  # en superficies bajas (el dock), la zona curvada no pasa de esta fracción del lado menor
+rim_width = 0.3      # ancho del filo de luz (fracción de edge)
+rim_bottom = 0.35    # brillo del filo abajo respecto a arriba
 
 # ---------------------------------------------------------------------------
 # Escritorio Plasma (px lógicos)

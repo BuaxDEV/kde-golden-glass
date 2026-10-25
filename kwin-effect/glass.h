@@ -139,6 +139,9 @@ private:
         int specularLocation;
         int tintLocation;
         int clarityLocation;
+        int rimWidthLocation;
+        int rimBottomLocation;
+        int rimTopGainLocation;
         int sharpTextureLocation;
     } m_glassPass;
     // refracción, ya con el nivel de vidrio aplicado (px lógicos)
