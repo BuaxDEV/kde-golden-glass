@@ -26,9 +26,9 @@ jobs:
     timeout-minutes: 40
     steps:
       # actions/checkout necesita git para clonar con historia (makepkg cuenta
-      # los commits para pkgver)
+      # los commits para pkgver). Con -Syu: en Arch no se actualiza a medias.
       - name: Install git
-        run: pacman -Sy --noconfirm --needed git
+        run: pacman -Syu --noconfirm --needed git
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

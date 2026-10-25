@@ -7,8 +7,8 @@
 #   2. comprobaciones rápidas: Python (ruff, pytest), shell (shellcheck), traducciones
 #   3. compatibilidad con el Plasma actual de Arch (tools/check_plasma_compat.py)
 #   4. generadores (tools/gen_tokens.py) y qmllint de lo generado
-#   5. C++: compilación y pruebas (ctest)
-#   6. makepkg del commit actual: los paquetes quedan en ci-artifacts/
+#   5. makepkg del commit actual: compila el C++, pasa ctest (check()) y deja
+#      los paquetes en ci-artifacts/
 #
 # Trabaja sobre un clon en /tmp (makepkg no corre como root y así no se
 # tocan los permisos del repositorio montado). Lo usa .github/workflows/ci.yml;
@@ -110,11 +110,8 @@ for c in "${qmlcats[@]}"; do qmlargs+=("--$c" error); done
 as_builder bash -c "cd '$WORK/goldenglass' && find build/plasma build/login plasma/shell kcm -name '*.qml' -print0 \
   | xargs -0 /usr/lib/qt6/bin/qmllint --ignore-settings --only-explicit-categories ${qmlargs[*]}"
 
-step "C++: compilación y pruebas"
-as_builder bash -c "cd '$WORK/goldenglass' && cmake -S . -B build/cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON >/dev/null \
-  && cmake --build build/cmake && ctest --test-dir build/cmake --output-on-failure"
-
-step "makepkg"
+step "makepkg: C++, pruebas (ctest) y paquetes"
+# el C++ se compila y se prueba una sola vez: en build() y check() del PKGBUILD
 as_builder bash -c "git config --global --add safe.directory '*' && cd '$WORK/goldenglass/packaging/goldenglass' \
   && GOLDENGLASS_BRANCH=ci-build makepkg -f --nodeps --noconfirm"
 
