@@ -88,6 +88,7 @@ def header(tokens: dict) -> str:
         ("Decoración", None, None),
         ("TitleAlignment", TITLE_ALIGNMENTS.index(align), align),
         ("GlassTitleBar", bool(tokens["decoration"]["glass_titlebar"]), "barra de título translúcida como la toolbar"),
+        ("FloatingTitlebar", bool(tokens["decoration"]["floating_titlebar"]), "barra de título flotante (decoración y blur del estilo)"),
         ("DecorationAnimationsDuration", int(tokens["decoration"]["animation_ms"]), "animaciones de los botones (ms)"),
         ("DecorationTitleGradientLighter", int(tokens["decoration"]["title_gradient_lighter"]),
          "degradado de la barra de título (QColor::lighter)"),

@@ -161,6 +161,10 @@ title_alignment = "AlignCenterFullWidth"  # AlignLeft | AlignCenter | AlignCente
 # Barra de título de vidrio con la misma opacidad que la toolbar: ambas se ven
 # como una sola superficie (toolbar unificada).
 glass_titlebar = true
+# Barra de título flotante (opción heredada de Lightly): separada del contenido
+# con su propio redondeo. Apagada, como la dibuja la decoración de fábrica; el
+# estilo la lee para redondear el blur de la ventana.
+floating_titlebar = false
 animation_ms = 150       # animaciones de los botones (el estilo usa style.animation_ms)
 # Opciones de la decoración heredadas de Breeze, apagadas de fábrica:
 title_gradient_lighter = 120   # degradado de la barra de título: arriba, QColor::lighter(%)
