@@ -162,6 +162,8 @@ private:
 
     QColor sidebarBackground(const QWidget *widget, const QPalette &palette, bool *clear) const;
     QColor token(unsigned int light, unsigned int dark, const QPalette &palette) const;
+    //* edge of the capsules and the search field; the text colour with «Show borders»
+    QColor capsuleBorderColor(const QPalette &palette) const;
 
     void applyDolphinDefaults() const;
 

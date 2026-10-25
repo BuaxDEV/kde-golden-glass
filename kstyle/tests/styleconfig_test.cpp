@@ -5,6 +5,9 @@
  * DolphinViewOpacity slider and integrates with the config system.
  */
 
+#include <KConfig>
+#include <KConfigGroup>
+
 #include <QTest>
 #include <QSlider>
 #include <QSpinBox>
@@ -37,6 +40,9 @@ private Q_SLOTS:
 
     // goldenglassrc [Accessibility]: valores de fábrica de los tokens (init() los pone)
     void testAccessibilityDefaults();
+    // «Show borders» written by goldenglass-glass reaches the style through the
+    // load() of Style::configurationChanged (D-Bus reparseConfiguration)
+    void testShowBordersIsReadLive();
 };
 
 void StyleConfigTest::initTestCase()
@@ -189,6 +195,24 @@ void StyleConfigTest::testAccessibilityDefaults()
         QCOMPARE(item->group(), QStringLiteral("Accessibility"));
         QCOMPARE(item->key(), QString::fromLatin1(key));
     }
+}
+
+void StyleConfigTest::testShowBordersIsReadLive()
+{
+    using GoldenGlass::StyleConfigData;
+    const auto writeShowBorders = [](bool value) {
+        KConfig config(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig);
+        config.group(QStringLiteral("Accessibility")).writeEntry("ShowBorders", value);
+        config.sync();
+    };
+
+    writeShowBorders(!GoldenGlass::Tokens::AccessibilityShowBorders);
+    StyleConfigData::self()->load();
+    QCOMPARE(StyleConfigData::showBorders(), !GoldenGlass::Tokens::AccessibilityShowBorders);
+
+    writeShowBorders(GoldenGlass::Tokens::AccessibilityShowBorders);
+    StyleConfigData::self()->load();
+    QCOMPARE(StyleConfigData::showBorders(), GoldenGlass::Tokens::AccessibilityShowBorders);
 }
 
 QTEST_MAIN(StyleConfigTest)

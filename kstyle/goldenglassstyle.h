@@ -422,6 +422,9 @@ private:
     //* return true if option corresponds to QtQuick control
     bool isQtQuickControl(const QStyleOption *, const QWidget *) const;
 
+    //* flat tool button of a toolbar («Show borders» draws its shape)
+    bool isToolBarButton(const QStyleOption *, const QWidget *) const;
+
     //@}
 
     //* adjust rect based on provided margins
