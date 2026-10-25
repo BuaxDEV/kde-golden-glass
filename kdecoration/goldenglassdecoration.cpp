@@ -46,6 +46,9 @@
 #include <QVariantAnimation>
 
 #include <cmath>
+#include <map>
+#include <memory>
+#include <tuple>
 
 K_PLUGIN_FACTORY_WITH_JSON(GoldenGlassDecoFactory, "goldenglass.json", registerPlugin<GoldenGlass::Decoration>(); registerPlugin<GoldenGlass::Button>();)
 
@@ -132,10 +135,10 @@ using KDecoration3::ColorRole;
 
 //________________________________________________________________
 static int g_sDecoCount = 0;
-static int g_shadowSizeEnum = InternalSettings::ShadowLarge;
-static int g_shadowStrength = 255;
-static QColor g_shadowColor = Qt::black;
-static std::shared_ptr<KDecoration3::DecorationShadow> g_sShadow;
+//* sombras compartidas por las decoraciones con los mismos parámetros: tamaño,
+//* intensidad, color, radio y desplazamiento del contorno (barra flotante)
+using ShadowKey = std::tuple<int, int, QRgb, qreal, int>;
+static std::map<ShadowKey, std::weak_ptr<KDecoration3::DecorationShadow>> g_shadows;
 
 //________________________________________________________________
 Decoration::Decoration(QObject *parent, const QVariantList &args)
@@ -151,7 +154,7 @@ Decoration::~Decoration()
     g_sDecoCount--;
     if (g_sDecoCount == 0) {
         // last deco destroyed, clean up shadow
-        g_sShadow.reset();
+        g_shadows.clear();
     }
 }
 
@@ -245,9 +248,10 @@ bool Decoration::init()
     connect(s.get(), &KDecoration3::DecorationSettings::decorationButtonsLeftChanged, this, &Decoration::updateButtonsGeometryDelayed);
     connect(s.get(), &KDecoration3::DecorationSettings::decorationButtonsRightChanged, this, &Decoration::updateButtonsGeometryDelayed);
 
-    // full reconfiguration
-    connect(s.get(), &KDecoration3::DecorationSettings::reconfigured, this, &Decoration::reconfigure);
+    // full reconfiguration. El proveedor relee la configuración antes que
+    // cualquier decoración: los slots se llaman en orden de conexión
     connect(s.get(), &KDecoration3::DecorationSettings::reconfigured, SettingsProvider::self(), &SettingsProvider::reconfigure, Qt::UniqueConnection);
+    connect(s.get(), &KDecoration3::DecorationSettings::reconfigured, this, &Decoration::reconfigure);
     connect(s.get(), &KDecoration3::DecorationSettings::reconfigured, this, &Decoration::updateButtonsGeometryDelayed);
 
     connect(window(), &KDecoration3::DecoratedWindow::activeChanged, this, &Decoration::recalculateBorders);
@@ -277,6 +281,8 @@ bool Decoration::init()
     connect(c, &KDecoration3::DecoratedWindow::activeChanged, this, &Decoration::updateBlur);
     connect(c, &KDecoration3::DecoratedWindow::widthChanged, this, &Decoration::updateTitleBar);
     connect(c, &KDecoration3::DecoratedWindow::maximizedChanged, this, &Decoration::updateTitleBar);
+    // con la barra flotante el contorno de la sombra depende de si está maximizada
+    connect(c, &KDecoration3::DecoratedWindow::maximizedChanged, this, &Decoration::createShadow);
 
     connect(c, &KDecoration3::DecoratedWindow::sizeChanged, this, &Decoration::updateBlur); // recalculate blur region on resize
 
@@ -636,15 +642,25 @@ if (m_internalSettings->floatingTitlebar()){
 
         const qreal thickness = std::max(KDecoration3::pixelSize(window()->scale()), KDecoration3::snapToPixelGrid(1, window()->scale()));
 
-        qreal bottomLeftRadius = 0;
-        qreal bottomRightRadius = 0;
-
-        if (!hasNoBorders() || m_internalSettings->roundedCorners()) {
-            bottomLeftRadius = m_scaledCornerRadius;
-            bottomRightRadius = m_scaledCornerRadius;
+        // el contorno sigue la forma visible: esquinas rectas donde la ventana
+        // toca un borde de la pantalla. Sin barra de título y sin bordes, las
+        // esquinas son las del cliente (setBorderRadius)
+        qreal outlineTopLeft = topLeftRadius;
+        qreal outlineTopRight = topRightRadius;
+        if (!hideTitleBar()) {
+            // la barra de título es recta junto a los bordes (calculateWindowAndTitleBarShapes)
+            outlineTopLeft = (isTopEdge() || isLeftEdge()) ? 0 : m_scaledCornerRadius;
+            outlineTopRight = (isTopEdge() || isRightEdge()) ? 0 : m_scaledCornerRadius;
+        }
+        qreal outlineBottomLeft = bottomLeftRadius;
+        qreal outlineBottomRight = bottomRightRadius;
+        if (!hasNoBorders()) {
+            // el borde inferior se pinta redondeado; pegado abajo no hay borde
+            outlineBottomLeft = isBottomEdge() ? 0 : m_scaledCornerRadius;
+            outlineBottomRight = isBottomEdge() ? 0 : m_scaledCornerRadius;
         }
 
-        const auto radius = KDecoration3::BorderRadius(m_scaledCornerRadius, m_scaledCornerRadius, bottomRightRadius, bottomLeftRadius);
+        const auto radius = KDecoration3::BorderRadius(outlineTopLeft, outlineTopRight, outlineBottomRight, outlineBottomLeft);
         setBorderOutline(KDecoration3::BorderOutline(thickness, color, radius));
     }
 }
@@ -1065,19 +1081,21 @@ QPair<QRectF, Qt::Alignment> Decoration::captionRect() const
 //________________________________________________________________
 void Decoration::createShadow()
 {
-    if (!g_sShadow || g_shadowSizeEnum != m_internalSettings->shadowSize() || g_shadowStrength != m_internalSettings->shadowStrength()
-        || g_shadowColor != m_internalSettings->shadowColor()) {
-        g_shadowSizeEnum = m_internalSettings->shadowSize();
-        g_shadowStrength = m_internalSettings->shadowStrength();
-        g_shadowColor = m_internalSettings->shadowColor();
+    const int shadowSize = m_internalSettings->shadowSize();
+    const CompositeShadowParams params = lookupShadowParams(shadowSize);
+    if (params.isNone()) {
+        setShadow(nullptr);
+        return;
+    }
 
-        const CompositeShadowParams params = lookupShadowParams(g_shadowSizeEnum);
-        if (params.isNone()) {
-            g_sShadow.reset();
-            setShadow(g_sShadow);
-            return;
-        }
+    // con la barra flotante el contorno empieza debajo de ella (salvo maximizada)
+    const int outlineTop = (m_internalSettings->floatingTitlebar() && !isMaximized()) ? (buttonSize() + (Metrics::TitleBar_TopMargin * 2) + 13) : 0;
+    const QColor shadowColor = m_internalSettings->shadowColor();
+    const int shadowStrength = m_internalSettings->shadowStrength();
+    const ShadowKey key(shadowSize, shadowStrength, shadowColor.rgba(), m_scaledCornerRadius, outlineTop);
 
+    std::shared_ptr<KDecoration3::DecorationShadow> shadow = g_shadows[key].lock();
+    if (!shadow) {
         auto withOpacity = [](const QColor &color, qreal opacity) -> QColor {
             QColor c(color);
             c.setAlphaF(opacity);
@@ -1091,9 +1109,9 @@ void Decoration::createShadow()
         shadowRenderer.setBorderRadius(m_scaledCornerRadius + 0.5);
         shadowRenderer.setBoxSize(boxSize);
 
-        const qreal strength = static_cast<qreal>(g_shadowStrength) / 255.0;
-        shadowRenderer.addShadow(params.shadow1.offset, params.shadow1.radius, withOpacity(g_shadowColor, params.shadow1.opacity * strength));
-        shadowRenderer.addShadow(params.shadow2.offset, params.shadow2.radius, withOpacity(g_shadowColor, params.shadow2.opacity * strength));
+        const qreal strength = static_cast<qreal>(shadowStrength) / 255.0;
+        shadowRenderer.addShadow(params.shadow1.offset, params.shadow1.radius, withOpacity(shadowColor, params.shadow1.opacity * strength));
+        shadowRenderer.addShadow(params.shadow2.offset, params.shadow2.radius, withOpacity(shadowColor, params.shadow2.opacity * strength));
 
         QImage shadowTexture = shadowRenderer.render();
 
@@ -1109,37 +1127,35 @@ void Decoration::createShadow()
                                           boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),
                                           outerRect.right() - boxRect.right() - Metrics::Shadow_Overlap + params.offset.x(),
                                           outerRect.bottom() - boxRect.bottom() - Metrics::Shadow_Overlap + params.offset.y());
-        const QRect innerRect = outerRect - padding;
+        const QRect innerRect = (outerRect - padding).adjusted(0, outlineTop, 0, 0);
 
         // Draw outline.
-        painter.setPen(withOpacity(g_shadowColor, 0.4 * strength));
+        painter.setPen(withOpacity(shadowColor, 0.4 * strength));
         painter.setBrush(Qt::NoBrush);
         painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-        if (m_internalSettings->floatingTitlebar()){
-        painter.drawRoundedRect(innerRect.adjusted(0, isMaximized() ? 0 : (buttonSize() + (Metrics::TitleBar_TopMargin * 2) + 13), 0, 0), m_scaledCornerRadius - 0.5, m_scaledCornerRadius - 0.5);
-        } else {
         painter.drawRoundedRect(innerRect, m_scaledCornerRadius - 0.5, m_scaledCornerRadius - 0.5);
-        }
 
         // Mask out inner rect.
         painter.setPen(Qt::NoPen);
         painter.setBrush(Qt::black);
         painter.setCompositionMode(QPainter::CompositionMode_DestinationOut);
-        if (m_internalSettings->floatingTitlebar()){
-        painter.drawRoundedRect(innerRect.adjusted(0, isMaximized() ? 0 : (buttonSize() + (Metrics::TitleBar_TopMargin * 2) + 13), 0, 0), m_scaledCornerRadius + 0.5, m_scaledCornerRadius + 0.5);
-        } else {
         painter.drawRoundedRect(innerRect, m_scaledCornerRadius + 0.5, m_scaledCornerRadius + 0.5);
-        }
 
         painter.end();
 
-        g_sShadow = std::make_shared<KDecoration3::DecorationShadow>();
-        g_sShadow->setPadding(padding);
-        g_sShadow->setInnerShadowRect(QRect(outerRect.center(), QSize(1, 1)));
-        g_sShadow->setShadow(shadowTexture);
+        shadow = std::make_shared<KDecoration3::DecorationShadow>();
+        shadow->setPadding(padding);
+        shadow->setInnerShadowRect(QRect(outerRect.center(), QSize(1, 1)));
+        shadow->setShadow(shadowTexture);
+
+        // las sombras que ya no usa ninguna ventana salen de la caché
+        std::erase_if(g_shadows, [](const auto &entry) {
+            return entry.second.expired();
+        });
+        g_shadows[key] = shadow;
     }
 
-    setShadow(g_sShadow);
+    setShadow(shadow);
 }
 
 QMarginsF Decoration::bordersFor(qreal scale) const
@@ -1183,6 +1199,8 @@ void Decoration::updateScale()
     setScaledCornerRadius();
     recalculateBorders();
     updateBlur();
+    // la sombra usa el radio escalado
+    createShadow();
 }
 
 } // namespace
