@@ -47,18 +47,18 @@ ConfigWidget::ConfigWidget(QObject *parent, const KPluginMetaData &data, const Q
     // track ui changes
     connect(m_ui.titleAlignment, SIGNAL(currentIndexChanged(int)), SLOT(updateChanged()));
     connect(m_ui.buttonSize, SIGNAL(currentIndexChanged(int)), SLOT(updateChanged()));
-    connect(m_ui.outlineCloseButton, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
-    connect(m_ui.drawBorderOnMaximizedWindows, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
-    connect(m_ui.drawBackgroundGradient, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
-    connect(m_ui.drawTitleBarSeparator, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
-    connect(m_ui.roundedCorners, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
+    connect(m_ui.outlineCloseButton, &QAbstractButton::toggled, this, &ConfigWidget::updateChanged);
+    connect(m_ui.drawBorderOnMaximizedWindows, &QAbstractButton::toggled, this, &ConfigWidget::updateChanged);
+    connect(m_ui.drawBackgroundGradient, &QAbstractButton::toggled, this, &ConfigWidget::updateChanged);
+    connect(m_ui.drawTitleBarSeparator, &QAbstractButton::toggled, this, &ConfigWidget::updateChanged);
+    connect(m_ui.roundedCorners, &QAbstractButton::toggled, this, &ConfigWidget::updateChanged);
     connect(m_ui.windowCornerRadius, SIGNAL(valueChanged(int)), SLOT(updateChanged()));
-    connect(m_ui.floatingTitlebar, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
-    connect(m_ui.blurTransparentTitleBar, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
-    connect(m_ui.matchInactiveTitleBar, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
+    connect(m_ui.floatingTitlebar, &QAbstractButton::toggled, this, &ConfigWidget::updateChanged);
+    connect(m_ui.blurTransparentTitleBar, &QAbstractButton::toggled, this, &ConfigWidget::updateChanged);
+    connect(m_ui.matchInactiveTitleBar, &QAbstractButton::toggled, this, &ConfigWidget::updateChanged);
 
     // track animations changes
-    connect(m_ui.animationsEnabled, &QAbstractButton::clicked, this, &ConfigWidget::updateChanged);
+    connect(m_ui.animationsEnabled, &QAbstractButton::toggled, this, &ConfigWidget::updateChanged);
     connect(m_ui.animationsDuration, SIGNAL(valueChanged(int)), SLOT(updateChanged()));
 
     // track shadows changes
@@ -166,28 +166,31 @@ void ConfigWidget::save()
 //_________________________________________________________
 void ConfigWidget::defaults()
 {
-    // create internal settings and load from rc files
-    m_internalSettings = InternalSettingsPtr(new InternalSettings());
-    m_internalSettings->setDefaults();
+    // valores de fábrica en una copia aparte: m_internalSettings sigue siendo lo
+    // guardado, para que updateChanged() vea la diferencia y se pueda aplicar
+    const InternalSettingsPtr defaults(new InternalSettings());
+    defaults->setDefaults();
 
     // assign to ui
-    m_ui.titleAlignment->setCurrentIndex(m_internalSettings->titleAlignment());
-    m_ui.buttonSize->setCurrentIndex(m_internalSettings->buttonSize());
-    m_ui.outlineCloseButton->setChecked(m_internalSettings->outlineCloseButton());
-    m_ui.drawBorderOnMaximizedWindows->setChecked(m_internalSettings->drawBorderOnMaximizedWindows());
-    m_ui.drawBackgroundGradient->setChecked(m_internalSettings->drawBackgroundGradient());
-    m_ui.animationsEnabled->setChecked(m_internalSettings->animationsEnabled());
-    m_ui.animationsDuration->setValue(m_internalSettings->animationsDuration());
-    m_ui.drawTitleBarSeparator->setChecked(m_internalSettings->drawTitleBarSeparator());
-    m_ui.roundedCorners->setChecked(m_internalSettings->roundedCorners());
-    m_ui.windowCornerRadius->setValue(m_internalSettings->windowCornerRadius());
-    m_ui.floatingTitlebar->setChecked(m_internalSettings->floatingTitlebar());
-    m_ui.blurTransparentTitleBar->setChecked(m_internalSettings->blurTransparentTitleBar());
-    m_ui.matchInactiveTitleBar->setChecked(m_internalSettings->matchInactiveTitleBar());
+    m_ui.titleAlignment->setCurrentIndex(defaults->titleAlignment());
+    m_ui.buttonSize->setCurrentIndex(defaults->buttonSize());
+    m_ui.outlineCloseButton->setChecked(defaults->outlineCloseButton());
+    m_ui.drawBorderOnMaximizedWindows->setChecked(defaults->drawBorderOnMaximizedWindows());
+    m_ui.drawBackgroundGradient->setChecked(defaults->drawBackgroundGradient());
+    m_ui.animationsEnabled->setChecked(defaults->animationsEnabled());
+    m_ui.animationsDuration->setValue(defaults->animationsDuration());
+    m_ui.drawTitleBarSeparator->setChecked(defaults->drawTitleBarSeparator());
+    m_ui.roundedCorners->setChecked(defaults->roundedCorners());
+    m_ui.windowCornerRadius->setValue(defaults->windowCornerRadius());
+    m_ui.floatingTitlebar->setChecked(defaults->floatingTitlebar());
+    m_ui.blurTransparentTitleBar->setChecked(defaults->blurTransparentTitleBar());
+    m_ui.matchInactiveTitleBar->setChecked(defaults->matchInactiveTitleBar());
 
-    m_ui.shadowSize->setCurrentIndex(m_internalSettings->shadowSize());
-    m_ui.shadowStrength->setValue(qRound(qreal(m_internalSettings->shadowStrength() * 100) / 255));
-    m_ui.shadowColor->setColor(m_internalSettings->shadowColor());
+    m_ui.shadowSize->setCurrentIndex(defaults->shadowSize());
+    m_ui.shadowStrength->setValue(qRound(qreal(defaults->shadowStrength() * 100) / 255));
+    m_ui.shadowColor->setColor(defaults->shadowColor());
+
+    updateChanged();
 }
 
 //_______________________________________________

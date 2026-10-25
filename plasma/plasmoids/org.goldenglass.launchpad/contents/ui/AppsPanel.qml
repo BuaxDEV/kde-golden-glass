@@ -875,6 +875,7 @@ PlasmaCore.Dialog {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 text: item.entry.name
+                textFormat: Text.PlainText
                 font.weight: Font.Medium
                 elide: Text.ElideRight
                 maximumLineCount: 1

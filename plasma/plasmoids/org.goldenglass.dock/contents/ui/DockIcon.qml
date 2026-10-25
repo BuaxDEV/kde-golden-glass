@@ -262,6 +262,7 @@ Item {
         id: labelComponent
         PlasmaComponents3.Label {
             text: tile.label
+            textFormat: Text.PlainText
             leftPadding: Kirigami.Units.smallSpacing
             rightPadding: Kirigami.Units.smallSpacing
         }

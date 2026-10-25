@@ -7,6 +7,8 @@
     <group name="Effect-blur">
         <entry name="BlurStrength" type="Int">
             <default>15</default>
+            <min>1</min>
+            <max>15</max>
         </entry>
         <entry name="NoiseStrength" type="Int">
             <default>5</default>

@@ -260,6 +260,9 @@ bool Decoration::init()
     connect(c, &KDecoration3::DecoratedWindow::maximizedHorizontallyChanged, this, &Decoration::recalculateBorders);
     connect(c, &KDecoration3::DecoratedWindow::maximizedVerticallyChanged, this, &Decoration::recalculateBorders);
     connect(c, &KDecoration3::DecoratedWindow::shadedChanged, this, &Decoration::recalculateBorders);
+    // al pasar a una pantalla con otra escala, radio, bordes y blur se ajustan a
+    // la nueva rejilla de píxeles
+    connect(c, &KDecoration3::DecoratedWindow::nextScaleChanged, this, &Decoration::updateScale);
     // the menu bar tells the main windows of the integrated title bar apps
     // apart from their dialogs (see SettingsProvider::internalSettings)
     connect(c, &KDecoration3::DecoratedWindow::hasApplicationMenuChanged, this, [this]() {
@@ -1232,6 +1235,7 @@ void Decoration::updateScale()
 {
     setScaledCornerRadius();
     recalculateBorders();
+    updateBlur();
 }
 
 } // namespace

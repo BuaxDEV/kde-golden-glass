@@ -280,7 +280,9 @@ void GlassEffect::reconfigure(ReconfigureFlags flags)
 {
     GlassConfig::self()->read();
 
-    int blurStrength = GlassConfig::blurStrength() - 1;
+    // [Effect-blur] es el grupo del Blur de KWin: un valor fuera de rango ahí
+    // indexaría fuera de la tabla y tumbaría el compositor
+    const int blurStrength = std::clamp(GlassConfig::blurStrength() - 1, 0, int(blurStrengthValues.size()) - 1);
     m_iterationCount = blurStrengthValues[blurStrength].iteration;
     m_offset = blurStrengthValues[blurStrength].offset;
     m_expandSize = blurOffsets[m_iterationCount - 1].expandSize;

@@ -59,6 +59,8 @@ chown -R "$BUILDER:$BUILDER" "$WORK"
 as_builder() { runuser -u "$BUILDER" -- env HOME="/home/$BUILDER" QT_QPA_PLATFORM=offscreen "$@"; }
 
 step "Comprobaciones rápidas"
+# VERSION entra en el filtro pkgver de git (tools/setup-git.sh) y en el PKGBUILD
+grep -Eqx '[0-9]+(\.[0-9]+)*' "$ROOT/VERSION" || { echo "VERSION no válido: $(head -c 80 "$ROOT/VERSION")" >&2; exit 1; }
 as_builder bash -c "cd '$WORK/goldenglass' && python -m py_compile tools/*.py && for f in tools/*.sh; do bash -n \"\$f\"; done \
   && find plasma po login -name '*.po' -print0 | xargs -0 -n1 msgfmt --check -o /dev/null"
 

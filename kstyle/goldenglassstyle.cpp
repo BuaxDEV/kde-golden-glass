@@ -258,10 +258,6 @@ void Style::polish(QApplication *app)
     if (StyleConfigData::opaqueApps().contains(appName, Qt::CaseInsensitive) || StyleConfigData::forceOpaque().contains(appName, Qt::CaseInsensitive))
         _isOpaque = true;
 
-    const qreal dpr = qApp->devicePixelRatio();
-    bool nonIntegerScale = (dpr > static_cast<qreal>(1) && static_cast<qreal>(qRound(dpr)) != dpr);
-    if (nonIntegerScale)
-        _isOpaque = true;
     if (_translucentWidgets.size() > 0)
         _translucentWidgets.clear();
 
@@ -394,20 +390,19 @@ void Style::polish(QWidget *widget)
         }
     }
 
+    // contorno redondeado para los KMessageWidget (salvo los de Kate). Sin
+    // return: las etiquetas sin padre (QTipLabel de los tooltips) y las de Kate
+    // también necesitan el resto de polish()
     if (qobject_cast<QLabel*>(widget)) {
         QWidget* parent = widget->parentWidget();
-        if (!parent)
-            return;
-
         while (parent) {
             if (parent->inherits("KMessageWidget")) {
-                for (QWidget* p = parent->parentWidget(); p; p = p->parentWidget()) {
-                    if (p->inherits("KateMessageWidget")) {
-                        return;
-                    }
+                bool inKate = false;
+                for (QWidget* p = parent->parentWidget(); p && !inKate; p = p->parentWidget()) {
+                    inKate = p->inherits("KateMessageWidget");
                 }
 
-                if (!parent->property("_goldenglassRoundedOverlay").isValid())
+                if (!inKate && !parent->property("_goldenglassRoundedOverlay").isValid())
                 {
                     auto overlay = new RoundedOuterOutlineOverlay(parent, _isDolphin, StyleConfigData::windowCornerRadius(), StyleConfigData::windowCornerRadius() * 2);
                     overlay->lower();
@@ -4162,7 +4157,7 @@ bool Style::drawFramePrimitive(const QStyleOption *option, QPainter *painter, co
     const auto &rect(option->rect);
 
     // from kvantum
-    if (_isDolphin) {
+    if (_isDolphin && widget) {
         if (QWidget *pw = widget->parentWidget()) {
             if (StyleConfigData::dolphinViewOpacity() < 100
                 // not renaming area
@@ -4287,9 +4282,10 @@ bool Style::drawFrameLineEditPrimitive(const QStyleOption *option, QPainter *pai
 
                 if (!isVisible) {
                     // breadcrumb view not editable location
-                    if (StyleConfigData::toolBarOpacity() < 100) {
-                        background.setAlphaF(StyleConfigData::toolBarOpacity() / 100);
-                    } else if (StyleConfigData::disableDolphinUrlNavigatorBackground()) {
+                    // con la toolbar de vidrio la ruta va sin fondo, sobre el
+                    // vidrio de la toolbar (antes salía igual por una división
+                    // entera: toolBarOpacity() / 100 daba 0)
+                    if (StyleConfigData::toolBarOpacity() < 100 || StyleConfigData::disableDolphinUrlNavigatorBackground()) {
                         background.setAlphaF(0);
                     }
                     // URL location path

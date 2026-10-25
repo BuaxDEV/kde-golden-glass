@@ -46,6 +46,20 @@ StyleConfig::StyleConfig(QWidget *parent)
 {
     setupUi(this);
 
+    for (QString &item : _shadowSizes) {
+        if (item == "None") {
+            _shadowSize->addItem(item, "ShadowNone");
+        } else if (item == "Small") {
+            _shadowSize->addItem(item, "ShadowSmall");
+        } else if (item == "Medium") {
+            _shadowSize->addItem(item, "ShadowMedium");
+        } else if (item == "Large") {
+            _shadowSize->addItem(item, "ShadowLarge");
+        } else if (item == "VeryLarge") {
+            _shadowSize->addItem(item, "ShadowVeryLarge");
+        }
+    }
+
     // load setup from configData
     load();
 
@@ -96,7 +110,7 @@ StyleConfig::StyleConfig(QWidget *parent)
     connect(_widgetToolBarShadow, &QAbstractButton::toggled, this, &StyleConfig::updateChanged);
     connect(_shadowSize, SIGNAL(currentIndexChanged(int)), SLOT(updateChanged()));
     connect(_shadowColor, &KColorCombo::activated, this, &StyleConfig::updateChanged);
-    connect(_shadowStrength, SIGNAL(valueChanged(int)), _shadowStrength, SLOT(setValue(int)));
+    connect(_shadowStrength, SIGNAL(valueChanged(int)), SLOT(updateChanged()));
     connect(_shadowIntensity, SIGNAL(currentIndexChanged(int)), SLOT(updateChanged()));
 
     connect(_scrollableMenu, &QAbstractButton::toggled, this, &StyleConfig::updateChanged);
@@ -194,16 +208,17 @@ void StyleConfig::save()
 //__________________________________________________________________
 void StyleConfig::defaults()
 {
+    // los controles toman los valores de fábrica y StyleConfigData vuelve a lo
+    // guardado, para que updateChanged() vea la diferencia y se pueda aplicar
     StyleConfigData::self()->setDefaults();
-    load();
+    loadWidgets();
+    StyleConfigData::self()->load();
+    updateChanged();
 }
 
 //__________________________________________________________________
 void StyleConfig::reset()
 {
-    // reparse configuration
-    StyleConfigData::self()->load();
-
     load();
 }
 
@@ -231,7 +246,7 @@ void StyleConfig::updateChanged()
         modified = true;
     else if (_menuItemDrawThinFocus->isChecked() == StyleConfigData::menuItemDrawStrongFocus())
         modified = true;
-    else if (_roundedRubberBandFrame->isChecked() == StyleConfigData::roundedRubberBandFrame())
+    else if (_roundedRubberBandFrame->isChecked() != StyleConfigData::roundedRubberBandFrame())
         modified = true;
     else if (_mnemonicsMode->currentIndex() != StyleConfigData::mnemonicsMode())
         modified = true;
@@ -352,7 +367,12 @@ void StyleConfig::updateChanged()
 void StyleConfig::load()
 {
     StyleConfigData::self()->load();
+    loadWidgets();
+}
 
+//__________________________________________________________________
+void StyleConfig::loadWidgets()
+{
     _tabDrawHighlight->setChecked(StyleConfigData::tabDrawHighlight());
     _unifiedTabBarKonsole->setChecked(StyleConfigData::unifiedTabBarKonsole());
     _renderThinSeperatorBetweenTheScrollBar->setChecked(StyleConfigData::renderThinSeperatorBetweenTheScrollBar());
@@ -411,19 +431,6 @@ void StyleConfig::load()
         _widgetToolBarShadow->setEnabled(false);
     }
 
-    for (QString &item : _shadowSizes) {
-        if (item == "None") {
-            _shadowSize->addItem(item, "ShadowNone");
-        } else if (item == "Small") {
-            _shadowSize->addItem(item, "ShadowSmall");
-        } else if (item == "Medium") {
-            _shadowSize->addItem(item, "ShadowMedium");
-        } else if (item == "Large") {
-            _shadowSize->addItem(item, "ShadowLarge");
-        } else if (item == "VeryLarge") {
-            _shadowSize->addItem(item, "ShadowVeryLarge");
-        }
-    }
     _shadowSize->setCurrentIndex(StyleConfigData::shadowSize());
     if (_shadowSize->currentIndex() == 0) {
         _shadowColor->setEnabled(false);

@@ -98,8 +98,10 @@ Rectangle {
 
     // --- componentes -----------------------------------------------------------
 
-    // Texto claro del tema (sobre vidrio oscuro o el fondo difuminado).
+    // Texto claro del tema (sobre vidrio oscuro o el fondo difuminado). Texto
+    // plano: muestra nombres de usuario (GECOS), que cada usuario puede cambiar.
     component GlassLabel: Text {
+        textFormat: Text.PlainText
         color: st.text
         opacity: st.textAlpha
         font.family: st.font
