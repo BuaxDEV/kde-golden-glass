@@ -8,7 +8,9 @@
  * Pide tres niveles seguidos (1.0, 0.0, 0.25): el último debe quedar aplicado.
  * Then flips «Reduce motion» on, off and on: it must end on, through
  * goldenglass-windows, without losing the glass level. Then «Reduce
- * transparency» on, off and on with a level on top: both end applied.
+ * transparency» on, off and on with a level on top: both end applied. Then
+ * «Show borders» on, off and on queued with «Reduce transparency» off: all
+ * three kinds end applied.
  * En ctest corre sin sesión, con el goldenglass-glass de prueba de tests/bin y
  * XDG_CONFIG_HOME temporal (ver kcm/CMakeLists.txt).
  */
@@ -102,7 +104,29 @@ int main(int argc, char **argv)
     const bool transparencyOk = !kcm->property("busy").toBool() && transparencyApplied && kcm->property("reduceTransparency").toBool()
         && qAbs(levelAfterTransparency - 0.6) < 0.001 && transparencyError.isEmpty();
 
-    const bool ok = levelOk && reduceOk && transparencyOk;
+    // «Show borders» queues as a third kind next to the other two
+    for (const bool value : {true, false, true}) {
+        kcm->setProperty("showBorders", value);
+    }
+    kcm->setProperty("reduceTransparency", false);
+    timer.restart();
+    while (kcm->property("busy").toBool() && timer.elapsed() < 30000) {
+        app.processEvents(QEventLoop::AllEvents, 100);
+        QThread::msleep(20);
+    }
+    const KConfig afterBorders(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig);
+    const KConfigGroup accessibility = afterBorders.group(QStringLiteral("Accessibility"));
+    const bool bordersApplied = accessibility.readEntry("ShowBorders", false);
+    const bool transparencyAfterBorders = accessibility.readEntry("ReduceTransparency", true);
+    const double levelAfterBorders = afterBorders.group(QStringLiteral("Glass")).readEntry("Level", -1.0);
+    const QString bordersError = kcm->property("errorText").toString();
+    out << "show_borders_kcm=" << kcm->property("showBorders").toBool() << " show_borders_applied=" << bordersApplied
+        << " reduce_transparency_applied=" << transparencyAfterBorders << " nivel_tras=" << levelAfterBorders << " error=\"" << bordersError
+        << "\"\n";
+    const bool bordersOk = !kcm->property("busy").toBool() && bordersApplied && kcm->property("showBorders").toBool() && !transparencyAfterBorders
+        && !kcm->property("reduceTransparency").toBool() && qAbs(levelAfterBorders - 0.6) < 0.001 && bordersError.isEmpty();
+
+    const bool ok = levelOk && reduceOk && transparencyOk && bordersOk;
     out << (ok ? "OK" : "FALLO") << "\n";
     return ok ? 0 : 1;
 }
