@@ -581,6 +581,68 @@ ejecuta bajo `dbus-run-session` (un bus de sesión propio y descartable, con
 `check()` del PKGBUILD y la CI (`tools/ci.sh`) instalan `dbus` como
 `checkdepends`; `ctest` no necesita envoltorio.
 
+#### Movimiento — `Motion.qml`
+
+Las animaciones de los plasmoids siguen la «Velocidad de animación» de
+Ajustes del sistema (`kdeglobals [KDE] AnimationDurationFactor`). Los `*_ms` de
+animación de `[apps]`, `[scroll]`, `[dock]` y `[control_center]` son duraciones
+a factor 1 y pasan por el singleton `Motion` (`org.goldenglass.launchpad/
+contents/ui/Motion.qml` y su `qmldir`, que `tools/plasmoids.py` copia por
+`SHARED` al dock y al Centro de control, uniéndolo al `qmldir` que ya tengan):
+
+- `factor` = `Kirigami.Units.longDuration ÷ motion.kirigami_long_ms` (200);
+  `animated` = `longDuration > 1`.
+- `ms(base)`: fundidos, colores, rueda, barra de desplazamiento y ampliación
+  del dock (`base × factor`, 0 sin animaciones).
+- `moveMs(base)`: escalas, desplazamientos y resortes (paneles, tarjetas,
+  rebote elástico, rebote del dock, hueco al arrastrar).
+- `fadeMs(base)`: el fundido de una transición que también se mueve (abrir y
+  cerrar paneles).
+- `overshoot(v)`: el rebote de `Easing.OutBack`.
+- `reduced` («Reducir movimiento») vale `false`: es el punto de enganche de la
+  clave `ReduceMotion` (`AccessibilitySettings`, plan de macOS 27 §4.7). Con
+  ella, `moveMs` y `overshoot` darán 0 y `fadeMs`, `motion.reduced_fade_ms`.
+
+No se escalan las esperas que no son animaciones (`label_delay_ms`,
+`preview_hide_ms`, `bar_hide_ms`, `glass_update_ms`, `interval:` de los
+Timer). Con factor 1 las duraciones son las de los tokens, sin cambios. El
+rebote del dock no arranca si un tramo dura menos de 1 ms. `tools/tests/
+test_motion.py` falla si un `duration:` o un `easing.overshoot` de los
+plasmoids usa un token sin pasar por `Motion`, y comprueba en ejecución
+(offscreen, `kdeglobals` temporal; se salta sin `qml6` o sin el plugin de
+plataforma de Kirigami) `Motion.ms(100)` con factor 0, 0,25, 1 y 2.
+
+**Spike SP-04** (Plasma 6.8.1, Qt 6.12, Kirigami 6.31; `qml6` offscreen con
+`QT_QUICK_CONTROLS_STYLE=Plasma`, que carga `KirigamiPlasmaStyle`, el mismo
+plugin de plataforma que plasmashell):
+
+| `AnimationDurationFactor` | `longDuration` | `shortDuration` | `veryLongDuration` | `Motion.factor` |
+|---|---|---|---|---|
+| sin clave / 1 | 200 | 100 | 400 | 1 |
+| 0 (y negativos) | 1 | 0 | 2 | 0,005 (`animated` false) |
+| 0,25 | 50 | 25 | 100 | 0,25 |
+| 0,333 | 67 | 33 | 134 | 0,335 |
+| 2 | 400 | 200 | 800 | 2 |
+
+- `longDuration` = `max(1, round(200 × factor))`; `shortDuration` es la mitad
+  sin el mínimo de 1 y `veryLongDuration` el doble. Una clave no numérica se
+  ignora (200). Sin plugin de plataforma (estilo `Basic` o sin estilo), 200 fijo.
+- **En vivo:** cambia al instante (señal `longDurationChanged` y los bindings
+  que llaman a `Motion` se recalculan) cuando se reescribe `kdeglobals` con
+  aviso (`kwriteconfig6 --notify`, como hace Ajustes del sistema; probado en un
+  bus de D-Bus privado). Reescribir el archivo sin aviso no cambia nada.
+- **Duración 0:** `NumberAnimation`, `ParallelAnimation` y
+  `SequentialAnimation` (con `PauseAnimation` y `ScriptAction`) terminan dentro
+  de `start()`/`restart()`: dejan los valores finales, ejecutan los
+  `ScriptAction` y emiten `finished` antes de volver, así que el cierre de
+  `FloatingPanel` y `AppsPanel` acaba igual. Un `Behavior` de 0 ms pone el
+  valor final al momento. Reiniciar en `onFinished` una animación de 0 ms es
+  una recursión síncrona (en la prueba, `RangeError: Maximum call stack size
+  exceeded` tras ~1650 vueltas), no un bucle por fotograma: de ahí la guarda
+  del rebote del dock. Con 1 ms la animación termina en el fotograma
+  siguiente. No hizo falta el plan B (leer el factor en C++ ni forzar
+  `visible = false`).
+
 ### 4.6 Tipografía — `fontconfig/`
 - SF Pro **no se redistribuye** (licencia de Apple).
 - Alias de fontconfig `GoldenGlass Sans` → SF Pro → SF Pro Text → Inter, y
