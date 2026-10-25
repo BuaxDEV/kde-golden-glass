@@ -23,6 +23,13 @@
   son idénticos byte a byte). `goldenglass-icons` instala
   `/usr/share/goldenglass/icon-tile.json` con esos valores para que
   `goldenglass-wrap-icons` siga sin depender de los tokens ni de otros paquetes.
+- **`goldenglass-glass`:** el módulo de Ajustes y el slider del Centro de
+  control ya no se pisan si lanzan la herramienta a la vez: toda operación que
+  escribe (`--level`, `--refraction`, `--menubar-background`, `--check`) toma
+  un `flock` exclusivo en `$XDG_RUNTIME_DIR/goldenglass-glass.lock` y la
+  segunda espera a la primera; `--get*` no esperan. El tema
+  `GoldenGlassTuned` se genera en un directorio hermano y se cambia de golpe,
+  así que Plasma nunca lo ve a medias.
 
 ## 0.2.1 — 2026-10-15
 
