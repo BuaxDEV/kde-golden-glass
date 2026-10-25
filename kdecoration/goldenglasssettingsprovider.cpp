@@ -22,7 +22,6 @@
 
 #include "goldenglassexceptionlist.h"
 
-#include <KWindowInfo>
 #include <QRegularExpression>
 #include <QTextStream>
 

@@ -22,8 +22,6 @@
  */
 #pragma once
 #include "goldenglasssettings.h"
-#define KDECORATION_VERSION KDECORATION_VERSION_CHECK(KDECORATION_VERSION_MAJOR, KDECORATION_VERSION_MINOR, KDECORATION_VERSION_PATCH)
-#define KDECORATION_VERSION_CHECK(major, minor, patch) ((major << 16) | (minor << 8) | (patch))
 
 #include <QList>
 #include <QSharedPointer>
@@ -54,7 +52,7 @@ static constexpr int Shadow_Overlap = 3;
 //* standard pen widths
 namespace PenWidth
 {
-/* Using 1 instead of sgoldenglass more than 1 causes symbols drawn with
+/* Using 1 instead of slightly more than 1 causes symbols drawn with
  * pen strokes to look skewed. The exact amount added does not matter
  * as long as it isn't too visible.
  */

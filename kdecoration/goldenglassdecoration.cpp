@@ -22,7 +22,6 @@
 
 #include "goldenglassdecoration.h"
 
-#include "config-goldenglass.h"
 #include "goldenglass.h"
 #include "goldenglass_tokens.h"
 #include "goldenglasssettingsprovider.h"
@@ -45,10 +44,6 @@
 #include <QTextStream>
 #include <QTimer>
 #include <QVariantAnimation>
-
-#if GOLDENGLASS_HAVE_X11
-#include <QX11Info>
-#endif
 
 #include <cmath>
 
@@ -340,7 +335,6 @@ void Decoration::calculateWindowAndTitleBarShapes(const bool windowShapeOnly)
 {
 if (m_internalSettings->floatingTitlebar()){
     auto c = window();
-    auto s = settings();
 
     const qreal shrinkAmount = !isMaximized() ? 4 : 0; // shrink decoration height by 5px
 
@@ -352,7 +346,7 @@ if (m_internalSettings->floatingTitlebar()){
         // Clear previous path
         m_titleBarPath->clear();
 
-        if (isMaximized() || !s->isAlphaChannelSupported()) {
+        if (isMaximized()) {
             m_titleBarPath->addRect(m_titleRect);
         } else {
             m_titleBarPath->addRoundedRect(m_titleRect, m_scaledCornerRadius, m_scaledCornerRadius);
@@ -366,7 +360,7 @@ if (m_internalSettings->floatingTitlebar()){
         QRect adjustedRect = rect().toRect();
         adjustedRect.setHeight(std::max(adjustedRect.height() - int(shrinkAmount), 0));
 
-        if (s->isAlphaChannelSupported() && !isMaximized()) {
+        if (!isMaximized()) {
             m_windowPath->addRoundedRect(adjustedRect, m_scaledCornerRadius, m_scaledCornerRadius);
         } else {
             m_windowPath->addRect(adjustedRect);
@@ -376,13 +370,12 @@ if (m_internalSettings->floatingTitlebar()){
     }
 } else {
     auto c = window();
-    auto s = settings();
 
     if (!windowShapeOnly || c->isShaded()) {
         // set titleBar geometry and path
         m_titleRect = QRect(QPoint(0, 0), QSize(size().width(), borderTop()));
         m_titleBarPath->clear(); // clear the path for subsequent calls to this function
-        if (isMaximized() || !s->isAlphaChannelSupported()) {
+        if (isMaximized()) {
             m_titleBarPath->addRect(m_titleRect);
 
         } else if (c->isShaded()) {
@@ -407,7 +400,7 @@ if (m_internalSettings->floatingTitlebar()){
     // set windowPath
     m_windowPath->clear(); // clear the path for subsequent calls to this function
     if (!c->isShaded()) {
-        if (s->isAlphaChannelSupported() && !isMaximized())
+        if (!isMaximized())
             m_windowPath->addRoundedRect(rect(), m_scaledCornerRadius, m_scaledCornerRadius);
         else
             m_windowPath->addRect(rect());
@@ -553,7 +546,6 @@ if (m_internalSettings->floatingTitlebar()){
     }
 
     setResizeOnlyBorders(QMarginsF(extSides, 0, extSides, extBottom));
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
     qreal topLeftRadius = 0;
     qreal topRightRadius = 0;
     qreal bottomLeftRadius = 0;
@@ -571,40 +563,25 @@ if (m_internalSettings->floatingTitlebar()){
             bottomRightRadius = m_scaledCornerRadius;
         }
     }
-#endif
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
     setBorderRadius(KDecoration3::BorderRadius(topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius));
-#endif
 
     if (isMaximized() || !outlinesEnabled()) {
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
         setBorderOutline(KDecoration3::BorderOutline()); // no outline
-#endif
     } else {
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
         const auto color = KColorUtils::mix(
             window()->color(window()->isActive() ? ColorGroup::Active : ColorGroup::Inactive,
                             ColorRole::Frame),
                             window()->palette().text().color(),
                                             KColorScheme::frameContrast()
         );
-#else
-        KColorUtils::mix(window()->color(window()->isActive() ? ColorGroup::Active : ColorGroup::Inactive, ColorRole::Frame),
-                         window()->palette().text().color(),
-                         0.2);
-#endif
 
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
         const qreal thickness = std::max(KDecoration3::pixelSize(window()->scale()),
                                          KDecoration3::snapToPixelGrid(1, window()->scale()));
-#endif
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
         const KDecoration3::BorderRadius outlineRadius(
             topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius
         );
 
         setBorderOutline(KDecoration3::BorderOutline(thickness, color, outlineRadius));
-#endif
     }
 } else {
     setBorders(bordersFor(window()->nextScale()));
@@ -628,7 +605,6 @@ if (m_internalSettings->floatingTitlebar()){
     const qreal extTop = (hideTitleBar() && borderTop() <= 0 && !isMaximizedVertically()) ? extSize : 0;
 
     setResizeOnlyBorders(QMarginsF(extSides, extTop, extSides, extBottom));
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
     qreal bottomLeftRadius = 0;
     qreal bottomRightRadius = 0;
 
@@ -642,8 +618,6 @@ if (m_internalSettings->floatingTitlebar()){
             }
         }
     }
-#endif
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
     // without title bar the client reaches the top: round its top corners too,
     // except where they touch the screen edges (as the bottom ones)
     qreal topLeftRadius = 0;
@@ -653,23 +627,13 @@ if (m_internalSettings->floatingTitlebar()){
         topRightRadius = isRightEdge() ? 0 : m_scaledCornerRadius;
     }
     setBorderRadius(KDecoration3::BorderRadius(topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius));
-#endif
     if (isMaximized() || !outlinesEnabled()) {
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
         setBorderOutline(KDecoration3::BorderOutline());
-#endif
     } else {
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
         const auto color = KColorUtils::mix(window()->color(window()->isActive() ? ColorGroup::Active : ColorGroup::Inactive, ColorRole::Frame),
                                             window()->palette().text().color(),
                                             KColorScheme::frameContrast());
-#else
-        KColorUtils::mix(window()->color(window()->isActive() ? ColorGroup::Active : ColorGroup::Inactive, ColorRole::Frame),
-                         window()->palette().text().color(),
-                         0.2);
-#endif
 
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
         const qreal thickness = std::max(KDecoration3::pixelSize(window()->scale()), KDecoration3::snapToPixelGrid(1, window()->scale()));
 
         qreal bottomLeftRadius = 0;
@@ -679,12 +643,9 @@ if (m_internalSettings->floatingTitlebar()){
             bottomLeftRadius = m_scaledCornerRadius;
             bottomRightRadius = m_scaledCornerRadius;
         }
-#endif
 
-#if KDECORATION_VERSION >= KDECORATION_VERSION_CHECK(6, 6, 0)
         const auto radius = KDecoration3::BorderRadius(m_scaledCornerRadius, m_scaledCornerRadius, bottomRightRadius, bottomLeftRadius);
         setBorderOutline(KDecoration3::BorderOutline(thickness, color, radius));
-#endif
     }
 }
 }
@@ -900,7 +861,6 @@ void Decoration::paint(QPainter *painter, const QRectF &repaintRegion)
 {
     // TODO: optimize based on repaintRegion
     auto c = window();
-    auto s = settings();
 
     calculateWindowAndTitleBarShapes();
 
@@ -916,26 +876,13 @@ void Decoration::paint(QPainter *painter, const QRectF &repaintRegion)
         if (!hideTitleBar())
             painter->setClipRect(0, borderTop(), size().width(), size().height() - borderTop(), Qt::IntersectClip);
 
-        if (s->isAlphaChannelSupported())
-            painter->drawRoundedRect(rect(), m_scaledCornerRadius, m_scaledCornerRadius);
-        else
-            painter->drawRect(rect());
+        painter->drawRoundedRect(rect(), m_scaledCornerRadius, m_scaledCornerRadius);
 
         painter->restore();
     }
 
     if (!hideTitleBar())
         paintTitleBar(painter, repaintRegion);
-
-    if (hasBorders() && !s->isAlphaChannelSupported()) {
-        painter->save();
-        painter->setRenderHint(QPainter::Antialiasing, false);
-        painter->setBrush(Qt::NoBrush);
-        painter->setPen(c->isActive() ? c->color(ColorGroup::Active, ColorRole::TitleBar) : c->color(ColorGroup::Inactive, ColorRole::Foreground));
-
-        painter->drawRect(rect().adjusted(0, 0, -1, -1));
-        painter->restore();
-    }
 }
 
 //________________________________________________________________
@@ -970,7 +917,7 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
 
     // top highlight
     if (qGray(titleBarColor.rgb()) < 130 && m_internalSettings->drawHighlight()) {
-        if (isMaximized() || !s->isAlphaChannelSupported()) {
+        if (isMaximized()) {
             painter->setPen(QColor(255, 255, 255, 30));
             painter->drawLine(m_titleRect.topLeft(), m_titleRect.topRight());
 

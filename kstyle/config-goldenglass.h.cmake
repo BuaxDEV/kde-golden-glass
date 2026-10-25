@@ -28,9 +28,4 @@
 /* Define to 1 if FrameworkIntegration/Kstyle libraries are found */
 #cmakedefine01 GOLDENGLASS_HAVE_KSTYLE
 
-/* Define to 1 if XCB libraries are found */
-#cmakedefine01 GOLDENGLASS_HAVE_X11
-
-#cmakedefine01 GOLDENGLASS_HAVE_KWAYLAND
-
 #endif

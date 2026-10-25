@@ -34,8 +34,6 @@
 namespace GoldenGlass
 {
 
-class DetectDialog;
-
 //* goldenglass exceptions list
 class ExceptionDialog : public QDialog
 {
@@ -80,14 +78,6 @@ protected Q_SLOTS:
     //* check whether configuration is changed and emit appropriate signal if yes
     virtual void updateChanged();
 
-private Q_SLOTS:
-
-    //* select window properties from grabbed pointers
-    void selectWindowProperties();
-
-    //* read properties of selected window
-    void readWindowProperties(bool);
-
 private:
     //* map mask and checkbox
     using CheckBoxMap = QMap<ExceptionMask, QCheckBox *>;
@@ -99,9 +89,6 @@ private:
 
     //* internal exception
     InternalSettingsPtr m_exception;
-
-    //* detection dialog
-    DetectDialog *m_detectDialog = nullptr;
 
     //* changed state
     bool m_changed = false;

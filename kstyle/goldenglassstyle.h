@@ -146,7 +146,6 @@ public:
     bool eventFilterMdiSubWindow(QMdiSubWindow *, QEvent *);
     bool eventFilterCommandLinkButton(QCommandLinkButton *, QEvent *);
     bool eventFilterDialogButtonBox(QDialogButtonBox *, QEvent *);
-    bool eventFilterPageViewHeader(QWidget *, QEvent *);
 
     //* install event filter to object, in a unique way
     void addEventFilter(QObject *object)
@@ -410,14 +409,6 @@ private:
     //* returns item view parent if any
     /** needed to have correct color on focused checkboxes and radiobuttons */
     const QAbstractItemView *itemViewParent(const QWidget *) const;
-
-    //* returns true if a given widget is a selected item in a focused list
-    /**
-    This is necessary to have the correct colors used for e.g. checkboxes and radiobuttons in lists
-    @param widget The widget to be checked
-    @param position Used to find the relevant QModelIndex
-    */
-    bool isSelectedItem(const QWidget *, const QPoint &) const;
 
     //* return true if option corresponds to QtQuick control
     bool isQtQuickControl(const QStyleOption *, const QWidget *) const;

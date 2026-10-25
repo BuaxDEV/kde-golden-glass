@@ -62,11 +62,7 @@ public:
 
     void reconfigure(ReconfigureFlags flags) override;
     void prePaintScreen(ScreenPrePaintData &data) override;
-#ifdef GOLDENGLASS_KWIN_PAINT_RESULT
     bool drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data) override;
-#else
-    void drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data) override;
-#endif
 
     bool provides(Feature feature) override;
     bool isActive() const override;

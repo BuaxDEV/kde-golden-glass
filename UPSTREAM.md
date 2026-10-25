@@ -118,7 +118,8 @@ built-in blur in `libkwin`, its own resource prefix and logging category,
 linking xcb); `git log -- kwin-effect` shows the GoldenGlass changes on top:
 the refraction pass (`shaders/glass.frag`, `drawGlass()`, `isGlassSurface()`,
 corner radii from the blur region) and reading the glass level from
-`goldenglassrc`. `sdfRoundedBox` is copied from KWin's `src/opengl/sdf.glsl`.
+`goldenglassrc`. `shaders/glass.frag` includes KWin's `src/opengl/sdf.glsl`
+for `sdfRoundedBox`, as the upstream `onscreen_rounded.frag` does.
 It reads the same `Effect-blur` settings as KWin's Blur.
 
 The plugin only loads with the KWin version it was built against
@@ -129,8 +130,7 @@ says so after a KWin update). When KWin updates, rebuild
 
 Ported since the fork: **KWin 6.8.0** (`git diff v6.7.5 v6.8.0 --
 src/plugins/blur src/effect/effect.h`): `drawWindow()` returns whether painting
-succeeded (behind `GOLDENGLASS_KWIN_PAINT_RESULT`, set by CMake for KWin ≥
-6.7.90, so 6.7 still builds) and the blur region is only offset by the content
-rect with server-side decorations (upstream `5d45a63f8d`). Next diff base:
-`v6.8.0`.
+succeeded (KWin 6.8 is now the minimum) and the blur region is only offset by
+the content rect with server-side decorations (upstream `5d45a63f8d`). Next
+diff base: `v6.8.0`.
 

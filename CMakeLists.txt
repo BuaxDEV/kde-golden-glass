@@ -88,25 +88,13 @@ add_library(Qt::Core ALIAS Qt6::Core)
 add_library(Qt::Gui ALIAS Qt6::Gui)
 add_library(Qt::OpenGL ALIAS Qt6::OpenGL)
 add_library(Qt::Network ALIAS Qt6::Network)
-if(Qt6_VERSION_MINOR GREATER 6)
-    add_library(Qt::PlatformModuleInternal ALIAS Qt6::PlatformModuleInternal)
-endif()
+add_library(Qt::PlatformModuleInternal ALIAS Qt6::PlatformModuleInternal)
 
 add_subdirectory(kstyle kstyle6)
 add_subdirectory(libgoldenglasscommon libgoldenglasscommon6)
 
 if(WITH_DECORATIONS)
-    find_package(KDecoration3 REQUIRED)
-    set(KDECORATION_VERSION ${KDecoration3_VERSION})
-    set(KDECORATION_VERSION_MAJOR ${KDecoration3_VERSION_MAJOR})
-    set(KDECORATION_VERSION_MINOR ${KDecoration3_VERSION_MINOR})
-    set(KDECORATION_VERSION_PATCH ${KDecoration3_VERSION_PATCH})
-    
-    add_definitions(
-        -DKDECORATION_VERSION_MAJOR=${KDECORATION_VERSION_MAJOR}
-        -DKDECORATION_VERSION_MINOR=${KDECORATION_VERSION_MINOR}
-        -DKDECORATION_VERSION_PATCH=${KDECORATION_VERSION_PATCH}
-    )
+    find_package(KDecoration3 6.8 REQUIRED)
     add_subdirectory(kdecoration)
 endif()
 

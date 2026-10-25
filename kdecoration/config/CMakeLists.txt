@@ -3,7 +3,6 @@
 set(goldenglassdecoration_config_SRCS
   ../goldenglassexceptionlist.cpp
     goldenglassconfigwidget.cpp
-    goldenglassdetectwidget.cpp
     goldenglassexceptiondialog.cpp
     goldenglassexceptionlistwidget.cpp
     goldenglassexceptionmodel.cpp
@@ -11,7 +10,6 @@ set(goldenglassdecoration_config_SRCS
 )
 ki18n_wrap_ui(goldenglassdecoration_config_SRCS
     ui/goldenglassconfigurationui.ui
-    ui/goldenglassdetectwidget.ui
     ui/goldenglassexceptiondialog.ui
     ui/goldenglassexceptionlistwidget.ui
 )
@@ -31,7 +29,6 @@ target_link_libraries(kcm_goldenglassdecoration
         KF6::GuiAddons
         KF6::I18n
         KF6::IconThemes
-        KF6::WindowSystem
         KF6::KCMUtils
 )
 kcmutils_generate_desktop_file(kcm_goldenglassdecoration)

@@ -172,7 +172,7 @@ enum Metrics {
 //* standard pen widths
 namespace PenWidth
 {
-/* Using 1 instead of sgoldenglass more than 1 causes symbols drawn with
+/* Using 1 instead of slightly more than 1 causes symbols drawn with
  * pen strokes to look skewed. The exact amount added does not matter
  * as long as it isn't too visible.
  */

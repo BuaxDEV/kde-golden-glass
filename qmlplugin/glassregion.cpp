@@ -5,6 +5,8 @@
 
 #include "glassregion.h"
 
+#include "goldenglassroundedregion.h"
+
 #include <KWindowEffects>
 #include <QQuickWindow>
 
@@ -13,36 +15,13 @@
 
 namespace
 {
-// Rectángulo con las cuatro esquinas redondeadas, en franjas (como la máscara
-// del SVG de Plasma): el efecto mide el radio de cada esquina en ellas. Las
-// esquinas son elípticas si el elemento está escalado distinto a lo ancho
-// (rx) y a lo alto (ry).
+// Las cuatro esquinas redondeadas; elípticas si el elemento está escalado
+// distinto a lo ancho (rx) y a lo alto (ry).
 QRegion roundedRegion(const QRect &rect, int rx, int ry)
 {
     rx = std::clamp(rx, 0, rect.width() / 2);
     ry = std::clamp(ry, 0, rect.height() / 2);
-    QRegion region(rect);
-    if (rx == 0 || ry == 0) {
-        return region;
-    }
-    const int dx = 2 * rx;
-    const int dy = 2 * ry;
-    const QRect corners[] = {
-        QRect(rect.left(), rect.top(), rx, ry),
-        QRect(rect.right() - rx + 1, rect.top(), rx, ry),
-        QRect(rect.left(), rect.bottom() - ry + 1, rx, ry),
-        QRect(rect.right() - rx + 1, rect.bottom() - ry + 1, rx, ry),
-    };
-    const QRect ellipses[] = {
-        QRect(rect.left(), rect.top(), dx, dy),
-        QRect(rect.right() - dx + 1, rect.top(), dx, dy),
-        QRect(rect.left(), rect.bottom() - dy + 1, dx, dy),
-        QRect(rect.right() - dx + 1, rect.bottom() - dy + 1, dx, dy),
-    };
-    for (int i = 0; i < 4; ++i) {
-        region -= QRegion(corners[i]) - QRegion(ellipses[i], QRegion::Ellipse);
-    }
-    return region;
+    return GoldenGlass::roundedRectRegion(rect, rx, ry, true, true, true, true);
 }
 }
 

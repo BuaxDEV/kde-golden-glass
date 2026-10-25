@@ -81,9 +81,6 @@ protected:
     //* apply step
     virtual qreal digitize(const qreal &value) const
     {
-        // qDebug() << "receiving:" << value << "returning:" << std::floor( value*_steps )/_steps;
-        /*if( _steps > 0 ) return std::floor( value*_steps )/_steps;
-        else*/
         return value;
     }
 

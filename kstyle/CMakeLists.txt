@@ -54,17 +54,12 @@ set(goldenglass_PART_SRCS
     goldenglasstoolsareamanager.cpp
 )
 
-kconfig_add_kcfg_files(goldenglass_PART_SRCS ../kdecoration/goldenglasssettings.kcfgc)
 kconfig_add_kcfg_files(goldenglass_PART_SRCS goldenglassstyleconfigdata.kcfgc)
 
 add_library(goldenglass${QT_MAJOR_VERSION} MODULE ${goldenglass_PART_SRCS})
 
 ################# find Qt modules #################
-if(QT_MAJOR_VERSION EQUAL 6)
-    find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick QuickWidgets)
-else()
-    find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets Quick QuickWidgets)
-endif()
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick QuickWidgets)
 
 ################# link Qt libraries #################
 target_link_libraries(goldenglass${QT_MAJOR_VERSION}
@@ -95,16 +90,9 @@ target_link_libraries(goldenglass${QT_MAJOR_VERSION}
     KF${QT_MAJOR_VERSION}::WindowSystem
 )
 
-if(QT_MAJOR_VERSION STREQUAL "5")
-    target_link_libraries(goldenglass${QT_MAJOR_VERSION} PRIVATE KF5::ConfigWidgets)
-    if(GOLDENGLASS_HAVE_QTQUICK)
-        target_link_libraries(goldenglass${QT_MAJOR_VERSION} PRIVATE KF5::Kirigami2)
-    endif()
-else()
-    target_link_libraries(goldenglass${QT_MAJOR_VERSION} PRIVATE KF6::ColorScheme)
-    if(GOLDENGLASS_HAVE_QTQUICK)
-        target_link_libraries(goldenglass${QT_MAJOR_VERSION} PRIVATE KF6::KirigamiPlatform)
-    endif()
+target_link_libraries(goldenglass${QT_MAJOR_VERSION} PRIVATE KF6::ColorScheme)
+if(GOLDENGLASS_HAVE_QTQUICK)
+    target_link_libraries(goldenglass${QT_MAJOR_VERSION} PRIVATE KF6::KirigamiPlatform)
 endif()
 
 ################# link internal library #################
