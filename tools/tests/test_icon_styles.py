@@ -205,10 +205,8 @@ def test_validate_rejects_missing_tables_and_keys(tokens):
         validate_icon_style(style)
 
 
-def test_validate_accepts_the_real_tokens_and_later_tables(tokens):
-    style = copy.deepcopy(tokens["icon_style"])
-    style["extract"] = {"anything": 1}   # [icon_style.extract] and [icon_style.overrides] come later
-    validate_icon_style(style)
+def test_validate_accepts_the_real_tokens(tokens):
+    validate_icon_style(copy.deepcopy(tokens["icon_style"]))
 
 
 # --- installed tokens (icon-style.json) ----------------------------------------------

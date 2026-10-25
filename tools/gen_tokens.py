@@ -42,6 +42,7 @@ import cursors  # noqa: E402
 import cxx_tokens  # noqa: E402
 import gtk  # noqa: E402
 import icons  # noqa: E402
+import icons_glyph  # noqa: E402
 import login  # noqa: E402
 import lookandfeel  # noqa: E402
 import plasma_theme  # noqa: E402
@@ -341,13 +342,67 @@ def validate_icon_tile(tile: dict) -> None:
     validate_tile_section("icon_tile", tile, ICON_TILE)
 
 
+# [icon_style.extract]: the third-party glyph extraction (tools/icons_glyph.py), key → (minimum, maximum)
+ICON_STYLE_EXTRACT = {
+    "render_size": (32, 512),
+    "edge_samples": (1, 32),
+    "background_rows": (1, 64),
+    "contrast_low": (0.0, 1.0),
+    "contrast_high": (0.0, 1.0),
+    "gamma": (0.1, 4.0),
+    "ink_min": (0.0, 1.0),
+    "ink_max": (0.0, 1.0),
+    "detail_min": (0.0, 100.0),
+    "detail_max": (0.0, 100.0),
+    "silhouette_detail_min": (0.0, 100.0),
+    "glyph_size": (8.0, 52.0),       # inside the squircle (52 units of the 64 canvas)
+    "monogram_size": (4.0, 52.0),
+}
+ICON_STYLE_EXTRACT_WHOLE = ("render_size", "edge_samples", "background_rows")
+ICON_STYLE_EXTRACT_ORDERED = (("contrast_low", "contrast_high"), ("ink_min", "ink_max"), ("detail_min", "detail_max"))
+ICON_STYLE_EXTRACT_FONT = "monogram_font"
+
+
+def validate_icon_style_extract(extract: dict) -> None:
+    name = "icon_style.extract"
+    expected = {*ICON_STYLE_EXTRACT, ICON_STYLE_EXTRACT_FONT}
+    if set(extract) != expected:
+        raise SystemExit(f"[{name}]: missing {sorted(expected - set(extract))} or unknown "
+                         f"{sorted(set(extract) - expected)}")
+    for key, (low, high) in ICON_STYLE_EXTRACT.items():
+        value = extract[key]
+        whole = key in ICON_STYLE_EXTRACT_WHOLE
+        if not _is_number(value) or (whole and not isinstance(value, int)) or not low <= value <= high:
+            kind = "a whole number" if whole else "a number"
+            raise SystemExit(f"[{name}].{key} must be {kind} in [{low:g}, {high:g}], not {value!r}")
+    for low, high in ICON_STYLE_EXTRACT_ORDERED:
+        if not extract[low] < extract[high]:
+            raise SystemExit(f"[{name}]: {low} must be below {high}")
+    font = extract[ICON_STYLE_EXTRACT_FONT]
+    if not isinstance(font, str) or not font.strip():
+        raise SystemExit(f"[{name}].{ICON_STYLE_EXTRACT_FONT} must be a font family, not {font!r}")
+
+
+def validate_icon_style_overrides(table: dict) -> None:
+    """[icon_style.overrides]: icon name or pattern → one of the outcomes of icons_glyph.Kind."""
+    kinds = [kind.value for kind in icons_glyph.Kind]
+    for icon, value in table.items():
+        if value not in kinds:
+            raise SystemExit(f"[icon_style.overrides].{icon} must be one of {', '.join(kinds)}, not {value!r}")
+
+
 def validate_icon_style(style: dict) -> None:
-    """[icon_style]: one table per style; later parts of the plan add their own tables."""
+    """[icon_style]: one table per style, the extraction of third-party glyphs and its overrides."""
     for name, keys in ICON_STYLES.items():
         section = style.get(name)
         if not isinstance(section, dict):
             raise SystemExit(f"[icon_style.{name}] is missing or is not a table")
         validate_tile_section(f"icon_style.{name}", section, keys)
+    for name in ("extract", "overrides"):
+        if not isinstance(style.get(name), dict):
+            raise SystemExit(f"[icon_style.{name}] is missing or is not a table")
+    validate_icon_style_extract(style["extract"])
+    validate_icon_style_overrides(style["overrides"])
 
 
 def validate(tokens: dict) -> None:

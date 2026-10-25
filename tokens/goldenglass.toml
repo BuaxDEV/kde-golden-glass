@@ -1040,3 +1040,28 @@ rim_width = 1.4
 rim_top = 0.90
 rim_mid = 0.15
 rim_bottom = 0.35
+
+[icon_style.extract]
+# Símbolo de las apps de terceros (tools/icons_glyph.py): su icono a color se
+# convierte en una máscara de luminancia. Ver «Estilos de icono» en
+# docs/ARCHITECTURE.md (SP-10b).
+render_size = 128            # px del render que se analiza
+edge_samples = 6             # píxeles sólidos de cada extremo de una fila que dan su color de fondo
+background_rows = 9          # filas de la mediana que suaviza el fondo
+# Contraste (diferencia del canal que más cambia, 0..1) que pasa de fondo a símbolo
+contrast_low = 0.15
+contrast_high = 0.45
+gamma = 1.0                  # curva de la máscara del símbolo
+# Legibilidad: parte del cuerpo que destaca y detalle (contorno / √área;
+# ~3,5 un círculo, 4 un cuadrado, decenas el ruido de una foto)
+ink_min = 0.03
+ink_max = 0.50
+detail_min = 2.5
+detail_max = 23.0
+silhouette_detail_min = 4.4  # contorno propio que ya identifica la app (no un cuadrado ni un círculo)
+glyph_size = 36.0            # lado del recuadro del símbolo, en el lienzo de 64
+monogram_font = "GoldenGlass Sans"
+monogram_size = 24.0         # altura de las mayúsculas del monograma, en el lienzo de 64
+
+[icon_style.overrides]
+# Nombre de icono (o patrón con * y ?) → glyph, silhouette, monogram o skip
