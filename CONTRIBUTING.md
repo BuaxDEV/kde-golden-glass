@@ -47,6 +47,16 @@ proyecto. Para corregir commits sin firmar: `git rebase --signoff main`.
 
 - Todo valor visual va en `tokens/goldenglass.toml`; `build/` es generado.
 - Una vez por clon: `tools/setup-git.sh`.
+- Pruebas C++ de `qmlplugin/` (ctest, `-DBUILD_TESTING=ON`): copia una de
+  `qmlplugin/tests/*_test.cpp`, usa `GOLDENGLASS_TEST_MAIN(Clase)` de
+  `testbus.h` (aísla HOME y XDG_*; obligatorio, nunca se toca tu
+  configuración) y regístrala al final de `qmlplugin/tests/CMakeLists.txt`
+  con `goldenglass_add_qmlplugin_test(nombre [SOURCES ...] [LIBS ...] [DBUS])`.
+  Si necesita D-Bus (servicios falsos con `GoldenGlassTest::FakeService`),
+  añade `DBUS` y empieza con `GG_REQUIRE_SESSION_BUS()`: ctest la ejecuta bajo
+  `dbus-run-session` (paquete `dbus`) y, sin él, la omite. Nunca registres
+  nombres en el bus de tu sesión. Detalles en
+  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - La CI completa en local:
   `podman run --rm -v "$PWD":/src:Z -w /src docker.io/library/archlinux:latest tools/ci.sh`.
 
