@@ -405,8 +405,13 @@ def plasmoidheading_svg(tokens: dict) -> str:
 
 # --- paquete ------------------------------------------------------------------
 
-def build(tokens: dict, out: Path, level: float | None = None) -> list[Path]:
-    """Escribe el Plasma Style en `out/plasma/desktoptheme/GoldenGlass`."""
+def build(tokens: dict, out: Path, level: float | None = None, *, reduce_transparency: bool = False) -> list[Path]:
+    """Escribe el Plasma Style en `out/plasma/desktoptheme/GoldenGlass`.
+
+    With `reduce_transparency` the glass is opaque (accessibility
+    reduce_transparency_alpha) and the theme asks for neither blur nor
+    contrast behind it.
+    """
     root = out / "plasma" / "desktoptheme" / THEME_ID
     p = tokens["plasma"]
     rad = tokens["radius"]
@@ -417,7 +422,8 @@ def build(tokens: dict, out: Path, level: float | None = None) -> list[Path]:
         raise SystemExit(f"radius.dock ({rad['dock']}) debe ser ≤ plasma.menubar_height / 2 "
                          f"({p['menubar_height'] / 2:g}): Plasma no deja bajar la barra de menús "
                          f"de {2 * rad['dock']} px")
-    alpha = glass_alpha(tokens, level)
+    alpha = tokens["accessibility"]["reduce_transparency_alpha"] if reduce_transparency else glass_alpha(tokens, level)
+    behind_effects = "false" if reduce_transparency else "true"
     files: dict[str, str] = {}
 
     variants = {"translucent/": alpha, "": 1.0, "opaque/": 1.0, "solid/": 1.0}
@@ -440,9 +446,9 @@ def build(tokens: dict, out: Path, level: float | None = None) -> list[Path]:
     vib = tokens["glass"]["vibrancy"]
     files["plasmarc"] = "\n".join([
         "# Generado por tools/gen_tokens.py — NO EDITAR",
-        "[ContrastEffect]", "enabled=true",
+        "[ContrastEffect]", f"enabled={behind_effects}",
         f"contrast={vib['contrast']}", f"intensity={vib['intensity']}", f"saturation={vib['saturation']}",
-        "", "[BlurBehindEffect]", "enabled=true",
+        "", "[BlurBehindEffect]", f"enabled={behind_effects}",
         "", "[AdaptiveTransparency]", "enabled=false",
         # Fondo por defecto (escritorios nuevos y pantalla de bloqueo).
         "", "[Wallpaper]", "defaultWallpaperTheme=GoldenGlass", "defaultFileSuffix=.jpg",

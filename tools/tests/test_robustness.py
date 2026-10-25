@@ -163,9 +163,9 @@ class GlassLevelTest(unittest.TestCase):
             with self.assertRaises(argparse.ArgumentTypeError, msg=text):
                 glass._level_arg(text)
 
-    def test_set_level_rejects_nan(self) -> None:
+    def test_apply_rejects_nan(self) -> None:
         with self.assertRaises(ValueError):
-            glass.set_level(float("nan"), reload_plasma=False)
+            glass.apply(_tokens(), level=float("nan"), reload_plasma=False)
         self.kwrite.assert_not_called()
         self.tuned.assert_not_called()
 
@@ -242,14 +242,15 @@ class GlassConcurrencyTest(unittest.TestCase):
         with glass.session_lock(), mock.patch.object(glass, "effect_available", return_value=True), \
                 contextlib.redirect_stdout(io.StringIO()) as out:
             start = time.monotonic()
-            for flag in ("--get", "--get-refraction", "--get-menubar-background"):
+            reads = ("--get", "--get-refraction", "--get-menubar-background", "--get-reduce-transparency")
+            for flag in reads:
                 self.assertEqual(glass.main([flag]), 0, flag)
             self.assertLess(time.monotonic() - start, 2)
-        self.assertEqual(len(out.getvalue().split()), 3)
+        self.assertEqual(len(out.getvalue().split()), len(reads))
 
     def test_writes_wait_for_the_lock(self) -> None:
         for argv in (["--menubar-background", "on"], ["--level", "0.8", "--no-plasma-reload"],
-                     ["--refraction", "off"], ["--check"]):
+                     ["--reduce-transparency", "on", "--no-plasma-reload"], ["--refraction", "off"], ["--check"]):
             with self.subTest(argv=argv), mock.patch.object(glass, "effect_available", return_value=True), \
                     mock.patch.object(glass, "effects_call", return_value=""), \
                     mock.patch.object(glass, "write_tuned_theme"):
@@ -269,13 +270,13 @@ class GlassConcurrencyTest(unittest.TestCase):
         guard = threading.Lock()
         real_write = glass.write_tuned_theme
 
-        def slow_write(tokens: dict, level: float) -> None:
+        def slow_write(tokens: dict, level: float, **options) -> None:
             nonlocal inside
             with guard:
                 inside += 1
                 overlaps.append(inside)
             time.sleep(0.15)
-            real_write(tokens, level)
+            real_write(tokens, level, **options)
             with guard:
                 inside -= 1
 
