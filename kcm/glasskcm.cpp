@@ -35,6 +35,7 @@ GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
     , m_menubarBackground(GoldenGlass::Tokens::MenubarBackground)
     , m_reduceMotionProcess(new QProcess(this))
     , m_reduceMotion(GoldenGlass::Tokens::AccessibilityReduceMotion)
+    , m_reduceTransparency(GoldenGlass::Tokens::AccessibilityReduceTransparency)
 {
     // Los cambios se aplican en vivo al soltar el control: no hay «Aplicar».
     setButtons(KAbstractConfigModule::Default);
@@ -42,13 +43,13 @@ GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
     m_process->setProcessChannelMode(QProcess::MergedChannels);
     connect(m_process, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus status) {
         if (status != QProcess::NormalExit || exitCode != 0) {
-            const QString output = QString::fromLocal8Bit(m_process->readAll()).trimmed();
-            setErrorText(i18nc("@info:status", "The glass level could not be applied: %1", output));
+            glassRequestFailed(m_runningGlass, QString::fromLocal8Bit(m_process->readAll()).trimmed());
+        } else if (m_runningGlass == GlassRequest::ReduceTransparency && !m_pendingGlass.contains(GlassRequest::ReduceTransparency)) {
+            loadReduceTransparency();
         }
-        if (m_pending >= 0) {
-            const double next = m_pending;
-            m_pending = -1;
-            startProcess(next);
+        if (!m_pendingGlass.empty()) {
+            auto next = m_pendingGlass.extract(m_pendingGlass.begin());
+            startGlass(next.key(), next.mapped());
             return;
         }
         Q_EMIT busyChanged();
@@ -69,8 +70,13 @@ GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
         }
     });
 
-    connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError) {
+    connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
+        if (error != QProcess::FailedToStart) {
+            return; // finished follows
+        }
         setErrorText(i18nc("@info:status", "goldenglass-glass could not be started: %1", m_process->errorString()));
+        m_pendingGlass.clear();
+        loadReduceTransparency();
         Q_EMIT busyChanged();
     });
 
@@ -209,6 +215,36 @@ void GlassKcm::startReduceMotion(bool value)
     m_reduceMotionProcess->start(program, {QStringLiteral("--reduce-motion"), onOff(value)});
 }
 
+bool GlassKcm::reduceTransparency() const
+{
+    return m_reduceTransparency;
+}
+
+void GlassKcm::setReduceTransparency(bool value)
+{
+    if (m_reduceTransparency == value) {
+        return;
+    }
+    m_reduceTransparency = value;
+    Q_EMIT reduceTransparencyChanged();
+    updateRepresentsDefaults();
+    setErrorText(QString());
+    requestGlass(GlassRequest::ReduceTransparency, {QStringLiteral("--reduce-transparency"), onOff(value)});
+}
+
+void GlassKcm::loadReduceTransparency()
+{
+    // a fresh KConfig: goldenglass-glass has just written the file
+    const KConfig config(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig);
+    const bool value =
+        config.group(QStringLiteral("Accessibility")).readEntry("ReduceTransparency", GoldenGlass::Tokens::AccessibilityReduceTransparency);
+    if (m_reduceTransparency != value) {
+        m_reduceTransparency = value;
+        Q_EMIT reduceTransparencyChanged();
+    }
+    updateRepresentsDefaults();
+}
+
 void GlassKcm::loadReduceMotion()
 {
     // a fresh KConfig: goldenglass-windows has just written the file
@@ -251,6 +287,7 @@ void GlassKcm::load()
     }
     setLevel(config->group(QStringLiteral("Glass")).readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel));
     loadReduceMotion();
+    loadReduceTransparency();
 }
 
 void GlassKcm::defaults()
@@ -258,6 +295,7 @@ void GlassKcm::defaults()
     applyLevel(GoldenGlass::Tokens::GlassDefaultLevel);
     setMenubarBackground(GoldenGlass::Tokens::MenubarBackground);
     setReduceMotion(GoldenGlass::Tokens::AccessibilityReduceMotion);
+    setReduceTransparency(GoldenGlass::Tokens::AccessibilityReduceTransparency);
 }
 
 void GlassKcm::applyLevel(double level)
@@ -265,23 +303,46 @@ void GlassKcm::applyLevel(double level)
     level = qBound(0.0, level, 1.0);
     setLevel(level);
     setErrorText(QString());
-
-    if (busy()) {
-        m_pending = level; // se aplica al terminar el actual
-        return;
-    }
-    startProcess(level);
+    requestGlass(GlassRequest::Level, {QStringLiteral("--level"), QString::number(level, 'f', 3)});
 }
 
-void GlassKcm::startProcess(double level)
+void GlassKcm::requestGlass(GlassRequest kind, const QStringList &arguments)
+{
+    if (busy()) {
+        m_pendingGlass[kind] = arguments;
+        return;
+    }
+    startGlass(kind, arguments);
+}
+
+void GlassKcm::startGlass(GlassRequest kind, const QStringList &arguments)
 {
     const QString program = QStandardPaths::findExecutable(QStringLiteral("goldenglass-glass"));
     if (program.isEmpty()) {
         setErrorText(i18nc("@info:status", "goldenglass-glass was not found. Is the goldenglass-kstyle package installed?"));
+        m_pendingGlass.clear();
+        loadReduceTransparency();
+        Q_EMIT busyChanged();
         return;
     }
-    m_process->start(program, {QStringLiteral("--level"), QString::number(level, 'f', 3)});
+    m_runningGlass = kind;
+    m_process->start(program, arguments);
     Q_EMIT busyChanged();
+}
+
+void GlassKcm::glassRequestFailed(GlassRequest kind, const QString &output)
+{
+    switch (kind) {
+    case GlassRequest::Level:
+        setErrorText(i18nc("@info:status", "The glass level could not be applied: %1", output));
+        break;
+    case GlassRequest::ReduceTransparency:
+        setErrorText(i18nc("@info:status", "Reduce transparency could not be changed: %1", output));
+        if (!m_pendingGlass.contains(GlassRequest::ReduceTransparency)) {
+            loadReduceTransparency();
+        }
+        break;
+    }
 }
 
 void GlassKcm::setLevel(double level)
@@ -297,7 +358,8 @@ void GlassKcm::updateRepresentsDefaults()
 {
     setRepresentsDefaults(qAbs(m_level - GoldenGlass::Tokens::GlassDefaultLevel) < kSameLevel
                           && m_menubarBackground == GoldenGlass::Tokens::MenubarBackground
-                          && m_reduceMotion == GoldenGlass::Tokens::AccessibilityReduceMotion);
+                          && m_reduceMotion == GoldenGlass::Tokens::AccessibilityReduceMotion
+                          && m_reduceTransparency == GoldenGlass::Tokens::AccessibilityReduceTransparency);
 }
 
 void GlassKcm::setErrorText(const QString &text)

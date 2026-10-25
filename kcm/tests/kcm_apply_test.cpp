@@ -7,7 +7,8 @@
  *   kcm_apply_test /ruta/a/kcm_goldenglass.so
  * Pide tres niveles seguidos (1.0, 0.0, 0.25): el último debe quedar aplicado.
  * Then flips «Reduce motion» on, off and on: it must end on, through
- * goldenglass-windows, without losing the glass level.
+ * goldenglass-windows, without losing the glass level. Then «Reduce
+ * transparency» on, off and on with a level on top: both end applied.
  * En ctest corre sin sesión, con el goldenglass-glass de prueba de tests/bin y
  * XDG_CONFIG_HOME temporal (ver kcm/CMakeLists.txt).
  */
@@ -81,7 +82,27 @@ int main(int argc, char **argv)
     const bool reduceOk =
         readReduceMotion() && kcm->property("reduceMotion").toBool() && qAbs(levelAfter - 0.25) < 0.001 && reduceError.isEmpty();
 
-    const bool ok = levelOk && reduceOk;
+    // «Reduce transparency» shares goldenglass-glass with the level: both
+    // queue up and the last request of each kind wins
+    for (const bool value : {true, false, true}) {
+        kcm->setProperty("reduceTransparency", value);
+    }
+    QMetaObject::invokeMethod(kcm, "applyLevel", Q_ARG(double, 0.6));
+    timer.restart();
+    while (kcm->property("busy").toBool() && timer.elapsed() < 30000) {
+        app.processEvents(QEventLoop::AllEvents, 100);
+        QThread::msleep(20);
+    }
+    const KConfig afterTransparency(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig);
+    const bool transparencyApplied = afterTransparency.group(QStringLiteral("Accessibility")).readEntry("ReduceTransparency", false);
+    const double levelAfterTransparency = afterTransparency.group(QStringLiteral("Glass")).readEntry("Level", -1.0);
+    const QString transparencyError = kcm->property("errorText").toString();
+    out << "reduce_transparency_kcm=" << kcm->property("reduceTransparency").toBool() << " reduce_transparency_applied=" << transparencyApplied
+        << " nivel_tras=" << levelAfterTransparency << " error=\"" << transparencyError << "\"\n";
+    const bool transparencyOk = !kcm->property("busy").toBool() && transparencyApplied && kcm->property("reduceTransparency").toBool()
+        && qAbs(levelAfterTransparency - 0.6) < 0.001 && transparencyError.isEmpty();
+
+    const bool ok = levelOk && reduceOk && transparencyOk;
     out << (ok ? "OK" : "FALLO") << "\n";
     return ok ? 0 : 1;
 }

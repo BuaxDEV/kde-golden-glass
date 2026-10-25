@@ -6,8 +6,10 @@
 
 #include <KQuickConfigModule>
 
+#include <QStringList>
 #include <QVariantList>
 
+#include <map>
 #include <optional>
 
 class QProcess;
@@ -33,6 +35,8 @@ class GlassKcm : public KQuickConfigModule
     Q_PROPERTY(bool menubarBackground READ menubarBackground WRITE setMenubarBackground NOTIFY menubarBackgroundChanged)
     //* «Reduce motion»: written by goldenglass-windows, which also swaps KWin's effects for fades
     Q_PROPERTY(bool reduceMotion READ reduceMotion WRITE setReduceMotion NOTIFY reduceMotionChanged)
+    //* «Reduce transparency»: opaque glass without blur or refraction, through goldenglass-glass
+    Q_PROPERTY(bool reduceTransparency READ reduceTransparency WRITE setReduceTransparency NOTIFY reduceTransparencyChanged)
 
 public:
     GlassKcm(QObject *parent, const KPluginMetaData &data);
@@ -51,6 +55,8 @@ public:
     void setMenubarBackground(bool value);
     bool reduceMotion() const;
     void setReduceMotion(bool value);
+    bool reduceTransparency() const;
+    void setReduceTransparency(bool value);
 
     //* aplica un nivel (0 = más transparente, 1 = más opaco); si ya hay uno
     //* aplicándose, se aplica el último pedido al terminar
@@ -66,9 +72,19 @@ Q_SIGNALS:
     void refractionChanged();
     void menubarBackgroundChanged();
     void reduceMotionChanged();
+    void reduceTransparencyChanged();
 
 private:
-    void startProcess(double level);
+    // What goldenglass-glass is asked to change. One process runs at a time;
+    // meanwhile the last request of each kind waits for its turn.
+    enum class GlassRequest {
+        Level,
+        ReduceTransparency,
+    };
+    void requestGlass(GlassRequest kind, const QStringList &arguments);
+    void startGlass(GlassRequest kind, const QStringList &arguments);
+    void glassRequestFailed(GlassRequest kind, const QString &output);
+    void loadReduceTransparency();
     void loadRefraction();
     void startReduceMotion(bool value);
     void loadReduceMotion();
@@ -77,8 +93,9 @@ private:
     void setErrorText(const QString &text);
 
     QProcess *m_process = nullptr;
+    GlassRequest m_runningGlass = GlassRequest::Level;
+    std::map<GlassRequest, QStringList> m_pendingGlass;
     double m_level;
-    double m_pending = -1;
     QString m_errorText;
     QProcess *m_refractionProcess = nullptr;
     bool m_refraction = false;
@@ -88,4 +105,5 @@ private:
     QProcess *m_reduceMotionProcess = nullptr;
     bool m_reduceMotion;
     std::optional<bool> m_pendingReduceMotion;
+    bool m_reduceTransparency;
 };

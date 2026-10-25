@@ -73,6 +73,21 @@ ShowBorders=true
 [Glass]
 Level=1"
 
+# «Reduce transparency» only touches its own key
+printf '[Accessibility]\nReduceMotion=true\n[Glass]\nLevel=0.4\n' >"$rc"
+"$stub" --reduce-transparency on
+check "reduce transparency" "[Accessibility]
+ReduceMotion=true
+ReduceTransparency=true
+[Glass]
+Level=0.4"
+"$stub" --reduce-transparency off
+check "reduce transparency off" "[Accessibility]
+ReduceMotion=true
+ReduceTransparency=false
+[Glass]
+Level=0.4"
+
 # no quedan temporales
 if [ "$(find "$dir" -mindepth 1 | wc -l)" -ne 1 ]; then
   echo "FALLO: archivos de más en XDG_CONFIG_HOME: $(ls -A "$dir")"

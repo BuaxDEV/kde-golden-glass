@@ -27,6 +27,8 @@ KCM.SimpleKCM {
         return value;
     }
 
+    readonly property string reducedTransparencyNote: i18nc("@info", "Turned off by Reduce transparency")
+
     function apply() {
         const value = root.snapped(slider.value);
         slider.value = value;
@@ -76,6 +78,7 @@ KCM.SimpleKCM {
                         from: 0
                         to: 1
                         value: kcm.level
+                        enabled: !kcm.reduceTransparency
                         Accessible.name: i18nc("@label:slider", "Glass")
                         onPressedChanged: {
                             if (!pressed) {
@@ -133,6 +136,13 @@ KCM.SimpleKCM {
                         text: i18nc("@item:inrange glass level", "More opaque")
                     }
                 }
+
+                QQC2.Label {
+                    visible: kcm.reduceTransparency
+                    font: Kirigami.Theme.smallFont
+                    color: Kirigami.Theme.disabledTextColor
+                    text: root.reducedTransparencyNote
+                }
             }
 
             RowLayout {
@@ -160,7 +170,7 @@ KCM.SimpleKCM {
             QQC2.Switch {
                 Kirigami.FormData.label: i18nc("@label", "Refraction:")
                 text: i18nc("@option:check", "Bend the background at the edges of the glass")
-                enabled: kcm.refractionAvailable
+                enabled: kcm.refractionAvailable && !kcm.reduceTransparency
                 checked: kcm.refraction
                 onToggled: kcm.refraction = checked
             }
@@ -169,9 +179,10 @@ KCM.SimpleKCM {
                 wrapMode: Text.WordWrap
                 font: Kirigami.Theme.smallFont
                 color: Kirigami.Theme.disabledTextColor
-                text: kcm.refractionAvailable
-                    ? i18nc("@info", "Like Liquid Glass: the dock, menu bar and popups bend what is behind them, more with clearer glass. Turn it off if the graphics card struggles.")
-                    : i18nc("@info", "Not available: KWin did not load the GoldenGlass effect. Rebuild goldenglass-kstyle after updating KWin.")
+                text: !kcm.refractionAvailable
+                    ? i18nc("@info", "Not available: KWin did not load the GoldenGlass effect. Rebuild goldenglass-kstyle after updating KWin.")
+                    : kcm.reduceTransparency ? root.reducedTransparencyNote
+                    : i18nc("@info", "Like Liquid Glass: the dock, menu bar and popups bend what is behind them, more with clearer glass. Turn it off if the graphics card struggles.")
             }
 
             Item {
@@ -198,6 +209,19 @@ KCM.SimpleKCM {
 
             QQC2.Switch {
                 Kirigami.FormData.label: i18nc("@label", "Accessibility:")
+                text: i18nc("@option:check", "Reduce transparency")
+                checked: kcm.reduceTransparency
+                onToggled: kcm.reduceTransparency = checked
+            }
+            QQC2.Label {
+                Layout.maximumWidth: Kirigami.Units.gridUnit * 20
+                wrapMode: Text.WordWrap
+                font: Kirigami.Theme.smallFont
+                color: Kirigami.Theme.disabledTextColor
+                text: i18nc("@info", "The menu bar, the dock, popups, title bars, toolbars, sidebars and menus become opaque, without blur or refraction. The glass level is kept for when you turn it off.")
+            }
+
+            QQC2.Switch {
                 text: i18nc("@option:check", "Reduce motion")
                 checked: kcm.reduceMotion
                 onToggled: kcm.reduceMotion = checked

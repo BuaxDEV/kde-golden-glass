@@ -2,12 +2,13 @@
 # SPDX-FileCopyrightText: 2026 GoldenGlass contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Sustituto de goldenglass-glass para kcm_apply_test en ctest: guarda el nivel
-# en $XDG_CONFIG_HOME/goldenglassrc como el de verdad, sin tocar la sesión
-# (Plasma Style, KWin). Tarda un poco para que las peticiones se encolen.
+# Stand-in for goldenglass-glass in kcm_apply_test (ctest): stores the level
+# and «Reduce transparency» in $XDG_CONFIG_HOME/goldenglassrc like the real
+# tool, without touching the session (Plasma Style, KWin). It takes a moment
+# so that requests queue up.
 #
-# Como kwriteconfig6, solo cambia su clave: el resto del archivo (p. ej.
-# [Accessibility]) se conserva. Lo comprueba goldenglass_glass_stub_test.
+# Like kwriteconfig6 it only changes its own key: the rest of the file is
+# kept. goldenglass_glass_stub_test checks it.
 set -eu
 . "$(dirname "$0")/../set_entry.sh"
 
@@ -15,6 +16,15 @@ case "${1:-}" in
   --level)
     sleep 0.2
     set_entry "${XDG_CONFIG_HOME:?}/goldenglassrc" Glass Level "$2"
+    ;;
+  --reduce-transparency)
+    case "${2:-}" in
+      on) value=true ;;
+      off) value=false ;;
+      *) echo "goldenglass-glass (test): on or off, not: ${2:-}" >&2; exit 2 ;;
+    esac
+    sleep 0.2
+    set_entry "${XDG_CONFIG_HOME:?}/goldenglassrc" Accessibility ReduceTransparency "$value"
     ;;
   --get-refraction) echo unavailable ;;
   --refraction) ;;
