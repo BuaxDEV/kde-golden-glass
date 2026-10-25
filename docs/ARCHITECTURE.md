@@ -204,9 +204,11 @@ Dolphin imita el Finder de macOS 27 (tokens `[finder]` y los colores
   que las separa de la ventana, relleno con volumen, borde fino, **brillo arriba
   y brillo abajo** y glifo tintado por botón (×, −, triángulos de pantalla
   completa; tokens `traffic_lights`). Al pulsar se encogen un poco. Al pasar el
-  ratón por cualquiera aparecen los símbolos en los tres. Siempre en color, también
-  en ventanas sin foco (`traffic_lights.inactive_colored`; con `false`, como
-  macOS: vidrio gris con los brillos atenuados que se colorea al pasar el ratón). El
+  ratón por cualquiera aparecen los símbolos en los tres. En ventanas sin foco son
+  vidrio gris sin glifo, con los brillos atenuados (`inactive_shine`), como
+  macOS; al pasar el ratón por el **grupo** se colorean y muestran los glifos
+  aunque la ventana siga inactiva (`traffic_lights.inactive_colored`; con `true`
+  van siempre en color). El
   zoom apunta hacia dentro con la ventana maximizada. **Posición** con la regla
   de Apple: el primer círculo está tan lejos del borde izquierdo como del
   superior (`Decoration::leftButtonsPadding`). Los semáforos CSD de GTK usan
@@ -567,6 +569,13 @@ dentro de «Vidrio».
   libadwaita, claro y oscuro por `prefers-color-scheme`, el acento lo da el
   portal) se copia a `~/.config/gtk-4.0/gtk.css` solo si no existe o ya es
   nuestro (marca en la primera línea); si es de otra herramienta no se toca.
+- **Semáforos sin foco.** En `:backdrop` son grises (`traffic_light_inactive`).
+  GTK4/libadwaita: `windowcontrols:backdrop:hover > button.close|minimize|maximize`
+  devuelve el color de cada uno y `windowcontrols:hover > button image` muestra
+  los glifos de los tres al pasar por el grupo. GTK3 no tiene un nodo de grupo
+  con hover propio (`headerbar:hover` abarcaría toda la barra), así que la
+  reserva es `button.titlebutton.<clase>:backdrop:hover` por botón: límite
+  documentado, solo el botón bajo el ratón se colorea.
 - **`goldenglass-gtk-sync`** (autostart de la sesión): el Global Theme no puede
   fijar GTK, así que mientras sea GoldenGlass pone `GoldenGlass` o
   `GoldenGlass-Dark` según el esquema de KDE con la API de kde-gtk-config
