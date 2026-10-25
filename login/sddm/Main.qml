@@ -23,7 +23,7 @@ Rectangle {
 
     width: 1920
     height: 1080
-    color: "#101014"
+    color: config.background
 
     // --- valores del tema ------------------------------------------------------
 
@@ -36,6 +36,10 @@ Rectangle {
         readonly property color glass: withAlpha(config.glass, Number(config.glassAlpha))
         readonly property color glassBorder: withAlpha(config.glass, Number(config.glassBorderAlpha))
         readonly property color error: config.error
+        readonly property real borderWidth: Math.max(1, st.px(config.borderWidth))
+        // temblor del campo al fallar (listas separadas por espacios)
+        readonly property var shakeSteps: String(config.shakeSteps).split(" ").map(Number)
+        readonly property var shakeMs: String(config.shakeMs).split(" ").map(Number)
 
         function px(value) {
             return Math.round(Number(value) * scale);
@@ -87,7 +91,7 @@ Rectangle {
         blurEnabled: true
         blur: 1.0
         blurMax: Number(config.blur)
-        saturation: 0.15
+        saturation: Number(config.blurSaturation)
     }
 
     Rectangle {
@@ -153,18 +157,18 @@ Rectangle {
         Image {
             anchors.centerIn: parent
             visible: photo.status !== Image.Ready
-            width: avatar.size * 0.62
+            width: avatar.size * Number(config.avatarIconScale)
             height: width
             source: "icons/user.svg"
             sourceSize.width: width * 2
             sourceSize.height: height * 2
-            opacity: 0.85
+            opacity: Number(config.avatarIconAlpha)
         }
         Rectangle {
             anchors.fill: parent
             radius: width / 2
             color: "transparent"
-            border.width: Math.max(1, st.px(1.5))
+            border.width: st.borderWidth
             border.color: st.glassBorder
         }
     }
@@ -177,8 +181,8 @@ Rectangle {
         // nombre para el lector de pantalla (el botón de volver no lleva texto)
         property string accessibleName: label
         signal clicked
-        width: Math.max(circleButton.width, caption.implicitWidth) + st.px(16)
-        height: circleButton.height + st.px(8) + caption.implicitHeight
+        width: Math.max(circleButton.width, caption.implicitWidth) + st.px(config.actionPadding)
+        height: circleButton.height + st.px(config.actionCaptionGap) + caption.implicitHeight
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: accessibleName
@@ -187,11 +191,11 @@ Rectangle {
         Rectangle {
             id: circleButton
             anchors.horizontalCenter: parent.horizontalCenter
-            width: st.px(Number(config.actionSize) * 1.6)
+            width: st.px(Number(config.actionSize) * Number(config.actionCircleScale))
             height: width
             radius: width / 2
             color: mouse.pressed ? st.glassBorder : (mouse.containsMouse || action.activeFocus ? st.glass : "transparent")
-            border.width: action.activeFocus ? Math.max(1, st.px(1.5)) : 0
+            border.width: action.activeFocus ? st.borderWidth : 0
             border.color: st.glassBorder
 
             Image {
@@ -207,10 +211,10 @@ Rectangle {
         GlassLabel {
             id: caption
             anchors.top: circleButton.bottom
-            anchors.topMargin: st.px(8)
+            anchors.topMargin: st.px(config.actionCaptionGap)
             anchors.horizontalCenter: parent.horizontalCenter
             text: action.label
-            font.pixelSize: st.px(14)
+            font.pixelSize: st.px(config.smallSize)
         }
         MouseArea {
             id: mouse
@@ -228,11 +232,11 @@ Rectangle {
         property string icon
         property string label
         signal clicked
-        height: st.px(30)
-        width: row.implicitWidth + st.px(24)
+        height: st.px(config.cornerHeight)
+        width: row.implicitWidth + st.px(config.cornerPadding)
         radius: height / 2
         color: cornerMouse.containsMouse || activeFocus ? st.glass : "transparent"
-        border.width: activeFocus ? Math.max(1, st.px(1.5)) : 0
+        border.width: activeFocus ? st.borderWidth : 0
         border.color: st.glassBorder
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
@@ -241,10 +245,10 @@ Rectangle {
         Row {
             id: row
             anchors.centerIn: parent
-            spacing: st.px(8)
+            spacing: st.px(config.cornerSpacing)
             Image {
                 anchors.verticalCenter: parent.verticalCenter
-                width: st.px(18)
+                width: st.px(config.cornerIcon)
                 height: width
                 source: corner.icon
                 sourceSize.width: width * 2
@@ -254,7 +258,7 @@ Rectangle {
             GlassLabel {
                 anchors.verticalCenter: parent.verticalCenter
                 text: corner.label
-                font.pixelSize: st.px(14)
+                font.pixelSize: st.px(config.smallSize)
             }
         }
         MouseArea {
@@ -348,8 +352,8 @@ Rectangle {
         visible: root.picking && primaryScreen
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: actions.top
-        anchors.bottomMargin: st.px(96)
-        spacing: st.px(36)
+        anchors.bottomMargin: st.px(config.usersBottom)
+        spacing: st.px(config.usersSpacing)
 
         Repeater {
             id: userEntries
@@ -360,8 +364,8 @@ Rectangle {
                 required property string name
                 required property string realName
                 required property string icon
-                width: Math.max(st.px(config.avatarSmall) + st.px(24), entryName.implicitWidth)
-                height: entryAvatar.height + st.px(10) + entryName.implicitHeight
+                width: Math.max(st.px(config.avatarSmall) + st.px(config.userPadding), entryName.implicitWidth)
+                height: entryAvatar.height + st.px(config.userNameGap) + entryName.implicitHeight
                 activeFocusOnTab: true
                 Accessible.role: Accessible.Button
                 Accessible.name: entryName.text
@@ -371,20 +375,20 @@ Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     size: st.px(config.avatarSmall)
                     source: entry.icon
-                    scale: entryMouse.containsMouse || entry.activeFocus ? 1.08 : 1
+                    scale: entryMouse.containsMouse || entry.activeFocus ? Number(config.userHoverScale) : 1
                     Behavior on scale {
                         NumberAnimation {
-                            duration: 120
+                            duration: Number(config.userHoverMs)
                         }
                     }
                 }
                 GlassLabel {
                     id: entryName
                     anchors.top: entryAvatar.bottom
-                    anchors.topMargin: st.px(10)
+                    anchors.topMargin: st.px(config.userNameGap)
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: entry.realName.length > 0 ? entry.realName : entry.name
-                    font.pixelSize: st.px(15)
+                    font.pixelSize: st.px(config.userNameSize)
                 }
                 MouseArea {
                     id: entryMouse
@@ -404,8 +408,8 @@ Rectangle {
         visible: !root.picking && primaryScreen && root.currentUser !== null
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: actions.top
-        anchors.bottomMargin: st.px(72)
-        spacing: st.px(14)
+        anchors.bottomMargin: st.px(config.formBottom)
+        spacing: st.px(config.formSpacing)
 
         Avatar {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -431,12 +435,12 @@ Rectangle {
                 echoMode: TextInput.Password
                 passwordCharacter: "●"
                 placeholderText: tc.password
-                placeholderTextColor: st.withAlpha(st.text, 0.55)
+                placeholderTextColor: st.withAlpha(st.text, Number(config.placeholderAlpha))
                 color: st.text
                 font.family: st.font
-                font.pixelSize: st.px(15)
-                font.letterSpacing: echoMode === TextInput.Password && text.length > 0 ? st.px(2) : 0
-                leftPadding: st.px(14)
+                font.pixelSize: st.px(config.fieldFontSize)
+                font.letterSpacing: echoMode === TextInput.Password && text.length > 0 ? st.px(config.passwordSpacing) : 0
+                leftPadding: st.px(config.fieldPadding)
                 rightPadding: height
                 verticalAlignment: TextInput.AlignVCenter
                 selectByMouse: true
@@ -445,8 +449,8 @@ Rectangle {
                 background: Rectangle {
                     radius: height / 2
                     color: st.glass
-                    border.width: Math.max(1, st.px(1))
-                    border.color: password.activeFocus ? st.withAlpha(st.text, 0.5) : st.glassBorder
+                    border.width: Math.max(1, st.px(config.fieldBorderWidth))
+                    border.color: password.activeFocus ? st.withAlpha(st.text, Number(config.fieldFocusAlpha)) : st.glassBorder
                 }
                 onAccepted: root.login()
                 onTextEdited: root.failed = false
@@ -464,7 +468,7 @@ Rectangle {
                 anchors.right: parent.right
                 anchors.rightMargin: (parent.height - width) / 2
                 anchors.verticalCenter: parent.verticalCenter
-                width: parent.height * 0.62
+                width: parent.height * Number(config.fieldIconScale)
                 height: width
                 visible: password.text.length > 0 || keyboard.capsLock
                 source: password.text.length > 0 ? "icons/arrow.svg" : "icons/capslock.svg"
@@ -480,12 +484,12 @@ Rectangle {
 
             SequentialAnimation {
                 id: shake
-                property real d: st.px(10)
-                NumberAnimation { target: fieldRow; property: "anchors.horizontalCenterOffset"; to: -shake.d; duration: 50 }
-                NumberAnimation { target: fieldRow; property: "anchors.horizontalCenterOffset"; to: shake.d; duration: 70 }
-                NumberAnimation { target: fieldRow; property: "anchors.horizontalCenterOffset"; to: -shake.d * 0.6; duration: 70 }
-                NumberAnimation { target: fieldRow; property: "anchors.horizontalCenterOffset"; to: shake.d * 0.3; duration: 60 }
-                NumberAnimation { target: fieldRow; property: "anchors.horizontalCenterOffset"; to: 0; duration: 50 }
+                property real d: st.px(config.shakeDistance)
+                NumberAnimation { target: fieldRow; property: "anchors.horizontalCenterOffset"; to: shake.d * st.shakeSteps[0]; duration: st.shakeMs[0] }
+                NumberAnimation { target: fieldRow; property: "anchors.horizontalCenterOffset"; to: shake.d * st.shakeSteps[1]; duration: st.shakeMs[1] }
+                NumberAnimation { target: fieldRow; property: "anchors.horizontalCenterOffset"; to: shake.d * st.shakeSteps[2]; duration: st.shakeMs[2] }
+                NumberAnimation { target: fieldRow; property: "anchors.horizontalCenterOffset"; to: shake.d * st.shakeSteps[3]; duration: st.shakeMs[3] }
+                NumberAnimation { target: fieldRow; property: "anchors.horizontalCenterOffset"; to: shake.d * st.shakeSteps[4]; duration: st.shakeMs[4] }
             }
         }
 
@@ -494,8 +498,8 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.failed ? tc.loginFailed : (keyboard.capsLock ? tc.capslockWarning : "")
             color: root.failed ? st.error : st.text
-            font.pixelSize: st.px(14)
-            height: st.px(18)
+            font.pixelSize: st.px(config.smallSize)
+            height: st.px(config.messageHeight)
         }
     }
 
@@ -503,7 +507,7 @@ Rectangle {
     ActionButton {
         visible: !root.picking && userModel.count > 1 && primaryScreen
         anchors.right: loginBox.left
-        anchors.rightMargin: st.px(48)
+        anchors.rightMargin: st.px(config.backMargin)
         anchors.verticalCenter: loginBox.verticalCenter
         icon: "icons/back.svg"
         label: ""
@@ -519,7 +523,7 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: st.px(config.bottomMargin)
-        spacing: st.px(28)
+        spacing: st.px(config.actionSpacing)
 
         ActionButton {
             visible: sddm.canSuspend
@@ -547,7 +551,7 @@ Rectangle {
         visible: primaryScreen && sessionModel.count > 1
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        anchors.margins: st.px(24)
+        anchors.margins: st.px(config.cornerMargin)
         icon: "icons/session.svg"
         label: sessionNames.count > 0 && sessionNames.itemAt(root.sessionIndex) ? sessionNames.itemAt(root.sessionIndex).text : tc.session
         onClicked: sessionMenu.open()
@@ -563,7 +567,7 @@ Rectangle {
 
         Menu {
             id: sessionMenu
-            y: -height - st.px(8)
+            y: -height - st.px(config.menuGap)
             Repeater {
                 model: sessionModel
                 delegate: MenuItem {
@@ -582,7 +586,7 @@ Rectangle {
         visible: primaryScreen && keyboard.layouts.length > 1
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.margins: st.px(24)
+        anchors.margins: st.px(config.cornerMargin)
         icon: "icons/keyboard.svg"
         label: keyboard.layouts.length > 0 ? keyboard.layouts[keyboard.currentLayout].shortName.toUpperCase() : ""
         onClicked: keyboard.currentLayout = (keyboard.currentLayout + 1) % keyboard.layouts.length

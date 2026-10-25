@@ -452,6 +452,49 @@ glass = "#FFFFFF"        # relleno de campo y botones (con glass_alpha)
 glass_alpha = 0.16
 glass_border_alpha = 0.28
 error = "#FF6961"
+background = "#101014"   # detrás del fondo de pantalla mientras carga
+blur_saturation = 0.15   # saturación del fondo difuminado (0..1)
+border_width = 1.5       # filo de avatares y botones con el foco
+avatar_icon_scale = 0.62 # silueta sin foto, respecto al avatar
+avatar_icon_alpha = 0.85
+# fila de usuarios
+users_bottom = 96        # de la fila a los botones de acciones
+users_spacing = 36
+user_padding = 24        # ancho extra de cada usuario sobre su avatar
+user_name_gap = 10       # del avatar al nombre
+user_name_size = 15
+user_hover_scale = 1.08  # avatar bajo el cursor o con el foco
+user_hover_ms = 120
+# usuario elegido: avatar, nombre y contraseña
+form_bottom = 72         # del bloque a los botones de acciones
+form_spacing = 14
+field_font_size = 15
+field_padding = 14       # margen izquierdo del texto
+field_border_width = 1
+field_focus_alpha = 0.5  # filo del campo con el foco (color de texto)
+placeholder_alpha = 0.55
+password_spacing = 2     # entre los puntos de la contraseña
+field_icon_scale = 0.62  # flecha y Bloq Mayús, respecto al alto del campo
+message_height = 18      # aviso bajo el campo
+small_size = 14          # texto de botones y avisos
+# temblor del campo al fallar: desplazamiento (× shake_distance) y duración
+# de cada tramo
+shake_distance = 10
+shake_steps = [-1.0, 1.0, -0.6, 0.3, 0.0]
+shake_ms = [50, 70, 70, 60, 50]
+back_margin = 48         # botón «volver a los usuarios», a la izquierda del bloque
+# botones redondos (Reposo, Reiniciar, Apagar)
+action_spacing = 28
+action_circle_scale = 1.6    # círculo respecto al icono (action_size)
+action_padding = 16          # ancho extra del botón sobre el círculo o el texto
+action_caption_gap = 8       # del círculo al texto
+# botones de las esquinas (sesión, teclado)
+corner_margin = 24
+corner_height = 30
+corner_padding = 24          # ancho extra sobre icono y texto
+corner_spacing = 8           # entre icono y texto
+corner_icon = 18
+menu_gap = 8                 # del botón de sesión a su menú
 
 # ---------------------------------------------------------------------------
 # Sonidos (tools/sounds.py): sintetizados, timbre de cristal
