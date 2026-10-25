@@ -9,6 +9,12 @@
   aunque la ventana siga sin foco (`traffic_lights.inactive_colored = false`).
   En las ventanas CSD de GTK4/libadwaita el grupo entero reacciona; en GTK3
   solo el botón bajo el ratón.
+- **Sombra de las ventanas sin foco:** más corta y suave que la de la ventana
+  activa, como en macOS 27 (tokens `[shadow.inactive]`, por calibrar). Se
+  ajusta sin interfaz con `InactiveShadowSize` e `InactiveShadowStrength` en
+  `goldenglassrc [Common]` y nunca supera a la activa. Las dos sombras se
+  preparan de antemano: cambiar el foco no dibuja nada. La opacidad del
+  contorno de la ventana sale del token `shadow.outline_alpha`.
 
 ## 0.2.1 — 2026-10-15
 

@@ -215,6 +215,24 @@ Dolphin imita el Finder de macOS 27 (tokens `[finder]` y los colores
   los mismos colores, glifos y brillos. `build/cmake/bin/trafficlight_preview
   salida.png` dibuja todos los estados para revisarlos sin KWin.
 - Radio de esquina y sombras desde los tokens.
+- **Sombra activa e inactiva**, como macOS 27: la ventana sin foco lleva una
+  sombra más corta y suave (`[shadow.inactive]`, de fábrica ShadowMedium al
+  25 %, frente a `[shadow.active]`, ShadowVeryLarge al 45 %; calibrar). En
+  `goldenglassrc [Common]`, `InactiveShadowSize` e `InactiveShadowStrength`,
+  sin interfaz en el diálogo de la decoración; los valores efectivos son
+  `min(inactiva, activa)` y, sin sombra activa, tampoco hay inactiva
+  (`gen_tokens` rechaza unos tokens con la inactiva mayor). La resolución y la
+  clave de la caché están en `kdecoration/goldenglassshadowparams.h`, una
+  cabecera pura con su prueba (`shadowparams_test`). Cada decoración guarda las
+  dos sombras (`updateShadows()`, al configurar, cambiar de escala o
+  maximizar); las texturas se comparten entre ventanas por estilo resuelto
+  (tamaño, fuerza, color, radio, inicio del contorno y su opacidad,
+  `shadow.outline_alpha`). Cambiar el foco solo elige una de las dos
+  (`applyShadow()`): no renderiza nada, y el cambio es instantáneo porque
+  KDecoration3 no funde sombras. Con
+  `QT_LOGGING_RULES="goldenglass.decoration.shadow.debug=true"` KWin anota cada
+  textura creada. Como el `padding` de la sombra cambia con el foco, también
+  cambia la geometría expandida de la ventana (la del marco no).
 - **Toolbar unificada:** con `decoration.glass_titlebar` la barra de título usa
   el mismo color (Header) y la misma opacidad de vidrio que la toolbar, y KWin
   difumina detrás de ambas: se ven como una sola barra. Los semáforos no pueden
