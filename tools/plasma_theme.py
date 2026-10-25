@@ -60,6 +60,7 @@ TEXT = "ColorScheme-Text"
 HIGHLIGHT = "ColorScheme-Highlight"
 NEUTRAL = "ColorScheme-NeutralText"
 BLACK = Paint(None, 1.0, "#000000")
+WHITE = "#FFFFFF"
 
 
 class Svg:
@@ -106,10 +107,12 @@ class Svg:
 
 def frame(svg: Svg, prefix: str, radius: float, fill: Paint,
           border: Paint | None = None, margins: tuple[float, float, float, float] | None = None,
-          edge: float = 8, stretch: bool = False, border_width: float = 1) -> None:
+          edge: float = 8, stretch: bool = False, border_width: float = 1,
+          inner_border: Paint | None = None) -> None:
     """Marco de 9 teselas con esquinas redondeadas.
 
     `margins` = (top, right, bottom, left) → `hint-*-margin`.
+    `inner_border` is a second line of the same width just inside `border`.
     """
     c = max(radius, 1.0)
     x0, y0 = svg.reserve(2 * c + edge, 2 * c + edge)
@@ -127,6 +130,9 @@ def frame(svg: Svg, prefix: str, radius: float, fill: Paint,
             parts = [_tile_fill(name, x, y, w, h, c, radius, fill)]
             if border is not None and name != "center":
                 parts.append(_tile_border(name, x, y, w, h, c, radius, border, border_width))
+            if inner_border is not None and name != "center":
+                parts.append(_tile_border(name, x, y, w, h, c, radius, inner_border, border_width,
+                                          inset=border_width))
             svg.body.append(f'<g id="{prefix}{name}">{"".join(parts)}</g>')
 
     if margins is not None:
@@ -146,26 +152,27 @@ def _tile_fill(name: str, x, y, w, h, c, radius, paint: Paint) -> str:
     return f'<rect x="{_f(x)}" y="{_f(y)}" width="{_f(w)}" height="{_f(h)}"{paint.attrs()}/>'
 
 
-def _tile_border(name: str, x, y, w, h, c, radius, paint: Paint, width: float = 1) -> str:
-    """Filo de `width` px en el lado exterior de la tesela."""
+def _tile_border(name: str, x, y, w, h, c, radius, paint: Paint, width: float = 1, inset: float = 0) -> str:
+    """Filo de `width` px en el lado exterior de la tesela, `inset` px hacia dentro."""
     if name in _CORNER_ARCS and radius > 0:
         # Anillo relleno (no trazo): QtSvg suma medio ancho de trazo a los
         # límites del elemento, lo que encoge la tesela y abre rendijas.
         cx, cy = _corner_center(name, x, y, c)
         (sx, sy), (ex, ey) = _CORNER_ARCS[name]
-        ri = max(c - width, 0)
-        return (f'<path d="M {_f(cx + sx * c)},{_f(cy + sy * c)} A {_f(c)},{_f(c)} 0 0 1 '
-                f'{_f(cx + ex * c)},{_f(cy + ey * c)} L {_f(cx + ex * ri)},{_f(cy + ey * ri)} '
+        ro = max(c - inset, 0)
+        ri = max(ro - width, 0)
+        return (f'<path d="M {_f(cx + sx * ro)},{_f(cy + sy * ro)} A {_f(ro)},{_f(ro)} 0 0 1 '
+                f'{_f(cx + ex * ro)},{_f(cy + ey * ro)} L {_f(cx + ex * ri)},{_f(cy + ey * ri)} '
                 f'A {_f(ri)},{_f(ri)} 0 0 0 {_f(cx + sx * ri)},{_f(cy + sy * ri)} Z"{paint.attrs()}/>')
     lines = []
     if name.startswith("top"):
-        lines.append((x, y, w, width))
+        lines.append((x, y + inset, w, width))
     if name.startswith("bottom"):
-        lines.append((x, y + h - width, w, width))
+        lines.append((x, y + h - inset - width, w, width))
     if name.endswith("left"):
-        lines.append((x, y, width, h))
+        lines.append((x + inset, y, width, h))
     if name.endswith("right"):
-        lines.append((x + w - width, y, width, h))
+        lines.append((x + w - inset - width, y, width, h))
     return "".join(f'<rect x="{_f(lx)}" y="{_f(ly)}" width="{_f(lw)}" height="{_f(lh)}"{paint.attrs()}/>'
                    for lx, ly, lw, lh in lines)
 
@@ -243,10 +250,17 @@ def glass_alpha(tokens: dict, level: float | None = None) -> float:
 
 def glass_surface(tokens: dict, radius: float, margin: float, shadow_size: float,
                   shadow_alpha: float, alpha: float) -> str:
-    """Superficie de vidrio completa: marco + máscara de blur + sombra."""
-    border = Paint(TEXT, tokens["glass"]["border"]["alpha"])
+    """Superficie de vidrio completa: marco + máscara de blur + sombra.
+
+    The edge is a dark outer line and a light one just inside (macOS 27's
+    improved contrast); fixed colours with alpha read on light and dark glass.
+    """
+    border = tokens["glass"]["border"]
+    shade = Paint(None, border["shade_alpha"], BLACK.color)
+    highlight = Paint(None, border["highlight_alpha"], WHITE)
     svg = Svg()
-    frame(svg, "", radius, Paint(BG, alpha), border, margins=(margin,) * 4)
+    frame(svg, "", radius, Paint(BG, alpha), shade, margins=(margin,) * 4, border_width=border["width"],
+          inner_border=highlight)
     frame(svg, "mask-", radius, BLACK)
     shadow(svg, radius, shadow_size, shadow_alpha)
     return svg.render()

@@ -61,7 +61,13 @@ position = 1.0
 alpha = 0.90
 
 [glass.border]
-alpha = 0.14         # filo del vidrio (color de texto con esta opacidad)
+alpha = 0.14         # filo de las tarjetas QML (Tile, panel de Apps): color de texto con esta opacidad
+# Filo del Plasma Style (macOS 27: «more uniform refraction and improved
+# contrast»): una línea oscura fina por fuera y una clara justo dentro. Colores
+# fijos (negro y blanco) con alfa: valen en claro y en oscuro — calibrar
+shade_alpha = 0.16       # línea exterior negra
+highlight_alpha = 0.22   # línea interior blanca
+width = 1                # ancho de cada línea (px)
 
 # Saturación/contraste del fondo difuminado detrás del vidrio ("vibrancy").
 # Se escribe en el plasmarc del Plasma Style.
@@ -79,11 +85,16 @@ strength = 10        # desplazamiento del fondo en el mismo borde — calibrar
 opaque_factor = 0.25 # fracción de la refracción con el vidrio más opaco
 dispersion = 0.35    # separación de colores (fracción de strength)
 clarity = 0.5        # en el borde, cuánto se ve el fondo nítido (no difuminado)
-specular = 0.12      # brillo del filo (más arriba que abajo)
+specular = 0.12      # brillo del filo (más arriba que abajo) — calibrar
 tint = 0.10          # acerca la luminancia del fondo a la media (legibilidad)
 edge_max_fraction = 0.3  # en superficies bajas (el dock), la zona curvada no pasa de esta fracción del lado menor
 rim_width = 0.3      # ancho del filo de luz (fracción de edge)
 rim_bottom = 0.35    # brillo del filo abajo respecto a arriba
+# Filo y oscurecido siguen al nivel con su propio factor (la lente usa
+# opaque_factor): con el vidrio más opaco el contraste del borde importa más
+rim_opaque_factor = 0.6  # fracción del filo y del oscurecido con el vidrio más opaco — calibrar
+edge_shade = 0.18        # oscurecido multiplicativo de la banda exterior — calibrar
+edge_shade_width = 1.5   # ancho de esa banda (px lógicos) — calibrar
 
 # ---------------------------------------------------------------------------
 # Escritorio Plasma (px lógicos)

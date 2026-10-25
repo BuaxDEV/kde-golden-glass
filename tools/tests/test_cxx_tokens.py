@@ -99,6 +99,32 @@ def test_invalid_shadow_tokens(tokens, change):
         gen_tokens.validate(tokens)
 
 
+def test_glass_edge(tokens):
+    refraction = tokens["glass"]["refraction"]
+    header = cxx_tokens.header(tokens)
+    assert float(constant(header, "RefractionRimOpaqueFactor")) == refraction["rim_opaque_factor"]
+    assert float(constant(header, "RefractionEdgeShade")) == refraction["edge_shade"]
+    assert float(constant(header, "RefractionEdgeShadeWidth")) == refraction["edge_shade_width"]
+    refraction["edge_shade_width"] = 2
+    assert re.search(r"^inline constexpr double RefractionEdgeShadeWidth = 2\.0;",
+                     cxx_tokens.header(tokens), re.M)
+
+
+@pytest.mark.parametrize(("section", "key", "value"), [
+    ("refraction", "rim_opaque_factor", 1.5),
+    ("refraction", "edge_shade", -0.1),
+    ("refraction", "edge_shade_width", True),
+    ("border", "shade_alpha", "0.16"),
+    ("border", "highlight_alpha", float("nan")),
+    ("border", "width", 0),
+])
+def test_invalid_glass_edge_tokens(tokens, section, key, value):
+    gen_tokens.validate(tokens)
+    tokens["glass"][section][key] = value
+    with pytest.raises(SystemExit, match=rf"\[glass\.{section}\]\.{key}"):
+        gen_tokens.validate(tokens)
+
+
 def test_shadow_size_table(tokens):
     # una entrada por opción de ShadowSize (salvo ShadowNone), con sus seis valores
     header = cxx_tokens.header(tokens)

@@ -185,6 +185,24 @@ def validate_motion(motion: dict) -> None:
             raise SystemExit(f"[motion].{key} debe ser un número {limit} (ms), no {value!r}")
 
 
+# glass edge contrast (docs/MACOS27-PLAN.md §4.3): key → (minimum, maximum)
+GLASS_EDGE_KEYS = {
+    ("refraction", "rim_opaque_factor"): (0.0, 1.0),
+    ("refraction", "edge_shade"): (0.0, 1.0),
+    ("refraction", "edge_shade_width"): (0.0, 8.0),
+    ("border", "shade_alpha"): (0.0, 1.0),
+    ("border", "highlight_alpha"): (0.0, 1.0),
+    ("border", "width"): (0.5, 4.0),
+}
+
+
+def validate_glass_edge(glass: dict) -> None:
+    for (section, key), (low, high) in GLASS_EDGE_KEYS.items():
+        value = glass.get(section, {}).get(key)
+        if not _is_number(value) or not low <= value <= high:
+            raise SystemExit(f"[glass.{section}].{key} must be a number in [{low:g}, {high:g}], not {value!r}")
+
+
 def validate_kwin(kwin: dict) -> None:
     for key in ("open_scale", "close_scale"):
         value = kwin.get(key)
@@ -253,6 +271,7 @@ def validate(tokens: dict) -> None:
         raise SystemExit(f"estas claves de los tokens deben ser secciones: {', '.join(not_tables)}")
     validate_motion(tokens["motion"])
     validate_kwin(tokens["kwin"])
+    validate_glass_edge(tokens["glass"])
 
     validate_icon_tile(tokens["icon_tile"])
 
