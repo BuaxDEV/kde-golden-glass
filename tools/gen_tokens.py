@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import traceback
 from pathlib import Path
@@ -158,13 +159,28 @@ def build_colors(tokens: dict, variant: str) -> str:
 # Secciones que leen los generadores: deben existir y ser tablas
 REQUIRED_SECTIONS = (
     "meta", "radius", "focus_ring", "glass", "plasma", "shadow", "decoration", "menu", "finder",
-    "font", "apps", "scroll", "traffic_lights", "dock", "control_center", "boot", "login",
+    "font", "apps", "scroll", "traffic_lights", "dock", "control_center", "motion", "boot", "login",
     "sounds", "accessibility", "light", "dark",
 )
 
 # [accessibility]: valores de fábrica de goldenglassrc [Accessibility] y la
 # opacidad con «Reducir transparencia» (docs/ARCHITECTURE.md, «Accesibilidad»)
 ACCESSIBILITY_FLAGS = ("show_borders", "reduce_transparency", "reduce_motion")
+
+# [motion]: clave → si admite 0 (Motion.qml divide por kirigami_long_ms)
+MOTION_KEYS = {"kirigami_long_ms": False, "reduced_fade_ms": True}
+
+
+def _is_number(value: object) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def validate_motion(motion: dict) -> None:
+    for key, zero_ok in MOTION_KEYS.items():
+        value = motion.get(key)
+        if not _is_number(value) or value < 0 or (value == 0 and not zero_ok):
+            limit = "≥ 0" if zero_ok else "> 0"
+            raise SystemExit(f"[motion].{key} debe ser un número {limit} (ms), no {value!r}")
 
 
 def validate(tokens: dict) -> None:
@@ -174,6 +190,7 @@ def validate(tokens: dict) -> None:
     not_tables = [name for name in REQUIRED_SECTIONS if not isinstance(tokens[name], dict)]
     if not_tables:
         raise SystemExit(f"estas claves de los tokens deben ser secciones: {', '.join(not_tables)}")
+    validate_motion(tokens["motion"])
 
     light, dark = set(tokens["light"]), set(tokens["dark"])
     if light != dark:
