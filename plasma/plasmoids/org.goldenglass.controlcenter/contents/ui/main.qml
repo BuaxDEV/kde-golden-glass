@@ -303,7 +303,7 @@ PlasmoidItem {
                     property: "opacity"
                     from: 0
                     to: 1
-                    duration: root.cc.open_fade_ms
+                    duration: Motion.fadeMs(root.cc.open_fade_ms)
                     easing.type: Easing.OutCubic
                 }
                 NumberAnimation {
@@ -311,9 +311,9 @@ PlasmoidItem {
                     property: "scale"
                     from: root.cc.switch_scale
                     to: 1
-                    duration: root.cc.open_ms
+                    duration: Motion.moveMs(root.cc.open_ms)
                     easing.type: Easing.OutBack
-                    easing.overshoot: root.cc.open_overshoot
+                    easing.overshoot: Motion.overshoot(root.cc.open_overshoot)
                 }
             }
 

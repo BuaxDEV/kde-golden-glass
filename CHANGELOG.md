@@ -47,6 +47,13 @@
   cuartos se alcanzan encadenándolas. Las instalaciones existentes reciben los
   atajos nuevos al recargar KWin o iniciar sesión, sin cambiar los que ya
   hubieras reasignado.
+- **Los plasmoids siguen la velocidad de animación global:** el Centro de
+  control, Apps y el dock (paneles, tarjetas, desplazamiento, rebote y
+  ampliación) usan la «Velocidad de animación» de Ajustes del sistema, como el
+  resto de Plasma, y la cambian en vivo; al mínimo no animan y los paneles se
+  abren y cierran al momento. Con la velocidad normal todo dura lo mismo que
+  antes. Las esperas (antes de mostrar el nombre de la app o de ocultar las
+  miniaturas y la barra de desplazamiento) no cambian.
 
 ## 0.2.1 — 2026-10-15
 

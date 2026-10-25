@@ -70,7 +70,7 @@ Item {
     property real amount: hover.hovered && magnification && !dragging ? 1 : 0
     Behavior on amount {
         NumberAnimation {
-            duration: T.tokens.dock.magnification_ms
+            duration: Motion.ms(T.tokens.dock.magnification_ms)
             easing.type: Easing.OutCubic
         }
     }
@@ -393,7 +393,7 @@ Item {
             fallback: "view-app-grid"
             label: i18n("Apps")
             trailingSpace: dock.dropIndex === 0 ? dock.dropSpace : 0
-            Behavior on trailingSpace { NumberAnimation { duration: T.tokens.dock.magnification_ms; easing.type: Easing.OutCubic } }
+            Behavior on trailingSpace { NumberAnimation { duration: Motion.moveMs(T.tokens.dock.magnification_ms); easing.type: Easing.OutCubic } }
             hovered: appsArea.containsMouse
             pressed: appsArea.pressed
             MouseArea {
@@ -423,7 +423,7 @@ Item {
                 iconSource: model.decoration
                 label: model.AppName || model.display || ""
                 trailingSpace: dock.dropIndex === index + 1 ? dock.dropSpace : 0
-                Behavior on trailingSpace { NumberAnimation { duration: T.tokens.dock.magnification_ms; easing.type: Easing.OutCubic } }
+                Behavior on trailingSpace { NumberAnimation { duration: Motion.moveMs(T.tokens.dock.magnification_ms); easing.type: Easing.OutCubic } }
                 running: model.IsWindow === true || model.IsGroupParent === true
                 launching: model.IsStartup === true
                 demandsAttention: model.IsDemandingAttention === true

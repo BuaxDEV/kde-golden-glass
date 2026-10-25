@@ -189,7 +189,7 @@ Item {
         id: wheelAnimation
         target: flick
         property: "contentY"
-        duration: root.tok.wheel_ms
+        duration: Motion.ms(root.tok.wheel_ms)
         easing.type: Easing.OutCubic
     }
 
@@ -222,7 +222,7 @@ Item {
             rebound: Transition {
                 NumberAnimation {
                     properties: "x,y"
-                    duration: root.tok.rebound_ms
+                    duration: Motion.moveMs(root.tok.rebound_ms)
                     easing.type: Easing.OutCubic
                 }
             }
@@ -299,7 +299,7 @@ Item {
         visible: flick.contentHeight > flick.height + 1
         opacity: shown ? 1 : 0
         Behavior on opacity {
-            NumberAnimation { duration: root.tok.bar_fade_ms; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: Motion.ms(root.tok.bar_fade_ms); easing.type: Easing.OutCubic }
         }
 
         property bool shown: false
@@ -332,7 +332,7 @@ Item {
             color: Qt.alpha(Kirigami.Theme.textColor, root.tok.bar_track_alpha)
             opacity: bar.expanded ? 1 : 0
             Behavior on opacity {
-                NumberAnimation { duration: root.tok.bar_fade_ms }
+                NumberAnimation { duration: Motion.ms(root.tok.bar_fade_ms) }
             }
         }
 
@@ -356,7 +356,7 @@ Item {
             radius: width / 2
             color: Qt.alpha(Kirigami.Theme.textColor, root.tok.bar_alpha)
             Behavior on width {
-                NumberAnimation { duration: root.tok.bar_fade_ms; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: Motion.ms(root.tok.bar_fade_ms); easing.type: Easing.OutCubic }
             }
         }
 
