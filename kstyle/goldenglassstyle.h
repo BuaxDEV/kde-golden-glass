@@ -161,6 +161,9 @@ protected Q_SLOTS:
     //* update configuration
     void configurationChanged();
 
+    //* forget a destroyed widget (its address can be reused by a new one)
+    void widgetDestroyed(QObject *object);
+
     //* standard icons
     QIcon standardIconImplementation(StandardPixmap, const QStyleOption *, const QWidget *) const;
 
@@ -174,6 +177,12 @@ protected:
 private:
     //* load configuration
     void loadConfiguration();
+
+    //* whether translucent menubar / toolbar / tabbar / sidebar need blur
+    void updateBarsOpaque();
+
+    //* remove the widget from the sets below when it is destroyed
+    void trackWidget(const QWidget *widget) const;
 
     //*@name subelementRect specialized functions
     //@{
@@ -602,7 +611,14 @@ private:
 
     //* Translucency handling
     //* set of transparent widgets (as defined in ::polish)
-    QSet<QWidget *> _translucentWidgets;
+    QSet<const QObject *> _translucentWidgets;
+
+    //* list of possible valid toolbars to be translucent
+    //* only one can be at time
+    mutable QSet<const QObject *> _possibleTranslucentToolBars;
+
+    //* Qt Quick windows (content items) registered in the window manager
+    mutable QSet<const QObject *> _quickContentItems;
 
     //* LibreOffice and Plasma need workarounds.
     bool _isLibreoffice = false;
