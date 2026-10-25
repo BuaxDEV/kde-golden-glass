@@ -26,10 +26,9 @@ class DockKcm : public KQuickConfigModule
     Q_PROPERTY(bool available READ available NOTIFY availableChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY errorTextChanged)
-    //* rangos de los deslizadores (tokens [dock] settings_*)
+    //* rangos de los deslizadores (tokens [dock]); la ampliación empieza en el tamaño del icono
     Q_PROPERTY(int iconSizeMin READ iconSizeMin CONSTANT)
     Q_PROPERTY(int iconSizeMax READ iconSizeMax CONSTANT)
-    Q_PROPERTY(int magnificationSizeMin READ magnificationSizeMin CONSTANT)
     Q_PROPERTY(int magnificationSizeMax READ magnificationSizeMax CONSTANT)
 
 public:
@@ -48,7 +47,6 @@ public:
     QString errorText() const;
     int iconSizeMin() const;
     int iconSizeMax() const;
-    int magnificationSizeMin() const;
     int magnificationSizeMax() const;
 
     void load() override;

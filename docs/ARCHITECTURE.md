@@ -848,7 +848,11 @@ dentro de «Vidrio».
   del plasmoid con el script de plasmashell (`iconSize`, `magnification`,
   `magnificationSize`, `showRecent`); el dock la aplica al momento y ajusta el
   grosor. Valores de fábrica en `[dock]` y `[plasma]` de los tokens (el
-  `main.xml` del plasmoid es una plantilla). El módulo «Dock» lo llama.
+  `main.xml` del plasmoid es una plantilla). El módulo «Dock» lo llama. Un solo
+  rango de tamaños (`[dock] icon_size_min/max`, `magnification_size_max`; la
+  ampliación nunca por debajo del icono) en los deslizadores del módulo, en el
+  `<min>`/`<max>` del `main.xml` y en `goldenglass-dock`, que lo lee del
+  `main.xml` instalado.
 - **Pruebas:** en el sandbox, el dock real con una app abierta y el panel de
   Apps abierto desde el dock (también que el dock oculto aparece al abrir Apps
   con `activateLauncherMenu` y se oculta al cerrarlo); `goldenglass-dock` y el

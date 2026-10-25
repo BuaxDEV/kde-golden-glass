@@ -98,7 +98,7 @@ KCM.SimpleKCM {
 
             LabeledSlider {
                 accessibleName: i18nc("@label:slider", "Magnification size")
-                from: Math.max(kcm.iconSize, kcm.magnificationSizeMin)
+                from: kcm.iconSize
                 to: kcm.magnificationSizeMax
                 value: kcm.magnificationSize
                 enabledSlider: kcm.magnification

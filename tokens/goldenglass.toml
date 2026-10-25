@@ -419,13 +419,15 @@ dot_alpha = 0.8          # punto de app abierta (color de texto)
 separator_height = 0.78  # separador de apps recientes (fracción del alto)
 separator_alpha = 0.22
 label_delay_ms = 400     # espera antes del nombre de la app al pasar el ratón
-# Rangos de los deslizadores del módulo «Dock» (px). goldenglass-dock acepta
-# otros más amplios (24–128 y 24–256) y el main.xml del plasmoid no pone
-# límites: decisión pendiente unificarlos.
-settings_icon_size_min = 32
-settings_icon_size_max = 80
-settings_magnification_size_min = 48   # y nunca menos que el tamaño del icono
-settings_magnification_size_max = 128
+# Rangos (px) del tamaño de icono y de la ampliación: los mismos en los
+# deslizadores del módulo «Dock», en el main.xml del plasmoid (<min>/<max>:
+# Plasma ajusta a ellos lo que lee) y en goldenglass-dock (los lee del main.xml
+# instalado). Icono: icon_size_min–icon_size_max. Ampliación: del tamaño del
+# icono a magnification_size_max (en main.xml, desde icon_size_min, porque no
+# puede depender de otra opción).
+icon_size_min = 32
+icon_size_max = 80
+magnification_size_max = 128
 
 # ---------------------------------------------------------------------------
 # Texto e iconos secundarios de los plasmoids: opacidad sobre el color de texto

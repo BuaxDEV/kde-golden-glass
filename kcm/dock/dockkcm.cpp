@@ -135,22 +135,17 @@ QString DockKcm::errorText() const
 
 int DockKcm::iconSizeMin() const
 {
-    return GoldenGlass::Tokens::DockSettingsIconSizeMin;
+    return GoldenGlass::Tokens::DockIconSizeMin;
 }
 
 int DockKcm::iconSizeMax() const
 {
-    return GoldenGlass::Tokens::DockSettingsIconSizeMax;
-}
-
-int DockKcm::magnificationSizeMin() const
-{
-    return GoldenGlass::Tokens::DockSettingsMagnificationSizeMin;
+    return GoldenGlass::Tokens::DockIconSizeMax;
 }
 
 int DockKcm::magnificationSizeMax() const
 {
-    return GoldenGlass::Tokens::DockSettingsMagnificationSizeMax;
+    return GoldenGlass::Tokens::DockMagnificationSizeMax;
 }
 
 QString DockKcm::program()
