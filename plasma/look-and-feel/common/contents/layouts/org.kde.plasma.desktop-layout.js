@@ -6,8 +6,8 @@
 //
 // Plantilla: tools/gen_tokens.py sustituye los marcadores entre arrobas desde los tokens.
 
-const MENUBAR_HEIGHT = @MENUBAR_HEIGHT@;
-const DOCK_HEIGHT = @DOCK_HEIGHT@;
+const MENUBAR_HEIGHT = @plasma.menubar_height@;
+const DOCK_HEIGHT = @lookandfeel.dock_height@;
 
 // --- Barra de menús (todas las pantallas) -----------------------------------
 for (let screen = 0; screen < screenCount; ++screen) {
@@ -41,7 +41,7 @@ for (let screen = 0; screen < screenCount; ++screen) {
     // Iconos de estado tan separados como en macOS.
     const tray = menubar.addWidget("org.kde.plasma.systemtray");
     tray.currentConfigGroup = ["General"];
-    tray.writeConfig("iconSpacing", @TRAY_ICON_SPACING@);
+    tray.writeConfig("iconSpacing", @lookandfeel.tray_icon_spacing@);
 
     // Centro de control (Wi‑Fi, Bluetooth, modo oscuro, No molestar, brillo,
     // sonido, vidrio, multimedia), junto al reloj como en macOS.
@@ -58,14 +58,14 @@ dock.location = "bottom";
 dock.floating = true;
 dock.lengthMode = "fit";
 dock.alignment = "center";
-dock.hiding = "@DOCK_HIDING@";
+dock.hiding = "@plasma.dock_hiding@";
 
 // Deslizamiento del dock al aparecer/ocultarse (efecto Sliding Popups de KWin,
 // también el de los popups de Plasma): KLookAndFeelManager ignora esta clave en
 // contents/defaults, así que se escribe aquí.
 const slide = ConfigFile("kwinrc", "Effect-slidingpopups");
-slide.writeEntry("SlideInTime", @SLIDE_IN_MS@);
-slide.writeEntry("SlideOutTime", @SLIDE_OUT_MS@);
+slide.writeEntry("SlideInTime", @plasma.slide_in_ms@);
+slide.writeEntry("SlideOutTime", @plasma.slide_out_ms@);
 dock.opacity = "translucent";
 dock.height = DOCK_HEIGHT;
 
@@ -104,7 +104,7 @@ ConfigFile("kwinrc", "Plugins").writeEntry("org.goldenglass.shortcutsEnabled", t
 // actúa en la pantalla con el foco). El script «Virtual Desktops Only on
 // Primary» de kdeplasma-addons fija las ventanas de las demás pantallas y
 // choca con esto: se desactiva.
-ConfigFile("kwinrc", "Windows").writeEntry("PerOutputVirtualDesktops", @PER_SCREEN_DESKTOPS@);
-if (@PER_SCREEN_DESKTOPS@) {
+ConfigFile("kwinrc", "Windows").writeEntry("PerOutputVirtualDesktops", @plasma.per_screen_desktops@);
+if (@plasma.per_screen_desktops@) {
     ConfigFile("kwinrc", "Plugins").writeEntry("virtualdesktopsonlyonprimaryEnabled", false);
 }

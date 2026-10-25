@@ -163,12 +163,12 @@ KCM.SimpleKCM {
                 }
                 ThemeCard {
                     variant: "dark"
-                    screenColor: "#000000"
+                    screenColor: kcm.darkBackground
                     label: i18nc("@option:radio boot screen", "GoldenGlass")
                 }
                 ThemeCard {
                     variant: "light"
-                    screenColor: "#E3E3E6"
+                    screenColor: kcm.lightBackground
                     label: i18nc("@option:radio boot screen", "GoldenGlass Light")
                 }
             }

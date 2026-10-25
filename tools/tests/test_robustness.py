@@ -23,9 +23,9 @@ TOOLS = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(TOOLS))
 
 import gen_tokens  # noqa: E402
+import ggcommon  # noqa: E402
 import glass  # noqa: E402
 import gtk_sync  # noqa: E402
-import lookandfeel  # noqa: E402
 import plasmoids  # noqa: E402
 import system  # noqa: E402
 
@@ -53,26 +53,28 @@ class TokensTest(unittest.TestCase):
             gen_tokens.validate(tokens)
         self.assertIn("radius", str(raised.exception))
 
-    def test_unknown_lookandfeel_marker_names_template(self) -> None:
-        src = lookandfeel.COMMON / "contents" / "x.qml"
-        with self.assertRaises(SystemExit) as raised:
-            lookandfeel._fill("a @KNOWN@ b @MISPELLED@", {"KNOWN": "1"}, src)
-        self.assertIn("@MISPELLED@", str(raised.exception))
-        self.assertIn("x.qml", str(raised.exception))
-        self.assertEqual(lookandfeel._fill("a @KNOWN@", {"KNOWN": "1"}, src), "a 1")
+    def test_unknown_template_marker_names_template(self) -> None:
+        tokens = {"dock": {"icon_size": 48}}
+        self.assertEqual(ggcommon.fill_template("size: @dock.icon_size@", tokens, "x.qml"), "size: 48")
+        for marker in ("@dock.icon_szie@", "@dock.icon_size.x@", "@dock.nope.x@"):
+            with self.assertRaises(SystemExit) as raised:
+                ggcommon.fill_template(f"size: {marker}", tokens, "x.qml")
+            self.assertIn("x.qml", str(raised.exception))
+            self.assertIn(marker, str(raised.exception))
 
     def test_unknown_plasmoid_marker_names_template(self) -> None:
         tokens = {"dock": {"icon_size": 48}}
+        src = plasmoids.ROOT / "plasma" / "plasmoids" / "org.example"
         with tempfile.TemporaryDirectory() as tmp:
             template = Path(tmp) / "main.qml.in"
             template.write_text("size: @dock.icon_size@\n", encoding="utf-8")
-            plasmoids._fill_templates(Path(tmp), tokens)
+            plasmoids.fill_templates(src, Path(tmp), tokens)
             self.assertEqual((Path(tmp) / "main.qml").read_text(encoding="utf-8"), "size: 48\n")
 
             bad = Path(tmp) / "bad.qml.in"
-            bad.write_text("size: @dock.icon_szie@ @dock.icon_size.x@\n", encoding="utf-8")
+            bad.write_text("size: @dock.icon_szie@\n", encoding="utf-8")
             with self.assertRaises(SystemExit) as raised:
-                plasmoids._fill_templates(Path(tmp), tokens)
+                plasmoids.fill_templates(src, Path(tmp), tokens)
             self.assertIn("bad.qml.in", str(raised.exception))
             self.assertIn("@dock.icon_szie@", str(raised.exception))
 

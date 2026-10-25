@@ -44,7 +44,6 @@ import subprocess
 import sys
 import tempfile
 import time
-import tomllib
 from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parent
@@ -52,6 +51,7 @@ ROOT = TOOLS.parent
 sys.path.insert(0, str(TOOLS))
 
 import plasma_theme  # noqa: E402
+from ggcommon import load_tokens  # noqa: E402
 
 BASE_ID = plasma_theme.THEME_ID
 TUNED_ID = BASE_ID + "Tuned"
@@ -62,11 +62,6 @@ STYLE_KEYS = ("MenuOpacity", "ToolBarOpacity", "DolphinSidebarOpacity")
 # (ThemePrivate::updateNotificationTimer): en el rebote hay que dejar que el
 # tema intermedio llegue a los paneles antes de volver, o no se repintan.
 BOUNCE_DELAY = 0.35
-
-
-def load_tokens() -> dict:
-    with (ROOT / "tokens" / "goldenglass.toml").open("rb") as f:
-        return tomllib.load(f)
 
 
 def data_home() -> Path:

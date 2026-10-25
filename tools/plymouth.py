@@ -16,11 +16,10 @@ Vista previa sin reiniciar ni root: tools/preview_plymouth.sh.
 
 from __future__ import annotations
 
-import hashlib
-import json
-import re
 import shutil
 from pathlib import Path
+
+from ggcommon import Color, fill_template, stamp
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / "plymouth" / "goldenglass.script.in"
@@ -35,14 +34,9 @@ VARIANTS = {
 }
 
 
-def _rgb(hex_color: str) -> tuple[int, int, int]:
-    h = hex_color.lstrip("#")
-    return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-
-
 def _script_color(hex_color: str) -> str:
     """#RRGGBB → «r, g, b» en 0..1 (formato de color de Plymouth)."""
-    return ", ".join(f"{c / 255:.3f}" for c in _rgb(hex_color))
+    return ", ".join(f"{c / 255:.3f}" for c in Color.parse(hex_color).rgb())
 
 
 # --- piezas -----------------------------------------------------------------
@@ -133,36 +127,21 @@ def _pieces(boot: dict, pal: dict, scale: int) -> dict:
         "field": _pill(field_w, field_h, _color(fg, pal["field_alpha"]),
                        _color(fg, pal["field_border_alpha"]), 1.0 * s),
         "dot": _pill(boot["dot_size"] * s, boot["dot_size"] * s, _color(fg, 1.0)),
-        "capslock": _capslock(_color(fg, pal["text_alpha"]), 14 * s),
+        "capslock": _capslock(_color(fg, pal["text_alpha"]), boot["capslock_size"] * s),
     }
 
 
 # --- tema -------------------------------------------------------------------
 
 def script(boot: dict, pal: dict) -> str:
-    values = {
-        "BG": _script_color(pal["background"]),
-        "FG": _script_color(pal["foreground"]),
-        "TEXT_ALPHA": f"{pal['text_alpha']:.3f}",
-        "FONT": boot["font"],
-        "FONT_SIZE": boot["font_size"],
-        "LOGO_SIZE": boot["logo_size"],
-        "LOGO_OFFSET": boot["logo_offset"],
-        "BAR_WIDTH": boot["bar_width"],
-        "BAR_HEIGHT": boot["bar_height"],
-        "BAR_GAP": boot["bar_gap"],
-        "FIELD_WIDTH": boot["field_width"],
-        "FIELD_HEIGHT": boot["field_height"],
-        "FIELD_GAP": boot["field_gap"],
-        "DOT_SIZE": boot["dot_size"],
-        "FADE_MS": boot["fade_ms"],
-    }
-    text = TEMPLATE.read_text(encoding="utf-8")
-    for key, value in values.items():
-        text = text.replace(f"@{key}@", str(value))
-    leftover = re.findall(r"@[A-Z_]+@", text)
-    if leftover:
-        raise ValueError(f"plymouth/goldenglass.script.in: marcadores sin valor: {leftover}")
+    # [boot] tal cual y, en «plymouth», los colores de la variante en el
+    # formato del script
+    values = {"boot": boot, "plymouth": {
+        "background": _script_color(pal["background"]),
+        "foreground": _script_color(pal["foreground"]),
+        "text_alpha": f"{pal['text_alpha']:.3f}",
+    }}
+    text = fill_template(TEMPLATE.read_text(encoding="utf-8"), values, TEMPLATE.relative_to(ROOT))
     header = "// Generado por tools/plymouth.py desde tokens/goldenglass.toml — NO EDITAR\n"
     return header + text
 
@@ -185,11 +164,7 @@ def plymouth_file(theme_id: str, name: str, description: str, boot: dict) -> str
 
 
 def _stamp(tokens: dict) -> str:
-    h = hashlib.sha256()
-    for path in (Path(__file__), TEMPLATE, LOGO):
-        h.update(path.read_bytes())
-    h.update(json.dumps(tokens["boot"], sort_keys=True).encode())
-    return h.hexdigest()
+    return stamp(Path(__file__), TEMPLATE, LOGO, data=tokens["boot"])
 
 
 def build(tokens: dict, out: Path) -> list[Path]:

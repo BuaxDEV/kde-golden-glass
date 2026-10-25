@@ -851,34 +851,37 @@ bool Finder::drawToolButton(const QStyleOptionToolButton *option, QPainter *pain
     QColor foreground(palette.color(enabled ? QPalette::Active : QPalette::Disabled, QPalette::WindowText));
     if (name == QLatin1String("toggle_search")) {
         // Finder's magnifier
-        QPen pen(foreground, 1.7);
+        QPen pen(foreground, Tokens::FinderGlyphSearchStroke);
         pen.setCapStyle(Qt::RoundCap);
         painter->setPen(pen);
         painter->setBrush(Qt::NoBrush);
-        const QPointF c = content.center() + QPointF(-1.5, -1.5);
-        const qreal r = 5.6;
+        const QPointF c = content.center() + QPointF(Tokens::FinderGlyphSearchOffset, Tokens::FinderGlyphSearchOffset);
+        const qreal r = Tokens::FinderGlyphSearchRadius;
         painter->drawEllipse(c, r, r);
         const qreal d = r * 0.7071;
-        painter->drawLine(QPointF(c.x() + d + 0.8, c.y() + d + 0.8), QPointF(c.x() + d + 5, c.y() + d + 5));
+        const qreal start = Tokens::FinderGlyphSearchHandleStart;
+        const qreal end = Tokens::FinderGlyphSearchHandleEnd;
+        painter->drawLine(QPointF(c.x() + d + start, c.y() + d + start), QPointF(c.x() + d + end, c.y() + d + end));
 
     } else if (name == QLatin1String("group_by")) {
         // Finder's group glyph: two rows of three rounded squares
-        painter->setPen(QPen(foreground, 1.3));
+        painter->setPen(QPen(foreground, Tokens::FinderGlyphGroupStroke));
         painter->setBrush(Qt::NoBrush);
-        const qreal cell = 4.2;
-        const qreal gap = 1.8;
+        const qreal cell = Tokens::FinderGlyphGroupCell;
+        const qreal gap = Tokens::FinderGlyphGroupGap;
         const QPointF origin(content.center().x() - (3 * cell + 2 * gap) / 2, content.center().y() - (2 * cell + gap) / 2);
         for (int row = 0; row < 2; ++row) {
             for (int column = 0; column < 3; ++column) {
-                painter->drawRoundedRect(QRectF(origin.x() + column * (cell + gap), origin.y() + row * (cell + gap), cell, cell), 1.2, 1.2);
+                painter->drawRoundedRect(QRectF(origin.x() + column * (cell + gap), origin.y() + row * (cell + gap), cell, cell),
+                                         Tokens::FinderGlyphGroupRadius, Tokens::FinderGlyphGroupRadius);
             }
         }
 
     } else if (hamburger) {
         // Finder's «⋯»
         painter->setBrush(foreground);
-        const qreal dot = 3.4;
-        const qreal step = 6.5;
+        const qreal dot = Tokens::FinderGlyphMoreDot;
+        const qreal step = Tokens::FinderGlyphMoreStep;
         const QPointF center = content.center();
         for (int i = -1; i <= 1; ++i) {
             painter->drawEllipse(QPointF(center.x() + i * step, center.y()), dot / 2, dot / 2);
@@ -902,14 +905,14 @@ bool Finder::drawToolButton(const QStyleOptionToolButton *option, QPainter *pain
 
     if (hasMenu) {
         // chevron ⌄
-        QPen pen(foreground, 1.5);
+        QPen pen(foreground, Tokens::FinderGlyphMenuChevronStroke);
         pen.setCapStyle(Qt::RoundCap);
         pen.setJoinStyle(Qt::RoundJoin);
         painter->setPen(pen);
         painter->setBrush(Qt::NoBrush);
         const QPointF c = arrow.center();
-        const qreal w = 3.2;
-        const qreal h = 1.9;
+        const qreal w = Tokens::FinderGlyphMenuChevronWidth;
+        const qreal h = Tokens::FinderGlyphMenuChevronHeight;
         painter->drawPolyline(QPolygonF({QPointF(c.x() - w, c.y() - h), QPointF(c.x(), c.y() + h), QPointF(c.x() + w, c.y() - h)}));
     }
 
@@ -1183,16 +1186,19 @@ bool Finder::drawSearchField(const QStyleOption *option, QPainter *painter, cons
 
     // magnifier, in the placeholder color
     QColor glyph(palette.color(QPalette::Text));
-    glyph.setAlphaF(glyph.alphaF() * 0.6);
-    QPen pen(glyph, 1.6);
+    glyph.setAlphaF(glyph.alphaF() * Tokens::FinderGlyphFieldSearchAlpha);
+    QPen pen(glyph, Tokens::FinderGlyphFieldSearchStroke);
     pen.setCapStyle(Qt::RoundCap);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
-    const qreal r = 5.0;
-    const QPointF c(body.left() + body.height() / 2 + 1, body.center().y() - 1);
+    const qreal r = Tokens::FinderGlyphFieldSearchRadius;
+    const QPointF c(body.left() + body.height() / 2 + Tokens::FinderGlyphFieldSearchOffset,
+                    body.center().y() - Tokens::FinderGlyphFieldSearchOffset);
     painter->drawEllipse(c, r, r);
     const qreal d = r * 0.7071;
-    painter->drawLine(QPointF(c.x() + d + 0.7, c.y() + d + 0.7), QPointF(c.x() + d + 4.2, c.y() + d + 4.2));
+    const qreal start = Tokens::FinderGlyphFieldSearchHandleStart;
+    const qreal end = Tokens::FinderGlyphFieldSearchHandleEnd;
+    painter->drawLine(QPointF(c.x() + d + start, c.y() + d + start), QPointF(c.x() + d + end, c.y() + d + end));
     painter->restore();
     return true;
 }
@@ -1212,13 +1218,14 @@ QRectF Finder::lightsRect(const QWidget *toolBar) const
     const qreal r = Tokens::TrafficLightDiameter / 2.0;
     const QPointF first = lightCenter(toolBar, Light::Close);
     const QPointF last = lightCenter(toolBar, Light::Zoom);
-    return QRectF(QPointF(first.x() - r, first.y() - r), QPointF(last.x() + r, last.y() + r)).adjusted(-2, -2, 2, 2);
+    const qreal margin = Tokens::FinderGlyphLightHitMargin;
+    return QRectF(QPointF(first.x() - r, first.y() - r), QPointF(last.x() + r, last.y() + r)).adjusted(-margin, -margin, margin, margin);
 }
 
 //____________________________________________________________________
 Finder::Light Finder::lightAt(const QWidget *toolBar, const QPointF &position) const
 {
-    const qreal r = Tokens::TrafficLightDiameter / 2.0 + 1;
+    const qreal r = Tokens::TrafficLightDiameter / 2.0 + Tokens::FinderGlyphLightHitSlop;
     for (const Light light : {Light::Close, Light::Minimize, Light::Zoom}) {
         const QPointF delta = position - lightCenter(toolBar, light);
         if (QPointF::dotProduct(delta, delta) <= r * r) {
@@ -2014,7 +2021,7 @@ bool Finder::drawHeader(const QStyleOptionHeader *option, QPainter *painter, con
     painter->setFont(font);
     QColor text(palette.color(QPalette::WindowText));
     if (!sorted) {
-        text.setAlphaF(text.alphaF() * 0.6);
+        text.setAlphaF(text.alphaF() * Tokens::FinderGlyphHeaderUnsortedAlpha);
     }
     painter->setPen(text);
 
@@ -2027,13 +2034,13 @@ bool Finder::drawHeader(const QStyleOptionHeader *option, QPainter *painter, con
         // ascending (Dolphin's SortDown) points up, as in Finder
         const bool up = option->sortIndicator == QStyleOptionHeader::SortDown;
         painter->setRenderHint(QPainter::Antialiasing);
-        QPen pen(palette.color(QPalette::WindowText), 1.4);
+        QPen pen(palette.color(QPalette::WindowText), Tokens::FinderGlyphHeaderChevronStroke);
         pen.setCapStyle(Qt::RoundCap);
         pen.setJoinStyle(Qt::RoundJoin);
         painter->setPen(pen);
-        const QPointF c(rect.right() - padding - 4, rect.center().y() + 0.5);
-        const qreal w = 3.5;
-        const qreal h = up ? -1.8 : 1.8;
+        const QPointF c(rect.right() - padding - Tokens::FinderGlyphHeaderChevronInset, rect.center().y() + 0.5);
+        const qreal w = Tokens::FinderGlyphHeaderChevronWidth;
+        const qreal h = up ? -Tokens::FinderGlyphHeaderChevronHeight : Tokens::FinderGlyphHeaderChevronHeight;
         painter->drawPolyline(QPolygonF({QPointF(c.x() - w, c.y() - h), QPointF(c.x(), c.y() + h), QPointF(c.x() + w, c.y() - h)}));
     }
 

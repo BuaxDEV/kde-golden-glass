@@ -12,6 +12,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.private.brightnesscontrolplugin as Brightness
+import "tokens.js" as T
 
 DetailView {
     id: view
@@ -47,7 +48,7 @@ DetailView {
                 Layout.fillWidth: true
                 visible: displays.count > 1
                 text: display.label
-                opacity: 0.7
+                opacity: T.tokens.text.secondary_alpha
                 font: Kirigami.Theme.smallFont
                 elide: Text.ElideRight
                 textFormat: Text.PlainText

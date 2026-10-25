@@ -11,12 +11,13 @@ import QtQuick.Layouts
 
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
+import "tokens.js" as T
 
 PlasmaComponents3.Label {
     Layout.fillWidth: true
     Layout.leftMargin: Kirigami.Units.smallSpacing
     Layout.topMargin: Kirigami.Units.smallSpacing
-    opacity: 0.6
+    opacity: T.tokens.text.tertiary_alpha
     font.weight: Font.DemiBold
     font.pointSize: Kirigami.Theme.smallFont.pointSize
     elide: Text.ElideRight

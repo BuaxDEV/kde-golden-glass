@@ -25,16 +25,11 @@ from PyQt6.QtCore import QByteArray, QPointF, QRectF, Qt
 from PyQt6.QtGui import QColor, QFont, QGuiApplication, QImage, QLinearGradient, QPainter, QRadialGradient
 from PyQt6.QtSvg import QSvgRenderer
 
+from ggcommon import flatten
+
 ROOT = Path(__file__).resolve().parent.parent
 THEME = ROOT / "build" / "plasma" / "desktoptheme" / "GoldenGlass"
 PARTS = ("topleft", "top", "topright", "left", "center", "right", "bottomleft", "bottom", "bottomright")
-
-
-def flatten(fg: str, bg: str) -> str:
-    """#RRGGBBAA sobre #RRGGBB → #RRGGBB."""
-    f, b = fg.lstrip("#"), bg.lstrip("#")
-    a = int(f[6:8], 16) / 255 if len(f) == 8 else 1.0
-    return "#" + "".join(f"{round(int(f[i:i+2], 16) * a + int(b[i:i+2], 16) * (1 - a)):02x}" for i in (0, 2, 4))
 
 
 class Frame:

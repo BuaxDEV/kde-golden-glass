@@ -480,7 +480,7 @@ PlasmoidItem {
                                 Layout.fillWidth: true
                                 visible: displays.count > 1
                                 text: display.label
-                                opacity: 0.7
+                                opacity: T.tokens.text.secondary_alpha
                                 font: Kirigami.Theme.smallFont
                                 elide: Text.ElideRight
                                 textFormat: Text.PlainText

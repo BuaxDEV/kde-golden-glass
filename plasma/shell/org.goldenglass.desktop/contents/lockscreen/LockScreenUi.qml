@@ -26,6 +26,9 @@ import org.kde.ki18n
 import org.kde.plasma.private.sessions
 import org.kde.breeze.components
 
+// GoldenGlass: valores de [lock_screen] (tools/shell.py escribe tokens.js)
+import "tokens.js" as T
+
 Item {
     id: lockScreenUi
 
@@ -268,7 +271,7 @@ Item {
             visible: config.alwaysShowClock
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
-            anchors.topMargin: Kirigami.Units.gridUnit * 4
+            anchors.topMargin: Kirigami.Units.gridUnit * T.tokens.lock_screen.clock_top
         }
 
         ListModel {
@@ -304,9 +307,10 @@ Item {
             }
             // GoldenGlass: avatar y contraseña en el tercio inferior. El centro
             // vertical del StackView es la frontera entre el avatar y el campo,
-            // y VirtualKeyboardLoader fija y = 0: la altura lleva ese centro al
-            // 66 % de la pantalla (lo que sobra queda fuera, sin contenido).
-            height: lockScreenRoot.height * 1.32
+            // y VirtualKeyboardLoader fija y = 0: la altura lleva ese centro a
+            // lock_screen.form_center (66 %) de la pantalla (lo que sobra queda
+            // fuera, sin contenido).
+            height: lockScreenRoot.height * 2 * T.tokens.lock_screen.form_center
             focus: true //StackView is an implicit focus scope, so we need to give this focus so the item inside will have it
 
             // this isn't implicit, otherwise items still get processed for the scenegraph

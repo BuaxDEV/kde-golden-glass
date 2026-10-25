@@ -109,17 +109,17 @@ void render(QPainter *painter, const QPointF &center, Kind kind, const State &st
     painter->setRenderHints(QPainter::Antialiasing);
 
     // Pressed: the control shrinks slightly, as the macOS 27 ones animate.
-    const qreal d = Tokens::TrafficLightDiameter * (state.pressed ? 0.9 : 1.0);
+    const qreal d = Tokens::TrafficLightDiameter * (state.pressed ? Tokens::TrafficLightPressScale : 1.0);
     const qreal r = d / 2;
     const QRectF circle(center - QPointF(r, r), QSizeF(d, d));
     const Colors c = colorsFor(kind, state);
     // Highlights fade on inactive windows (gray glass, still with depth).
-    const qreal shine = state.lit ? 1.0 : 0.45;
+    const qreal shine = state.lit ? 1.0 : Tokens::TrafficLightInactiveShine;
 
     // 1. Soft drop shadow: the glass piece sits on top of the window.
     {
         QRadialGradient shadow(center + QPointF(0, d * 0.07), r * 1.18);
-        shadow.setColorAt(0.78, QColor(0, 0, 0, state.lit ? 60 : 30));
+        shadow.setColorAt(0.78, QColor(0, 0, 0, state.lit ? Tokens::TrafficLightShadowAlpha : Tokens::TrafficLightShadowInactiveAlpha));
         shadow.setColorAt(1.0, QColor(0, 0, 0, 0));
         painter->setPen(Qt::NoPen);
         painter->setBrush(shadow);
@@ -139,7 +139,7 @@ void render(QPainter *painter, const QPointF &center, Kind kind, const State &st
     // 3. Bottom highlight: light gathering inside the glass at the bottom.
     {
         QRadialGradient glow(QPointF(center.x(), circle.bottom() - d * 0.14), r * 0.95);
-        glow.setColorAt(0.0, QColor(255, 255, 255, int(110 * shine)));
+        glow.setColorAt(0.0, QColor(255, 255, 255, int(Tokens::TrafficLightHighlightBottomAlpha * shine)));
         glow.setColorAt(1.0, QColor(255, 255, 255, 0));
         QPainterPath clip;
         clip.addEllipse(circle.adjusted(0.75, 0.75, -0.75, -0.75));
@@ -154,8 +154,8 @@ void render(QPainter *painter, const QPointF &center, Kind kind, const State &st
     {
         const QRectF cap(circle.left() + d * 0.17, circle.top() + d * 0.06, d * 0.66, d * 0.44);
         QLinearGradient gloss(cap.topLeft(), cap.bottomLeft());
-        gloss.setColorAt(0.0, QColor(255, 255, 255, int(200 * shine)));
-        gloss.setColorAt(1.0, QColor(255, 255, 255, int(20 * shine)));
+        gloss.setColorAt(0.0, QColor(255, 255, 255, int(Tokens::TrafficLightHighlightTopAlpha * shine)));
+        gloss.setColorAt(1.0, QColor(255, 255, 255, int(Tokens::TrafficLightHighlightTopEndAlpha * shine)));
         painter->setPen(Qt::NoPen);
         painter->setBrush(gloss);
         painter->drawEllipse(cap);

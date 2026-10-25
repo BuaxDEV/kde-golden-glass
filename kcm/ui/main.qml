@@ -20,7 +20,7 @@ KCM.SimpleKCM {
     // Imán: al soltar cerca de una muesca, el valor queda exactamente en ella.
     function snapped(value) {
         for (const notch of kcm.notches) {
-            if (Math.abs(value - notch) < 0.04) {
+            if (Math.abs(value - notch) < kcm.snapDistance) {
                 return notch;
             }
         }
@@ -45,7 +45,7 @@ KCM.SimpleKCM {
     // Con el teclado no hay «soltar»: se aplica tras una pausa.
     Timer {
         id: keyboardDelay
-        interval: 400
+        interval: kcm.keyboardApplyDelay
         onTriggered: root.apply()
     }
 

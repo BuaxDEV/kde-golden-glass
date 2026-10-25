@@ -16,6 +16,7 @@ import org.kde.plasma.clock as PlasmaClock
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.plasmoid
 import org.kde.plasma.workspace.calendar as PlasmaCalendar
+import "tokens.js" as T
 
 PlasmoidItem {
     id: root
@@ -81,7 +82,7 @@ PlasmoidItem {
             id: monthView
             Layout.fillWidth: true
             Layout.fillHeight: true
-            borderOpacity: 0.25
+            borderOpacity: T.tokens.clock.calendar_border_alpha
             today: root.now
             firstDayOfWeek: Qt.locale().firstDayOfWeek
         }

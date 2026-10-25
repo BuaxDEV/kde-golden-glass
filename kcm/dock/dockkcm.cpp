@@ -133,6 +133,26 @@ QString DockKcm::errorText() const
     return m_errorText;
 }
 
+int DockKcm::iconSizeMin() const
+{
+    return GoldenGlass::Tokens::DockSettingsIconSizeMin;
+}
+
+int DockKcm::iconSizeMax() const
+{
+    return GoldenGlass::Tokens::DockSettingsIconSizeMax;
+}
+
+int DockKcm::magnificationSizeMin() const
+{
+    return GoldenGlass::Tokens::DockSettingsMagnificationSizeMin;
+}
+
+int DockKcm::magnificationSizeMax() const
+{
+    return GoldenGlass::Tokens::DockSettingsMagnificationSizeMax;
+}
+
 QString DockKcm::program()
 {
     const QString path = QStandardPaths::findExecutable(QStringLiteral("goldenglass-dock"));

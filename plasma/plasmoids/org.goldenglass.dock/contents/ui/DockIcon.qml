@@ -105,7 +105,7 @@ Item {
         fallback: tile.fallback
         active: tile.hovered
         // al pulsar, más oscuro (como macOS)
-        opacity: tile.pressed ? 0.7 : 1
+        opacity: tile.pressed ? T.tokens.dock.press_alpha : 1
     }
 
     Rectangle {
@@ -118,7 +118,7 @@ Item {
         x: (tile.size - dotSize) / 2
         y: tile.height + Math.max(0, (tile.padding - dotSize) / 2)
         color: Kirigami.Theme.textColor
-        opacity: 0.8
+        opacity: T.tokens.dock.dot_alpha
     }
 
     Item {
@@ -167,7 +167,7 @@ Item {
     // con miniaturas, un margen para pasar el ratón del icono al tooltip
     Timer {
         id: hideTimer
-        interval: 300
+        interval: T.tokens.dock.preview_hide_ms
         onTriggered: {
             if (!tile.hovered && !tooltipHover.hovered) {
                 tooltip.visible = false;

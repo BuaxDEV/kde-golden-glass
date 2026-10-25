@@ -22,13 +22,13 @@ Uso directo para iterar el diseño:
 
 from __future__ import annotations
 
-import hashlib
-import json
 import math
 import shutil
 from pathlib import Path
 
 import numpy as np
+
+from ggcommon import load_tokens, stamp
 
 THEME_ID = "GoldenGlass"
 
@@ -210,9 +210,7 @@ def _check(cfg: dict) -> None:
 
 
 def _stamp(cfg: dict) -> str:
-    h = hashlib.sha256(Path(__file__).read_bytes())
-    h.update(json.dumps(cfg, sort_keys=True).encode())
-    return h.hexdigest()
+    return stamp(Path(__file__), data=cfg)
 
 
 def build(tokens: dict, out: Path) -> list[Path]:
@@ -270,7 +268,6 @@ if __name__ == "__main__":
     import subprocess
     import sys
     import tempfile
-    import tomllib
     import wave
 
     root = Path(__file__).resolve().parent.parent
@@ -281,7 +278,7 @@ if __name__ == "__main__":
     group.add_argument("--play", nargs="+", metavar="EVENTO", choices=sorted(EVENTS),
                        help="reproduce eventos con pw-play")
     args = ap.parse_args()
-    cfg = tomllib.loads(args.tokens.read_text(encoding="utf-8"))["sounds"]
+    cfg = load_tokens(args.tokens)["sounds"]
     _check(cfg)
 
     def write_wav(path: Path, data: np.ndarray) -> None:

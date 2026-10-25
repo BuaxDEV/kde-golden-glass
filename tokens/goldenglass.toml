@@ -12,7 +12,8 @@
 
 [meta]
 name = "GoldenGlass"
-version = "0.2.1"
+# La versión no va aquí: sale del archivo VERSION (la misma de CMake y del
+# PKGBUILD) y los generadores la ven como meta.version.
 
 # ---------------------------------------------------------------------------
 # Geometría (px lógicos)
@@ -42,6 +43,10 @@ alpha = 0.5          # opacidad del acento
 [glass]
 default_level = 0.5
 blur_strength = 10   # KWin Blur: 1..15, calibrar
+# Módulo de Ajustes «Vidrio»: al soltar el slider a menos de esto de una
+# muesca, queda en ella; con el teclado se aplica tras esta pausa
+snap_distance = 0.04
+keyboard_apply_ms = 400
 
 [glass.notch.clear]
 position = 0.0
@@ -76,6 +81,9 @@ dispersion = 0.35    # separación de colores (fracción de strength)
 clarity = 0.5        # en el borde, cuánto se ve el fondo nítido (no difuminado)
 specular = 0.12      # brillo del filo (más arriba que abajo)
 tint = 0.10          # acerca la luminancia del fondo a la media (legibilidad)
+edge_max_fraction = 0.3  # en superficies bajas (el dock), la zona curvada no pasa de esta fracción del lado menor
+rim_width = 0.3      # ancho del filo de luz (fracción de edge)
+rim_bottom = 0.35    # brillo del filo abajo respecto a arriba
 
 # ---------------------------------------------------------------------------
 # Escritorio Plasma (px lógicos)
@@ -111,12 +119,31 @@ popup_shadow_alpha = 0.30
 tooltip_shadow = 12
 tooltip_shadow_alpha = 0.22
 task_dot_size = 4        # indicador de app abierta en el dock
+# gestor de tareas del Plasma Style (widgets/tasks.svg): opacidad del punto
+# (color de texto) según el estado de la app
+task_dot_alpha = 0.55            # abierta (y al pasar el ratón: macOS no resalta)
+task_dot_minimized_alpha = 0.35
+task_dot_focus_alpha = 0.85
+task_dot_attention = "#FF9500"   # pide atención; el mismo en claro y oscuro (decisión pendiente)
+task_progress_alpha = 0.35       # progreso (color de acento)
 item_hover_alpha = 0.10  # resaltado de listas (sobre color de texto)
 item_selected_alpha = 0.28  # selección de listas (sobre color de acento)
+item_selected_hover_boost = 0.08  # selección bajo el cursor: item_selected_alpha + esto
+item_padding_v = 4       # margen del contenido de cada elemento de lista
+item_padding_h = 8
+# campos de texto (KRunner/Spotlight, contraseña de bloqueo): sobre el color de texto
+field_alpha = 0.08       # relleno
+field_border_alpha = 0.14
+field_hover_alpha = 0.28 # anillo al pasar el ratón
+field_padding_v = 6      # margen del texto dentro del campo
+field_padding_h = 10
 
 # ---------------------------------------------------------------------------
 # Sombras de ventana
 # ---------------------------------------------------------------------------
+[shadow]
+color = "#000000"    # sombras de ventanas (decoración) y de menús (estilo)
+
 [shadow.active]
 size = 64
 strength = 0.45
@@ -134,6 +161,24 @@ title_alignment = "AlignCenterFullWidth"  # AlignLeft | AlignCenter | AlignCente
 # Barra de título de vidrio con la misma opacidad que la toolbar: ambas se ven
 # como una sola superficie (toolbar unificada).
 glass_titlebar = true
+animation_ms = 150       # animaciones de los botones (el estilo usa style.animation_ms)
+# Opciones de la decoración heredadas de Breeze, apagadas de fábrica:
+title_gradient_lighter = 120   # degradado de la barra de título: arriba, QColor::lighter(%)
+highlight_threshold = 130      # filo claro arriba solo en barras más oscuras que esto (qGray)
+highlight_alpha = 0.118        # opacidad de ese filo blanco (30/255)
+
+# ---------------------------------------------------------------------------
+# Estilo de aplicaciones (kstyle): valores de fábrica de sus ajustes
+# ---------------------------------------------------------------------------
+[style]
+animation_ms = 250       # animaciones de los controles (la decoración usa decoration.animation_ms)
+progress_busy_step_ms = 800  # barra de progreso indeterminada: duración de cada paso
+dolphin_view_alpha = 1.0     # opacidad de la vista de archivos de Dolphin
+# Listas de las apps: resaltado bajo el cursor (opacidad del color de
+# selección; Plasma usa plasma.item_hover_alpha sobre el color de texto) y
+# selección bajo el cursor (QColor::lighter, %)
+list_hover_alpha = 0.2
+list_selected_hover_lighter = 110
 
 # ---------------------------------------------------------------------------
 # Menús
@@ -189,6 +234,36 @@ list_icon_size = 16      # iconos (y miniaturas) de la lista, como en Finder
 # Búsqueda: la lupa se convierte en un campo en cápsula dentro de la toolbar,
 # con el anillo de foco de [focus_ring]
 search_width = 230
+
+# Glifos que dibuja el estilo, como los de Finder (px lógicos)
+[finder.glyphs]
+search_stroke = 1.7          # lupa de la toolbar: trazo
+search_radius = 5.6
+search_offset = -1.5         # del círculo respecto al centro del botón
+search_handle_start = 0.8    # mango: desde el borde del círculo…
+search_handle_end = 5.0      # …hasta aquí
+field_search_stroke = 1.6    # lupa del campo de búsqueda (otro tamaño)
+field_search_radius = 5.0
+field_search_offset = 1.0    # a la derecha de medio alto del campo y hacia arriba
+field_search_handle_start = 0.7
+field_search_handle_end = 4.2
+field_search_alpha = 0.6     # opacidad (color de texto, como el texto de ayuda)
+group_stroke = 1.3           # «Agrupar»: dos filas de tres cuadrados
+group_cell = 4.2
+group_gap = 1.8
+group_radius = 1.2
+more_dot = 3.4               # «⋯»: diámetro de cada punto
+more_step = 6.5              # y distancia entre puntos
+menu_chevron_stroke = 1.5    # ⌄ de los botones con menú
+menu_chevron_width = 3.2     # semiancho
+menu_chevron_height = 1.9    # semialto
+header_chevron_stroke = 1.4  # flecha de la columna ordenada
+header_chevron_width = 3.5
+header_chevron_height = 1.8
+header_chevron_inset = 4.0   # del margen derecho de la cabecera
+header_unsorted_alpha = 0.6  # texto de las columnas sin ordenar
+light_hit_margin = 2         # px alrededor de los semáforos que repintan al pasar
+light_hit_slop = 1           # px de más en el radio de cada semáforo al pulsar
 
 # ---------------------------------------------------------------------------
 # Tipografía — familias son alias de fontconfig (ver fontconfig/)
@@ -250,6 +325,11 @@ close_ms = 160
 close_scale = 0.96
 close_unblur_at = 0.5    # fracción del cierre a la que se quita el blur de KWin
 glass_update_ms = 32
+glyph_alpha = 0.8        # glifo de Apps junto al buscador y puntos del botón «⋯»
+
+# Reloj de la barra de menús (plasmoid org.goldenglass.clock)
+[clock]
+calendar_border_alpha = 0.25 # rejilla del calendario
 
 [scroll]
 # Desplazamiento como en macOS (GlassScrollView de los plasmoids): barra
@@ -287,6 +367,23 @@ minimize_glyph = "#995700"
 zoom = "#28C840"
 zoom_border = "#1AAB29"
 zoom_glyph = "#006500"
+# Vidrio de la gema que dibuja libgoldenglasscommon (decoración y Finder):
+# opacidad 0..1 del blanco de los brillos y del negro de la sombra (en C++,
+# 0..255)
+gem_highlight_top = 0.784          # brillo de arriba, al empezar (200)
+gem_highlight_top_end = 0.078      # y al acabar (20)
+gem_highlight_bottom = 0.431       # brillo de abajo (110)
+gem_shadow_alpha = 0.235           # sombra (60)
+gem_shadow_inactive_alpha = 0.118  # sombra en ventanas sin foco (30)
+inactive_shine = 0.45              # brillos en ventanas sin foco (fracción)
+press_scale = 0.9                  # tamaño al pulsar
+# Semáforos de las ventanas GTK con decoración propia (tools/gtk.py): CSS, con
+# sus propios valores (decisión pendiente: no coinciden con los de la gema)
+gtk_highlight_top = 0.55           # degradado de arriba
+gtk_highlight_bottom = 0.35        # brillo de abajo
+gtk_shadow_alpha = 0.25
+gtk_inactive_border_alpha = 0.12   # filo en gris sin foco (inactive_colored = false)
+gtk_glyph_scale = 0.6              # glifo respecto al icono de GTK
 
 # ---------------------------------------------------------------------------
 # Dock (plasmoid org.goldenglass.dock): ampliación, rebote, apps recientes y
@@ -306,7 +403,33 @@ attention_bounces = 8    # rebotes al pedir atención (luego queda quieto)
 show_recent = true       # apps recientes no fijadas, tras un separador
 recent_count = 3
 preview_width = 220      # px de las miniaturas de ventanas en el tooltip
+preview_alpha = 0.06     # fondo de cada miniatura (color de texto)
+preview_hover_alpha = 0.16
+preview_active_border = 2    # px del filo de acento de la ventana activa
+preview_hide_ms = 300    # margen para pasar el ratón del icono a las miniaturas
+press_alpha = 0.7        # icono pulsado: más oscuro, como macOS
+dot_alpha = 0.8          # punto de app abierta (color de texto)
+separator_height = 0.78  # separador de apps recientes (fracción del alto)
+separator_alpha = 0.22
 label_delay_ms = 400     # espera antes del nombre de la app al pasar el ratón
+# Rangos de los deslizadores del módulo «Dock» (px). goldenglass-dock acepta
+# otros más amplios (24–128 y 24–256) y el main.xml del plasmoid no pone
+# límites: decisión pendiente unificarlos.
+settings_icon_size_min = 32
+settings_icon_size_max = 80
+settings_magnification_size_min = 48   # y nunca menos que el tamaño del icono
+settings_magnification_size_max = 128
+
+# ---------------------------------------------------------------------------
+# Texto e iconos secundarios de los plasmoids: opacidad sobre el color de texto
+# de Kirigami. No son label_secondary ni label_tertiary de las paletas (50–55 %
+# y 25 %), que se aplanan sobre un fondo.
+# ---------------------------------------------------------------------------
+[text]
+secondary_alpha = 0.7    # subtítulos, artista y álbum, tiempos, avisos
+tertiary_alpha = 0.6     # títulos de sección, iconos al final de una fila, «Sin aplicaciones»
+icon_alpha = 0.85        # iconos a los lados de los sliders (enteros al pasar el ratón)
+disabled_alpha = 0.5     # controles deshabilitados
 
 # ---------------------------------------------------------------------------
 # Centro de control (plasmoid org.goldenglass.controlcenter): cuadrícula de 4
@@ -370,22 +493,47 @@ row_icon = 16
 separator_alpha = 0.12
 switch_width = 36            # interruptor de la cabecera
 switch_height = 20
+switch_knob = "#FFFFFF"      # botón del interruptor
+switch_knob_border_alpha = 0.08  # su filo (negro)
+press_color = "#FFFFFF"      # brillo de las tarjetas al pulsar (press_brighten_alpha, press_glow_alpha)
+media_pressed_alpha = 0.6    # botones de reproducción pulsados
+media_disabled_alpha = 0.35  # y deshabilitados
+
+# ---------------------------------------------------------------------------
+# Pantalla de bloqueo (shell org.goldenglass.desktop, tools/shell.py): fecha y
+# hora grandes arriba, avatar y contraseña en el tercio inferior, como macOS.
+# ---------------------------------------------------------------------------
+[lock_screen]
+clock_top = 4            # gridUnit del borde superior a la fecha
+date_scale = 1.6         # fecha respecto al texto normal
+clock_scale = 8          # hora respecto al texto normal
+clock_alpha = 0.9        # opacidad de la fecha y la hora
+form_center = 0.66       # frontera avatar/contraseña (fracción del alto de la pantalla)
 
 # ---------------------------------------------------------------------------
 # Arranque (Plymouth, tools/plymouth.py): logo y barra fina como el arranque de
 # Mac, con las proporciones del splash de Plasma. Medidas en px para una
 # pantalla de 1080 líneas; el script las escala con la altura de la pantalla.
+# El splash de Plasma (Global Themes, tools/lookandfeel.py) usa las mismas en
+# gridUnit: medida ÷ grid_unit (salvo bar_height, en px).
 # ---------------------------------------------------------------------------
 [boot]
+grid_unit = 18           # gridUnit de Plasma con la fuente por defecto
 logo_size = 126          # splash de Plasma: gridUnit × 7
 logo_offset = -36        # px del centro del logo al de la pantalla (− = arriba)
 bar_width = 216          # gridUnit × 12
 bar_height = 6
+bar_min_height = 2       # px de pantalla, por pequeña que sea
 bar_gap = 54             # del logo a la barra (gridUnit × 3)
+bar_ease = 0.08          # en cada fotograma la barra avanza esta fracción de lo que le falta
 field_width = 240        # campo de contraseña del disco (LUKS), estilo FileVault
 field_height = 30
 field_gap = 44           # del logo al campo
 dot_size = 8             # puntos de la contraseña
+capslock_size = 14       # aviso de Bloq Mayús dentro del campo
+prompt_gap = 14          # del campo a la petición de contraseña
+message_bottom = 64      # mensajes (fsck, actualizaciones…) desde el borde inferior
+min_scale = 0.5          # escala mínima de las medidas en pantallas bajas
 # Fuente del initramfs: el hook mete el archivo que resuelve fontconfig. Inter
 # Variable (0,9 MB) en vez del alias GoldenGlass Sans, que da Inter.ttc (13 MB).
 font = "Inter Variable"
@@ -399,6 +547,7 @@ track_alpha = 0.25       # pista de la barra (primer plano con esta opacidad)
 field_alpha = 0.14       # relleno del campo
 field_border_alpha = 0.30
 text_alpha = 0.65        # mensajes y petición de contraseña
+splash_track_alpha = 0.25    # pista de la barra del splash de Plasma (Global Theme)
 
 [boot.light]             # tema goldenglass-light
 background = "#E3E3E6"
@@ -407,6 +556,7 @@ track_alpha = 0.18
 field_alpha = 0.08
 field_border_alpha = 0.22
 text_alpha = 0.60
+splash_track_alpha = 0.149   # 0x26: no es track_alpha (decisión pendiente)
 
 # ---------------------------------------------------------------------------
 # Pantalla de inicio de sesión (tema de SDDM, tools/login.py): como la de
@@ -435,6 +585,49 @@ glass = "#FFFFFF"        # relleno de campo y botones (con glass_alpha)
 glass_alpha = 0.16
 glass_border_alpha = 0.28
 error = "#FF6961"
+background = "#101014"   # detrás del fondo de pantalla mientras carga
+blur_saturation = 0.15   # saturación del fondo difuminado (0..1)
+border_width = 1.5       # filo de avatares y botones con el foco
+avatar_icon_scale = 0.62 # silueta sin foto, respecto al avatar
+avatar_icon_alpha = 0.85
+# fila de usuarios
+users_bottom = 96        # de la fila a los botones de acciones
+users_spacing = 36
+user_padding = 24        # ancho extra de cada usuario sobre su avatar
+user_name_gap = 10       # del avatar al nombre
+user_name_size = 15
+user_hover_scale = 1.08  # avatar bajo el cursor o con el foco
+user_hover_ms = 120
+# usuario elegido: avatar, nombre y contraseña
+form_bottom = 72         # del bloque a los botones de acciones
+form_spacing = 14
+field_font_size = 15
+field_padding = 14       # margen izquierdo del texto
+field_border_width = 1
+field_focus_alpha = 0.5  # filo del campo con el foco (color de texto)
+placeholder_alpha = 0.55
+password_spacing = 2     # entre los puntos de la contraseña
+field_icon_scale = 0.62  # flecha y Bloq Mayús, respecto al alto del campo
+message_height = 18      # aviso bajo el campo
+small_size = 14          # texto de botones y avisos
+# temblor del campo al fallar: desplazamiento (× shake_distance) y duración
+# de cada tramo
+shake_distance = 10
+shake_steps = [-1.0, 1.0, -0.6, 0.3, 0.0]
+shake_ms = [50, 70, 70, 60, 50]
+back_margin = 48         # botón «volver a los usuarios», a la izquierda del bloque
+# botones redondos (Reposo, Reiniciar, Apagar)
+action_spacing = 28
+action_circle_scale = 1.6    # círculo respecto al icono (action_size)
+action_padding = 16          # ancho extra del botón sobre el círculo o el texto
+action_caption_gap = 8       # del círculo al texto
+# botones de las esquinas (sesión, teclado)
+corner_margin = 24
+corner_height = 30
+corner_padding = 24          # ancho extra sobre icono y texto
+corner_spacing = 8           # entre icono y texto
+corner_icon = 18
+menu_gap = 8                 # del botón de sesión a su menú
 
 # ---------------------------------------------------------------------------
 # Sonidos (tools/sounds.py): sintetizados, timbre de cristal
@@ -548,6 +741,10 @@ visited = "#AF52DE"
 positive = "#34C759"
 neutral = "#FF9500"
 negative = "#FF3B30"
+# texto sobre un fondo de color semántico (botones de GTK/libadwaita)
+positive_fg = "#FFFFFF"
+neutral_fg = "#000000CC"       # 80 %
+negative_fg = "#FFFFFF"
 
 # Texto (macOS usa negro con alfa; se aplana sobre cada fondo)
 label = "#000000D9"            # 85 %
@@ -591,6 +788,9 @@ visited = "#BF5AF2"
 positive = "#30D158"
 neutral = "#FF9F0A"
 negative = "#FF453A"
+positive_fg = "#FFFFFF"
+neutral_fg = "#000000CC"
+negative_fg = "#FFFFFF"
 
 label = "#FFFFFFD9"
 label_secondary = "#FFFFFF8C"  # 55 %

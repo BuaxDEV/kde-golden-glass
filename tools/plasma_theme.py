@@ -267,12 +267,12 @@ def tasks_svg(tokens: dict) -> str:
 
     orientations = {"": "bottom", "north-": "top", "west-": "left", "east-": "right"}
     states = {
-        "normal": (None, Paint(TEXT, 0.55)),
-        "minimized": (None, Paint(TEXT, 0.35)),
-        "focus": (None, Paint(TEXT, 0.85)),
-        "attention": (None, Paint(None, 1.0, "#FF9500")),
-        "hover": (None, Paint(TEXT, 0.55)),  # el Dock de macOS no resalta al pasar
-        "progress": (Paint(HIGHLIGHT, 0.35), None),
+        "normal": (None, Paint(TEXT, p["task_dot_alpha"])),
+        "minimized": (None, Paint(TEXT, p["task_dot_minimized_alpha"])),
+        "focus": (None, Paint(TEXT, p["task_dot_focus_alpha"])),
+        "attention": (None, Paint(None, 1.0, p["task_dot_attention"])),
+        "hover": (None, Paint(TEXT, p["task_dot_alpha"])),  # el Dock de macOS no resalta al pasar
+        "progress": (Paint(HIGHLIGHT, p["task_progress_alpha"]), None),
     }
 
     for orient, side in orientations.items():
@@ -319,12 +319,13 @@ def viewitem_svg(tokens: dict) -> str:
     """Resaltado de elementos de lista (Kickoff, KRunner, popups)."""
     p = tokens["plasma"]
     r = tokens["radius"]["control"]
+    margins = (p["item_padding_v"], p["item_padding_h"]) * 2
     svg = Svg()
-    frame(svg, "normal-", r, Paint(None, 0.0, "#000000"), margins=(4, 8, 4, 8))
-    frame(svg, "hover-", r, Paint(TEXT, p["item_hover_alpha"]), margins=(4, 8, 4, 8))
-    frame(svg, "selected-", r, Paint(HIGHLIGHT, p["item_selected_alpha"]), margins=(4, 8, 4, 8))
-    frame(svg, "selected+hover-", r, Paint(HIGHLIGHT, min(1.0, p["item_selected_alpha"] + 0.08)),
-          margins=(4, 8, 4, 8))
+    frame(svg, "normal-", r, Paint(None, 0.0, "#000000"), margins=margins)
+    frame(svg, "hover-", r, Paint(TEXT, p["item_hover_alpha"]), margins=margins)
+    frame(svg, "selected-", r, Paint(HIGHLIGHT, p["item_selected_alpha"]), margins=margins)
+    frame(svg, "selected+hover-", r,
+          Paint(HIGHLIGHT, min(1.0, p["item_selected_alpha"] + p["item_selected_hover_boost"])), margins=margins)
     svg.hint("hint-tile-center", 1, 1)
     return svg.render()
 
@@ -335,14 +336,15 @@ def lineedit_svg(tokens: dict) -> str:
     Relleno y filo derivan del color de texto, así funciona igual sobre el
     vidrio claro, el oscuro y el fondo de la pantalla de bloqueo.
     """
+    p = tokens["plasma"]
     r = tokens["radius"]["field"]
-    margins = (6, 10, 6, 10)
+    margins = (p["field_padding_v"], p["field_padding_h"]) * 2
     clear = Paint(None, 0.0, "#000000")
     svg = Svg()
-    frame(svg, "base-", r, Paint(TEXT, 0.08), Paint(TEXT, 0.14), margins=margins)
+    frame(svg, "base-", r, Paint(TEXT, p["field_alpha"]), Paint(TEXT, p["field_border_alpha"]), margins=margins)
     # Plasma agranda hover/focus hacia fuera según sus márgenes: cada anillo
     # cubre el filo de 1 px de base y sobresale solo lo que le queda de ancho.
-    frame(svg, "hover-", r + 1, clear, Paint(TEXT, 0.28), margins=(1, 1, 1, 1), border_width=2)
+    frame(svg, "hover-", r + 1, clear, Paint(TEXT, p["field_hover_alpha"]), margins=(1, 1, 1, 1), border_width=2)
     ring = tokens["focus_ring"]
     out = ring["width"] - 1
     for prefix in ("focus-", "focusframe-"):

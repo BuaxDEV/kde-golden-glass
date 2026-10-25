@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 
 import plasma_theme
+from ggcommon import Color
 
 # Orden de los <choice> en los .kcfg: el índice es el valor del enum.
 SHADOW_SIZES = ("ShadowNone", "ShadowSmall", "ShadowMedium", "ShadowLarge", "ShadowVeryLarge")
@@ -35,11 +36,20 @@ def _shadow_strength(alpha: float) -> int:
     return max(25, min(255, round(alpha * 255)))
 
 
+def _camel(key: str) -> str:
+    """search_handle_end → SearchHandleEnd."""
+    return "".join(word.title() for word in key.split("_"))
+
+
+def _alpha8(alpha: float) -> int:
+    """Opacidad 0..1 → 0..255 (canal alfa de QColor)."""
+    return round(alpha * 255)
+
+
 def _argb(value: str) -> str:
     """#RRGGBB[AA] → literal 0xAARRGGBB (formato de QColor::fromRgba)."""
-    h = value.lstrip("#")
-    alpha = h[6:8] if len(h) == 8 else "FF"
-    return "0x" + (alpha + h[:6]).upper() + "u"
+    c = Color.parse(value)
+    return f"0x{c.alpha8:02X}{c.r:02X}{c.g:02X}{c.b:02X}u"
 
 
 def header(tokens: dict) -> str:
@@ -66,6 +76,8 @@ def header(tokens: dict) -> str:
         ("GlassNotchClear", float(tokens["glass"]["notch"]["clear"]["position"]), "muesca «más claro»"),
         ("GlassNotchMedium", float(tokens["glass"]["notch"]["medium"]["position"]), "muesca «medio»"),
         ("GlassNotchOpaque", float(tokens["glass"]["notch"]["opaque"]["position"]), "muesca «más opaco»"),
+        ("GlassSnapDistance", float(tokens["glass"]["snap_distance"]), "imán de las muescas del slider"),
+        ("GlassKeyboardApplyMs", int(tokens["glass"]["keyboard_apply_ms"]), "pausa antes de aplicar con el teclado"),
         ("Barra de menús", None, None),
         ("MenubarBackground", bool(tokens["plasma"]["menubar_background"]), "franja de vidrio tras la barra de menús"),
         ("MenubarInactiveOpacity", float(tokens["plasma"]["menubar_inactive_opacity"]), "opacidad en las pantallas sin la ventana activa"),
@@ -76,6 +88,17 @@ def header(tokens: dict) -> str:
         ("Decoración", None, None),
         ("TitleAlignment", TITLE_ALIGNMENTS.index(align), align),
         ("GlassTitleBar", bool(tokens["decoration"]["glass_titlebar"]), "barra de título translúcida como la toolbar"),
+        ("DecorationAnimationsDuration", int(tokens["decoration"]["animation_ms"]), "animaciones de los botones (ms)"),
+        ("DecorationTitleGradientLighter", int(tokens["decoration"]["title_gradient_lighter"]),
+         "degradado de la barra de título (QColor::lighter)"),
+        ("DecorationHighlightThreshold", int(tokens["decoration"]["highlight_threshold"]), "filo claro bajo este qGray"),
+        ("DecorationHighlightAlpha", _alpha8(tokens["decoration"]["highlight_alpha"]), "opacidad del filo claro (0..255)"),
+        ("Estilo de aplicaciones", None, None),
+        ("StyleAnimationsDuration", int(tokens["style"]["animation_ms"]), "animaciones de los controles (ms)"),
+        ("StyleProgressBarBusyStepDuration", int(tokens["style"]["progress_busy_step_ms"]), "progreso indeterminado (ms)"),
+        ("DolphinViewOpacity", round(tokens["style"]["dolphin_view_alpha"] * 100), "% de opacidad de la vista de Dolphin"),
+        ("ListHoverAlpha", float(tokens["style"]["list_hover_alpha"]), "resaltado de listas (color de selección)"),
+        ("ListSelectedHoverLighter", int(tokens["style"]["list_selected_hover_lighter"]), "selección bajo el cursor (QColor::lighter)"),
         ("Refracción (efecto de KWin goldenglass_glass, px lógicos)", None, None),
         ("RefractionEdge", float(tokens["glass"]["refraction"]["edge"]), "ancho de la zona curvada"),
         ("RefractionStrength", float(tokens["glass"]["refraction"]["strength"]), "desplazamiento en el borde"),
@@ -84,11 +107,21 @@ def header(tokens: dict) -> str:
         ("RefractionSpecular", float(tokens["glass"]["refraction"]["specular"]), "brillo del filo"),
         ("RefractionClarity", float(tokens["glass"]["refraction"]["clarity"]), "fondo nítido en el borde"),
         ("RefractionTint", float(tokens["glass"]["refraction"]["tint"]), "tinte adaptativo"),
+        ("RefractionEdgeMaxFraction", float(tokens["glass"]["refraction"]["edge_max_fraction"]),
+         "tope de la zona curvada (fracción del lado menor)"),
+        ("RefractionRimWidth", float(tokens["glass"]["refraction"]["rim_width"]), "ancho del filo (fracción de edge)"),
+        ("RefractionRimBottom", float(tokens["glass"]["refraction"]["rim_bottom"]), "brillo del filo abajo"),
         ("Dock (valores de fábrica del módulo «Dock»)", None, None),
         ("DockIconSize", int(tokens["plasma"]["dock_icon_size"]), "tamaño de los iconos (px)"),
         ("DockMagnification", bool(tokens["dock"]["magnification"]), "ampliación bajo el cursor"),
         ("DockMagnificationSize", int(tokens["dock"]["magnification_size"]), "tamaño del icono ampliado (px)"),
         ("DockShowRecent", bool(tokens["dock"]["show_recent"]), "apps recientes en el dock"),
+        ("DockSettingsIconSizeMin", int(tokens["dock"]["settings_icon_size_min"]), "deslizador del tamaño (px)"),
+        ("DockSettingsIconSizeMax", int(tokens["dock"]["settings_icon_size_max"]), "deslizador del tamaño (px)"),
+        ("DockSettingsMagnificationSizeMin", int(tokens["dock"]["settings_magnification_size_min"]),
+         "deslizador de la ampliación (px; nunca menos que el icono)"),
+        ("DockSettingsMagnificationSizeMax", int(tokens["dock"]["settings_magnification_size_max"]),
+         "deslizador de la ampliación (px)"),
         ("Menús", None, None),
         ("MenuIcons", bool(tokens["menu"]["show_icons"]), "iconos junto a los comandos de los menús"),
         ("Finder (Dolphin con la barra de título integrada; px lógicos, ms)", None, None),
@@ -120,10 +153,19 @@ def header(tokens: dict) -> str:
         ("FinderRowRadius", int(finder["row_radius"]), "esquinas de franjas y selección"),
         ("FinderListIconSize", int(finder["list_icon_size"]), "iconos de la lista"),
         ("FinderSearchWidth", int(finder["search_width"]), "campo de búsqueda en la toolbar"),
+        *((f"FinderGlyph{_camel(key)}", value, f"finder.glyphs.{key}")
+          for key, value in finder["glyphs"].items()),
         ("Semáforos y colores fijos (px, 0xAARRGGBB)", None, None),
         ("TrafficLightDiameter", tl["diameter"], "diámetro"),
         ("TrafficLightGap", tl["gap"], "separación entre bordes"),
         ("TrafficLightInactiveColored", bool(tl["inactive_colored"]), "en color también sin foco"),
+        ("TrafficLightPressScale", float(tl["press_scale"]), "tamaño al pulsar"),
+        ("TrafficLightInactiveShine", float(tl["inactive_shine"]), "brillos sin foco (fracción)"),
+        ("TrafficLightHighlightTopAlpha", _alpha8(tl["gem_highlight_top"]), "brillo de arriba, al empezar (0..255)"),
+        ("TrafficLightHighlightTopEndAlpha", _alpha8(tl["gem_highlight_top_end"]), "brillo de arriba, al acabar (0..255)"),
+        ("TrafficLightHighlightBottomAlpha", _alpha8(tl["gem_highlight_bottom"]), "brillo de abajo (0..255)"),
+        ("TrafficLightShadowAlpha", _alpha8(tl["gem_shadow_alpha"]), "sombra (0..255)"),
+        ("TrafficLightShadowInactiveAlpha", _alpha8(tl["gem_shadow_inactive_alpha"]), "sombra sin foco (0..255)"),
     ]
     colors = [
         ("TrafficLightClose", tl["close"]),
@@ -137,6 +179,9 @@ def header(tokens: dict) -> str:
         ("TrafficLightZoomGlyph", tl["zoom_glyph"]),
         ("TrafficLightInactiveLight", tokens["light"]["traffic_light_inactive"]),
         ("TrafficLightInactiveDark", tokens["dark"]["traffic_light_inactive"]),
+        ("ShadowColor", tokens["shadow"]["color"]),
+        ("BootDarkBackground", tokens["boot"]["dark"]["background"]),
+        ("BootLightBackground", tokens["boot"]["light"]["background"]),
         ("SidebarLight", tokens["light"]["sidebar"]),
         ("SidebarDark", tokens["dark"]["sidebar"]),
         ("SeparatorLight", tokens["light"]["separator"]),

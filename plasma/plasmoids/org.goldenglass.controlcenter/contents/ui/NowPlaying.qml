@@ -91,7 +91,7 @@ Tile {
                     Layout.fillWidth: true
                     visible: text.length > 0
                     text: tile.hasPlayer ? tile.player.artist : ""
-                    opacity: 0.7
+                    opacity: T.tokens.text.secondary_alpha
                     font: Kirigami.Theme.smallFont
                     elide: Text.ElideRight
                     textFormat: Text.PlainText
@@ -117,7 +117,8 @@ Tile {
                     implicitHeight: implicitWidth
                     isMask: true
                     color: Kirigami.Theme.textColor
-                    opacity: !mediaButton.enabled ? 0.35 : mediaButton.pressed ? 0.6 : 1
+                    opacity: !mediaButton.enabled ? T.tokens.control_center.media_disabled_alpha
+                             : mediaButton.pressed ? T.tokens.control_center.media_pressed_alpha : 1
                 }
             }
 

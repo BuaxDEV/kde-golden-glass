@@ -47,7 +47,7 @@ QQC2.AbstractButton {
         pressed: button.pressed
         pressPoint: Qt.point(button.pressX, button.pressY)
         radius: width / 2
-        opacity: button.enabled ? 1 : 0.5
+        opacity: button.enabled ? 1 : T.tokens.text.disabled_alpha
         color: button.active ? (button.dark ? "white" : Kirigami.Theme.highlightColor)
              : button.tile ? (button.hovered ? Qt.tint(circle.glassColor, Qt.alpha(Kirigami.Theme.textColor, 0.06)) : circle.glassColor)
              : Qt.alpha(Kirigami.Theme.textColor, button.hovered ? button.cc.off_hover_alpha : button.cc.off_alpha)
@@ -69,7 +69,7 @@ QQC2.AbstractButton {
             isMask: true
             color: !button.active ? Kirigami.Theme.textColor
                  : button.dark ? Kirigami.Theme.highlightColor : Kirigami.Theme.highlightedTextColor
-            opacity: button.enabled ? 1 : 0.5
+            opacity: button.enabled ? 1 : T.tokens.text.disabled_alpha
         }
     }
 

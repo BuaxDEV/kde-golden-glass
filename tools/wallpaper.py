@@ -19,7 +19,6 @@ Uso directo para iterar el diseño:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import shutil
@@ -28,6 +27,8 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
+
+from ggcommon import Color, stamp
 
 THEME_ID = "GoldenGlass"
 SIZES = ((5120, 2880), (3840, 2400))  # 16:9 y 16:10; Plasma elige el más cercano
@@ -80,8 +81,7 @@ NIGHT = Palette(
 
 
 def _rgb(hex_color: str) -> np.ndarray:
-    h = hex_color.lstrip("#")
-    return np.array([int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)], dtype=np.float32)
+    return np.array([c / 255 for c in Color.parse(hex_color).rgb()], dtype=np.float32)
 
 
 def _gradient(stops: tuple[tuple[float, str], ...], t: np.ndarray) -> np.ndarray:
@@ -133,7 +133,7 @@ def render(width: int, height: int, palette: Palette) -> Image.Image:
 
 
 def _stamp() -> str:
-    return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    return stamp(Path(__file__))
 
 
 def build(out: Path) -> list[Path]:

@@ -51,7 +51,7 @@
 
     <!-- shadow color -->
     <entry name="ShadowColor" type="Color">
-      <default>0, 0, 0</default>
+      <default code="true">QColor::fromRgba(GoldenGlass::Tokens::ShadowColor)</default>
     </entry>
 
     <!-- shadow intensity -->
@@ -130,7 +130,7 @@
     </entry>
 
     <entry name="AnimationsDuration" type="Int">
-      <default>250</default>
+      <default code="true">GoldenGlass::Tokens::StyleAnimationsDuration</default>
     </entry>
 
     <!-- transition flags -->
@@ -145,7 +145,7 @@
 
     <!-- progress bar animation durations -->
     <entry name="ProgressBarBusyStepDuration" type="Int">
-      <default>800</default>
+      <default code="true">GoldenGlass::Tokens::StyleProgressBarBusyStepDuration</default>
     </entry>
 
     <!-- scrollbar buttons -->
@@ -362,7 +362,7 @@
     </entry>
 
     <entry name="DolphinViewOpacity" type="Int">
-      <default>100</default>
+      <default code="true">GoldenGlass::Tokens::DolphinViewOpacity</default>
     </entry>
 
     <!-- Deprecated: kept for backwards compatibility migration -->

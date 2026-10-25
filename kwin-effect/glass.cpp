@@ -145,6 +145,9 @@ GlassEffect::GlassEffect()
         m_glassPass.specularLocation = m_glassPass.shader->uniformLocation("specular");
         m_glassPass.tintLocation = m_glassPass.shader->uniformLocation("tint");
         m_glassPass.clarityLocation = m_glassPass.shader->uniformLocation("clarity");
+        m_glassPass.rimWidthLocation = m_glassPass.shader->uniformLocation("rimWidth");
+        m_glassPass.rimBottomLocation = m_glassPass.shader->uniformLocation("rimBottom");
+        m_glassPass.rimTopGainLocation = m_glassPass.shader->uniformLocation("rimTopGain");
         m_glassPass.sharpTextureLocation = m_glassPass.shader->uniformLocation("sharpTexture");
     }
 
@@ -1050,6 +1053,10 @@ void GlassEffect::drawGlass(const RenderViewport &viewport, const RegionF &blurS
     shader->setUniform(m_glassPass.specularLocation, m_refractionSpecular);
     shader->setUniform(m_glassPass.tintLocation, m_refractionTint);
     shader->setUniform(m_glassPass.clarityLocation, m_refractionClarity);
+    // filo de luz: rimBottom abajo, rimBottom + rimTopGain arriba
+    shader->setUniform(m_glassPass.rimWidthLocation, float(GoldenGlass::Tokens::RefractionRimWidth));
+    shader->setUniform(m_glassPass.rimBottomLocation, float(GoldenGlass::Tokens::RefractionRimBottom));
+    shader->setUniform(m_glassPass.rimTopGainLocation, float(1.0 - GoldenGlass::Tokens::RefractionRimBottom));
     shader->setUniform(m_glassPass.sharpTextureLocation, 1);
 
     // unidad 1: el fondo sin difuminar (la primera textura del Blur, en caché)
@@ -1070,7 +1077,8 @@ void GlassEffect::drawGlass(const RenderViewport &viewport, const RegionF &blurS
         shader->setUniform(m_glassPass.boxLocation, QVector4D(box.center().x(), box.center().y(), box.width() * 0.5, box.height() * 0.5));
         shader->setUniform(m_glassPass.cornerRadiusLocation, radii);
         // en superficies bajas (el dock) la banda curvada no ocupa toda la placa
-        const float edge = std::min(float(m_refractionEdge * scale), float(std::min(box.width(), box.height()) * 0.3));
+        const float edge = std::min(float(m_refractionEdge * scale),
+                                    float(std::min(box.width(), box.height()) * GoldenGlass::Tokens::RefractionEdgeMaxFraction));
         shader->setUniform(m_glassPass.edgeLocation, edge);
         GLVertexBuffer::streamingBuffer()->draw(GL_TRIANGLES, 6, vertexCount);
     }

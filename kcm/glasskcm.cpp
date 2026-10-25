@@ -82,6 +82,16 @@ QVariantList GlassKcm::notches() const
     return {GoldenGlass::Tokens::GlassNotchClear, GoldenGlass::Tokens::GlassNotchMedium, GoldenGlass::Tokens::GlassNotchOpaque};
 }
 
+double GlassKcm::snapDistance() const
+{
+    return GoldenGlass::Tokens::GlassSnapDistance;
+}
+
+int GlassKcm::keyboardApplyDelay() const
+{
+    return GoldenGlass::Tokens::GlassKeyboardApplyMs;
+}
+
 bool GlassKcm::busy() const
 {
     return m_process->state() != QProcess::NotRunning;
