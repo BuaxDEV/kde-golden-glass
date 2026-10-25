@@ -1065,3 +1065,6 @@ monogram_size = 24.0         # altura de las mayúsculas del monograma, en el li
 
 [icon_style.overrides]
 # Nombre de icono (o patrón con * y ?) → glyph, silhouette, monogram o skip
+# Revisadas en SP-10b: el contraste da una forma que no es el logotipo
+"google-chrome*" = "monogram"
+jetbrains-toolbox = "monogram"
