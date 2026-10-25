@@ -57,6 +57,12 @@ proyecto. Para corregir commits sin firmar: `git rebase --signoff main`.
   `dbus-run-session` (paquete `dbus`) y, sin él, la omite. Nunca registres
   nombres en el bus de tu sesión. Detalles en
   [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- API privada de Plasma (`org.kde.*private*`, `org.kde.taskmanager`,
+  `org.kde.notificationmanager`): al usar una nueva (módulo, tipo, propiedad,
+  método, señal, valor de enum o rol de modelo), añádela en el mismo cambio a
+  `tools/plasma_api.toml` (el formato está en su cabecera) y comprueba con
+  `python3 tools/check_plasma_compat.py`. Un módulo privado que falte en el
+  manifiesto hace fallar la CI.
 - La CI completa en local:
   `podman run --rm -v "$PWD":/src:Z -w /src docker.io/library/archlinux:latest tools/ci.sh`.
 
