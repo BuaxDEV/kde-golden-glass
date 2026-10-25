@@ -1051,6 +1051,189 @@ QML, y se paró con `systemctl --user stop` sobre el gestor del sandbox.
   usa dbus-broker. No hizo falta el plan B (solo fijadas o
   StatusNotifierItem).
 
+#### HUD de volumen y brillo (F14)
+
+Tercera parte de F14 (plan de macOS 27 §4.10). Como en macOS 27, al cambiar el
+volumen o el brillo aparece una píldora de vidrio pequeña bajo la barra de
+menús, pegada al borde derecho, con el icono y una barra segmentada, sin
+porcentaje; los OSD de texto (distribución de teclado, Wi‑Fi, perfil de
+energía…) siguen siendo los de Plasma.
+
+**Por qué se intercepta `osdService`.** En Plasma 6.8 el OSD sale del módulo QML
+`org.kde.plasma.workspace.osd`, que plasmashell carga desde su objeto `Osd` de
+`/org/kde/osdService` (un `osd/Osd.qml` en el shell no tendría efecto), y
+`[OSD] Enabled=false` (en `plasmarc`) apaga también las señales `osdProgress`
+y `osdText` con las que la pantalla de bloqueo muestra su propio OSD.
+
+**`OsdInterceptor`** (`qmlplugin/osdinterceptor.*`, `osdservice.*`, módulo
+`org.goldenglass.glass`), un solo objeto por proceso dentro de plasmashell:
+
+1. Toma el objeto de `QDBusConnection::sessionBus().objectRegisteredAt("/org/kde/osdService")`
+   y compara sus slots y señales públicos (nombre, tipos de los argumentos y
+   tipo de retorno) y su `D-Bus Interface` con los de `OsdService`, que copia
+   `shell/osd.h` de Plasma en el mismo orden y con los mismos nombres de
+   argumento. **Si no coinciden exactamente, no hace nada** y queda el OSD de
+   Plasma (con otro Plasma, un aviso en el registro `org.goldenglass.osd`).
+2. Desregistra el objeto de Plasma y registra `OsdService` en la misma ruta y
+   con las mismas opciones (`ExportAllSlots | ExportAllSignals`): la
+   introspección es idéntica y plasma-pa, powerdevil, KWin y la pantalla de
+   bloqueo no notan el cambio.
+3. **Lo que muestra el HUD:** `volumeChanged` (con y sin máximo),
+   `microphoneVolumeChanged`, `mediaPlayerVolumeChanged`, `brightnessChanged`,
+   `screenBrightnessChanged` y `keyboardBrightnessChanged`. Cada uno va a un
+   `OsdHost` como `progressRequested(icon, value, maximum)`, con los iconos y
+   los umbrales de Plasma y el valor acotado a `[0, máximo]` (150 con «Subir el
+   volumen máximo»), y a la pantalla de bloqueo como el mismo `osdProgress` que
+   emitiría Plasma. Un silencio (valor 0) se ve en el HUD como la barra vacía
+   con el icono tachado, y la pantalla de bloqueo recibe el `osdText` de
+   Plasma («Audio silenciado», «Micrófono silenciado», «%1 silenciado»), con
+   la traducción del catálogo `plasmashell`. Con varias pantallas, la pantalla
+   de bloqueo, que solo tiene un OSD, recibe el nombre de la pantalla cuyo
+   brillo cambió.
+4. **El resto se reenvía** al objeto de Plasma (llamada directa al slot):
+   `kbdLayoutChanged`, `virtualDesktopChanged`, `showText`, `hide` y los
+   interruptores (táctil, Wi‑Fi, Bluetooth, WWAN, teclado virtual, inhibición,
+   perfil de energía). Sus `osdProgress` y `osdText` se reenvían al bus desde
+   `OsdService`, porque al desregistrarlo dejan de llegar solos.
+5. Respeta `[OSD] Enabled=false`: ni HUD ni señales, como Plasma.
+6. Vive mientras haya algún `OsdHost`: al destruirse el último vuelve a
+   registrar el objeto de Plasma tal como estaba.
+
+**`OsdHost`** (uno por Centro de control): `screenRect` (la pantalla de su
+barra), `activeScreen` (la ventana activa está en esa pantalla), `suppressed`
+(el Centro de control está abierto) e `intercepting` (constante: falso si el
+OSD sigue siendo el de Plasma). Elección del host:
+
+- brillo de una pantalla: el host cuyo `screenRect` es el rectángulo que llega;
+  powerdevil manda un rectángulo vacío, así que después se busca la pantalla
+  (`QScreen::name()`) que se llama como el id de la pantalla;
+- todo lo demás, y si no hay coincidencia: el host con la ventana activa, si
+  no el de la pantalla principal, si no el primero;
+- un host suprimido no muestra nada y ningún otro lo hace por él; la pantalla
+  de bloqueo recibe la señal igualmente.
+
+**`Hud.qml`** (en el Centro de control, cargado con un `Loader`; sin el módulo
+C++ solo falla ese archivo y queda el OSD de Plasma):
+
+- `activeScreen` sale de un `TasksModel` con `filterByScreen` sobre la
+  pantalla del plasmoide: su `activeTask` solo es válido si la ventana activa
+  está en ella.
+- `PlasmaCore.Dialog` sin fondo, `Qt.WindowDoesNotAcceptFocus |
+  Qt.WindowTransparentForInput` (ni foco ni clics) y tipo
+  **`CriticalNotification`**, no `OnScreenDisplay` (ver SP-09). Sin
+  `WindowStaysOnTopHint`: con él `Dialog` convierte cualquier tipo en un panel
+  (`Dock`), por debajo de las ventanas a pantalla completa.
+- `x` = borde derecho − `osd.screen_margin` − `osd.width`; `y` = borde real de
+  la barra (`GlassOverlay.menuBarHeight`) + `osd.margin_top`. Con la barra
+  oculta (`menuBarHeight` = 0) se toma `plasma.menubar_height`, para no quedar
+  debajo de la barra cuando aparece.
+- Píldora `goldenGlassTile` (radio = la mitad de la altura, borde de
+  `glass.border.alpha`) con `GlassRegion`; con «Reducir transparencia», fondo
+  de `accessibility.reduce_transparency_alpha`, como las tarjetas. Icono
+  `<icono de Plasma>-symbolic` (o el de Plasma si no hay versión simbólica, p.
+  ej. el de un reproductor) y `osd.segments` segmentos llenos en proporción a
+  `valor / máximo`.
+- Aparece con un resorte breve (`osd.open_scale` → 1 con `OutBack` de
+  `osd.open_overshoot` en `osd.open_ms`, por `Motion`: «Reducir movimiento» lo
+  deja en un fundido) y se va `osd.timeout_ms` después del último cambio con un
+  fundido de `osd.close_ms`; el vidrio se quita a `control_center.close_unblur_at`
+  del fundido, como en `GlassOverlay`. Un cambio con el HUD visible solo
+  actualiza el icono y la barra y reinicia la espera. Al abrir el Centro de
+  control el HUD se va.
+
+**Tokens `[osd]`** (al final de `goldenglass.toml`, por calibrar): `width = 200`,
+`height = 36`, `margin_top = 6`, `screen_margin = 8`, `icon = 18`,
+`segments = 16`, `segment_gap = 2`, `bar_height = 6`, `track_alpha = 0.20`,
+`fill_alpha = 0.90`, `alpha = 0.30`, `timeout_ms = 1500`, `open_ms = 260`,
+`close_ms = 220`, `open_scale = 0.9`, `open_overshoot = 1.2`. El margen
+interior es `(height − icon) / 2`. `gen_tokens.py` valida px, ms y recuentos
+enteros, opacidades en `[0, 1]` y que el icono y los segmentos quepan.
+
+**Contrato con Plasma.** `tools/plasma_api.toml` gana el tipo
+`[[system.dbus_object]]`: `check_plasma_compat.py` busca en el binario
+`plasmashell` la interfaz, la ruta, los 17 métodos y las 2 señales de
+`org.kde.osdService` (como cadenas, donde los deja moc), así que la CI avisa
+antes de que la guarda en ejecución deje el OSD de Plasma.
+
+**Pruebas.**
+
+- `osdinterceptor_test` (bajo `dbus-run-session`, con dos pantallas offscreen
+  con nombre): un `Osd` falso con la interfaz de Plasma 6.8 en la conexión de
+  sesión de la prueba, y plasma-pa y la pantalla de bloqueo en un
+  `FakeService`. Cubre la toma y la devolución con la introspección idéntica,
+  la guarda (un `Osd` con otra firma se queda), `volumeChanged` →
+  `progressRequested` + `osdProgress`, los iconos de cada OSD, los silencios,
+  el reenvío de `kbdLayoutChanged`, `showText`, `hide` y compañía con sus
+  señales, la elección de host, el Centro de control abierto y
+  `[OSD] Enabled=false`.
+- `tools/tests/test_osd_tokens.py` y las pruebas de `[[system.dbus_object]]` en
+  `test_check_plasma_compat.py`.
+- **Sandbox** (`tools/sandbox.sh` con `QT_FORCE_STDERR_LOGGING=1` y un hook): los
+  OSD se piden con `busctl --user call org.kde.plasmashell /org/kde/osdService …`
+  en el bus privado del sandbox, y la geometría de cada ventana la imprime un
+  script de KWin. Capturas del HUD de volumen (normal, 150 %, silencio),
+  micrófono, reproductor, brillo, brillo de cada pantalla y teclado, en claro,
+  oscuro y con «Reducir transparencia»; sin HUD con el Centro de control
+  abierto; encima de una ventana a pantalla completa. Con un
+  `org.goldenglass.glass` vacío en `QML_IMPORT_PATH` (como sin el módulo, o
+  con uno anterior sin `OsdHost`) solo falla `Hud.qml` («OsdHost is not a
+  type», igual que `AccessibilityReader.qml` y `AppUnitsSource.qml`) y sale el
+  OSD de Plasma.
+
+**Spike SP-09 — go con plan A** (interceptar `osdService`), con un cambio en la
+ventana. Plasma 6.8.1, KWin 6.8.1 virtual, Qt 6.12.
+
+1. **Registro, introspección y restauración: sí.** Dentro de plasmashell,
+   `objectRegisteredAt` devuelve el `Osd` de Plasma; desregistrarlo y
+   registrar `OsdService` funciona, y la introspección de
+   `/org/kde/osdService` es idéntica byte a byte a la de Plasma (comparada con
+   la de la sesión real, solo leyendo, y con la del mismo sandbox tras
+   devolver el objeto). Al quitar el último Centro de control vuelve el
+   objeto de Plasma (su OSD aparece de nuevo) y al añadir otro el HUD lo toma
+   otra vez; igual en las seis ejecuciones de la matriz.
+2. **Quién llama a qué** (fuentes 6.8.1): plasma-pa (módulo de kded
+   `audioshortcutsservice`, `mutedmicrophonereminder`) llama a
+   `volumeChanged(ii)` con máximo 100 o 150, `microphoneVolumeChanged(i)`,
+   `showText(ss)` (cambio de dispositivo, «Hablar…» del pulsar para hablar,
+   micrófono silenciado) y `hide()`. powerdevil llama a
+   `screenBrightnessChanged(issi(iiii))` con el **rectángulo vacío** (por eso
+   se busca la pantalla por su nombre), `brightnessChanged(i)` y
+   `keyboardBrightnessChanged(i)` (`BrightnessOSDWidget`) y
+   `powerProfileChanged(s)`. Nadie de los dos llama a
+   `mediaPlayerVolumeChanged`, que se cubre igualmente.
+3. **Pantalla de bloqueo: sigue funcionando.** `kscreenlocker_greet` se
+   suscribe a `osdProgress` y `osdText` de `org.kde.plasmashell` en
+   `/org/kde/osdService`. Con `kscreenlocker_greet --testing` en el sandbox,
+   el volumen al 60 % sale en su OSD como barra, el silencio como «Audio
+   silenciado» y un `kbdLayoutChanged` reenviado como texto. No se probó con
+   la sesión bloqueada de verdad (el sandbox arranca KWin con
+   `--no-lockscreen` y la sesión real no se bloquea).
+4. **Posición de un `OnScreenDisplay`: no.** libplasma (`Dialog`) no manda a
+   KWin la posición de una ventana `OnScreenDisplay` (ni al mostrarla ni al
+   moverla), así que KWin la centra abajo, como el OSD de Plasma, a cualquier
+   escala; un ancla `visualParent` tampoco llegaría. Además,
+   `WindowStaysOnTopHint` convierte cualquier tipo en `Dock`. **Plan para el
+   punto 4:** tipo `CriticalNotification`, sin `WindowStaysOnTopHint`: KWin
+   respeta su `x`/`y` y la pone en la capa de avisos críticos, encima de las
+   ventanas a pantalla completa (`Notification` quedaría debajo de ellas).
+
+| Matriz | Barra | HUD (lógico, según KWin) | Esperado |
+|---|---|---|---|
+| 1 salida 1600×1000, escala 1, claro y oscuro | 24 | 1392,30 200×36 | 1600 − 8 − 200, 24 + 6 |
+| 1 salida, escala 1,5 (1067×667) | 24 | 859,30 200×36 | ✓ |
+| 1 salida, escala 2 (800×500) | 24 | 592,30 200×36 | ✓ |
+| 2 salidas, escala 1 | 24 y 24 | 1392,30 (volumen y brillo de la 1.ª), 2992,30 (brillo de la 2.ª) | ✓ |
+| 2 salidas, escala 2, oscuro | 24 y 24 | 592,30 y 2192,30 | ✓ |
+
+- Sin ventanas, el volumen sale en la pantalla principal; el brillo de cada
+  pantalla, en la suya.
+- No hizo falta el plan B (`[OSD] Enabled=false` y fuentes propias de
+  PulseAudio y brillo), que habría perdido los OSD de texto.
+- Sin probar: pantallas físicas, el teclado multimedia real (los OSD se
+  pidieron por D-Bus con los mismos argumentos que plasma-pa y powerdevil),
+  la pantalla de bloqueo real y la elección por ventana activa en el sandbox
+  (cubierta por la prueba de C++).
+
 ### 4.6 Tipografía — `fontconfig/`
 - SF Pro **no se redistribuye** (licencia de Apple).
 - Alias de fontconfig `GoldenGlass Sans` → SF Pro → SF Pro Text → Inter, y
@@ -1627,7 +1810,7 @@ QML, y se paró con `systemctl --user stop` sobre el gestor del sandbox.
 | F11 | Efecto de KWin `goldenglass_glass` (fork de Blur) con refracción; interruptor en Vidrio | ✅ |
 | F12 | Material y accesibilidad: filo del vidrio, sombra inactiva, semáforos grises, Reducir transparencia, Mostrar bordes | 🚧 |
 | F13 | Ventanas y movimiento: efectos de KWin, atajos de tiling, velocidad de animación global, Reducir movimiento | 🚧 |
-| F14 | Barra de menús y Dock: barra a 24 px, HUD de volumen y brillo, apps en segundo plano | 🚧 |
+| F14 | Barra de menús y Dock: barra a 24 px, HUD de volumen y brillo, apps en segundo plano | ✅ |
 | F15 | Estilos de icono Tintado y Transparente; módulo Estilo de iconos | 📋 |
 | F16 | Spotlight propio (sustituye a KRunner) con vistas, portapapeles y teclas rápidas | 📋 |
 | F17 | Centro de notificaciones y avisos de vidrio | 📋 |
@@ -1661,6 +1844,7 @@ Refracción en las ventanas de las apps.
 | La fuente del tema entra en cada initramfs | Inter Variable (0,9 MB) en vez de `Inter.ttc` (13 MB) |
 | El dock depende de `views/Panel.qml` copiado de Plasma; si no carga, plasmashell se cae (pasó con Plasma 6.8) | Cambio mínimo y documentado en `UPSTREAM.md` (merge a tres vías por versión); `X-GoldenGlass-PlasmaVersion` + hook de pacman que quita `views/` y `lockscreen/` con otro Plasma; la CI comprueba módulos QML y versión (`tools/check_plasma_compat.py`) |
 | PanelView fija la región de entrada desde el borde superior de la placa | Aceptado: la ampliación se recoge al salir de la placa (4.13) |
+| El HUD sustituye un objeto interno de plasmashell (`/org/kde/osdService`) | Solo si exporta exactamente las firmas que copia `OsdService` (si no, queda el OSD de Plasma); los OSD de texto y las señales de la pantalla de bloqueo siguen siendo los de Plasma; al irse el último Centro de control se devuelve el objeto original; `check_plasma_compat.py` busca la interfaz en el binario `plasmashell` y `UPSTREAM.md` dice cómo revisarla en cada versión de Plasma (SP-09) |
 | Las apps en segundo plano dependen de cómo nombran sus units KIO, dbus-broker, Chromium y Flatpak | `parseUnitName()` sigue la especificación de systemd y tiene una prueba con los nombres reales; si el nombre no basta, `SourcePath` y `MainPID`; lo que no se reconoce no se muestra (`backgroundIgnore` para lo que sobre). Las apps lanzadas desde una terminal no se detectan (SP-08) |
 | El dock unificado pierde funciones de `icontasks` | Mismo `TasksModel`; menú, vistas previas, arrastre y soltar archivos reimplementados (4.13) |
 | La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle` (un hook de pacman lo avisa al actualizar KWin); `goldenglass-glass --check` al iniciar sesión reactiva Blur si el efecto no carga; fork documentado en `UPSTREAM.md` |

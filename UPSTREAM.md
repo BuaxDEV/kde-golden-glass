@@ -116,6 +116,28 @@ screen loads (`QT_QPA_PLATFORM=offscreen timeout 8 /usr/lib/kscreenlocker_greet
 --testing --shell org.goldenglass.desktop`, no `Failed to load lockscreen QML`
 in the journal). Update the merge bases above and `X-GoldenGlass-PlasmaVersion`.
 
+## Plasma OSD service (`qmlplugin/osdservice.h`)
+
+`OsdService` copies the D-Bus interface of Plasma's `Osd` object
+(`shell/osd.h` of **plasma-workspace 6.8.1**): the same public slots and
+signals, in the same order and with the same argument names, so that its
+introspection is identical. No code is copied. At run time `OsdInterceptor`
+only takes `/org/kde/osdService` over when Plasma's object exports exactly
+these signatures; otherwise Plasma's OSD stays. On a new Plasma version:
+
+```sh
+curl -sL https://invent.kde.org/plasma/plasma-workspace/-/raw/v<new>/shell/osd.h \
+  | diff <(curl -sL https://invent.kde.org/plasma/plasma-workspace/-/raw/v6.8.1/shell/osd.h) -
+```
+
+Port any change of the slots or signals to `osdservice.h`, the fake Plasma
+`Osd` of `qmlplugin/tests/osdinterceptor_test.cpp` and the
+`[[system.dbus_object]]` entry of `tools/plasma_api.toml`, and read
+`shell/osd.cpp` for new icons, thresholds or texts (the HUD and the lock
+screen signals follow them). `tools/check_plasma_compat.py` already fails
+when a name disappears from the installed `plasmashell`. Update the version
+above.
+
 ## KWin glass effect (`kwin-effect/`)
 
 `kwin-effect/` is a fork of the **Blur** effect of **KWin 6.7.5**

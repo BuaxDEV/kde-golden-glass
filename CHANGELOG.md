@@ -100,6 +100,17 @@
   systemd en las que Plasma lanza cada app, así que no ve las apps lanzadas
   desde una terminal. Se desactiva con `goldenglass-dock --background off`, y
   `backgroundIgnore` en la configuración del dock oculta apps concretas.
+- **HUD de volumen y brillo bajo la barra de menús**, como macOS 27: al
+  cambiar el volumen, el micrófono, el volumen de un reproductor, el brillo de
+  la pantalla o el del teclado aparece una píldora de vidrio pequeña arriba a
+  la derecha, con el icono y una barra segmentada, en lugar del OSD de Plasma
+  en el centro de la pantalla. Sale en la pantalla de la ventana activa (el
+  brillo de una pantalla, en esa pantalla), también sobre las apps a pantalla
+  completa, nunca con el Centro de control abierto, y respeta «Reducir
+  movimiento» y «Reducir transparencia». Los avisos de texto (distribución de
+  teclado, Wi‑Fi, táctil, perfil de energía…) siguen siendo los de Plasma, y
+  la pantalla de bloqueo sigue mostrando su OSD. Si se desactivan los OSD de
+  Plasma (`plasmarc [OSD] Enabled=false`), tampoco hay HUD.
 - **El Centro de control se abre justo debajo de la barra de menús real**, no
   de la altura de fábrica: sigue bien colocado si cambias la altura de la
   barra, y el resaltado de su icono se ajusta a ella.
@@ -135,6 +146,13 @@
   polling, y enlaza Qt DBus. `tools/sandbox.sh` admite `GG_SANDBOX_SYSTEMD=1`:
   un `systemd --user` propio en el bus privado, para que las apps se lancen
   en units como en una sesión real.
+- El módulo QML `org.goldenglass.glass` gana `OsdInterceptor` y `OsdHost`,
+  que dentro de plasmashell sustituyen el objeto `/org/kde/osdService` de
+  Plasma por uno con la misma interfaz, solo si sus firmas coinciden
+  exactamente, y lo devuelven al irse el último Centro de control; enlaza
+  KI18n. `tools/plasma_api.toml` gana `[[system.dbus_object]]`:
+  `check_plasma_compat.py` comprueba en el binario `plasmashell` la interfaz
+  `org.kde.osdService` que copia el HUD.
 - Los plasmoids leen la accesibilidad con un único singleton,
   `Accessibility.qml` (`MotionReduce.qml` pasa a ser
   `AccessibilityReader.qml`); `goldenglass-glass` aplica todo con `apply()`,
