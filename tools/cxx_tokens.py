@@ -71,6 +71,7 @@ def header(tokens: dict) -> str:
     rad = tokens["radius"]
     tl = tokens["traffic_lights"]
     shadow = tokens["shadow"]["active"]
+    inactive = tokens["shadow"]["inactive"]
     glass = round(plasma_theme.glass_alpha(tokens) * 100)
     finder = tokens["finder"]
     align = tokens["decoration"]["title_alignment"]
@@ -100,6 +101,10 @@ def header(tokens: dict) -> str:
         ("ShadowSize", _shadow_size_index(shadow["size"]),
          f"{SHADOW_SIZES[_shadow_size_index(shadow['size'])]} ({shadow['size']} px)"),
         ("ShadowStrength", _shadow_strength(shadow["strength"]), f"{shadow['strength']} de opacidad"),
+        ("InactiveShadowSize", _shadow_size_index(inactive["size"]),
+         f"sin foco: {SHADOW_SIZES[_shadow_size_index(inactive['size'])]} ({inactive['size']} px)"),
+        ("InactiveShadowStrength", _shadow_strength(inactive["strength"]), f"sin foco: {inactive['strength']} de opacidad"),
+        ("ShadowOutlineAlpha", float(tokens["shadow"]["outline_alpha"]), "contorno de la ventana (× la fuerza)"),
         *(item for size in SHADOW_SIZES[1:] for item in _shadow_size(tokens, size)),
         ("Animaciones (estilo y decoración)", None, None),
         ("AnimationsDuration", int(tokens["animation"]["controls_ms"]), "controles de las apps y botones de la ventana (ms)"),

@@ -11,6 +11,7 @@ import subprocess
 import pytest
 
 import cxx_tokens
+import gen_tokens
 
 
 def constant(header: str, name: str) -> str:
@@ -61,6 +62,41 @@ def test_shadow_size(tokens, px, index):
 def test_shadow_strength(tokens, alpha, strength):
     tokens["shadow"]["active"]["strength"] = alpha
     assert constant(cxx_tokens.header(tokens), "ShadowStrength") == str(strength)
+
+
+def test_inactive_shadow(tokens):
+    tokens["shadow"]["inactive"] = {"size": 32, "strength": 0.25}
+    tokens["shadow"]["outline_alpha"] = 0.3
+    header = cxx_tokens.header(tokens)
+    assert constant(header, "InactiveShadowSize") == "2"  # ShadowMedium
+    assert constant(header, "InactiveShadowStrength") == "64"
+    assert float(constant(header, "ShadowOutlineAlpha")) == 0.3
+
+
+@pytest.mark.parametrize(("key", "value"), [("size", 65), ("strength", 0.5)])
+def test_inactive_shadow_not_above_active(tokens, key, value):
+    gen_tokens.validate(tokens)
+    tokens["shadow"]["inactive"][key] = value
+    with pytest.raises(SystemExit, match=rf"\[shadow\.inactive\]\.{key}"):
+        gen_tokens.validate(tokens)
+
+
+def test_inactive_shadow_may_equal_active(tokens):
+    tokens["shadow"]["inactive"] = dict(tokens["shadow"]["active"])
+    gen_tokens.validate(tokens)
+
+
+@pytest.mark.parametrize("change", [
+    lambda s: s.pop("inactive"),
+    lambda s: s["inactive"].update(size="32"),
+    lambda s: s["inactive"].update(strength=-0.1),
+    lambda s: s.update(outline_alpha=1.5),
+    lambda s: s.pop("outline_alpha"),
+])
+def test_invalid_shadow_tokens(tokens, change):
+    change(tokens["shadow"])
+    with pytest.raises(SystemExit, match=r"shadow"):
+        gen_tokens.validate(tokens)
 
 
 def test_shadow_size_table(tokens):

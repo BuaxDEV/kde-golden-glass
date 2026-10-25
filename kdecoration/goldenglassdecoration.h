@@ -22,6 +22,7 @@
 #pragma once
 #include "goldenglass.h"
 #include "goldenglasssettings.h"
+#include "goldenglassshadowparams.h"
 
 #include <KDecoration3/DecoratedWindow>
 #include <KDecoration3/Decoration>
@@ -37,6 +38,7 @@ namespace KDecoration3
 {
 class DecorationButton;
 class DecorationButtonGroup;
+class DecorationShadow;
 }
 
 namespace GoldenGlass
@@ -127,6 +129,10 @@ private Q_SLOTS:
     void updateTitleBar();
     void updateAnimationState();
     void updateScale();
+    //* create (or reuse) the active and inactive shadows and apply the current one
+    void updateShadows();
+    //* use the shadow of the current focus state; never renders
+    void applyShadow();
 
 private:
     //* return the rect in which caption will be drawn
@@ -135,7 +141,8 @@ private:
     void createButtons();
     void calculateWindowAndTitleBarShapes(const bool windowShapeOnly = false);
     void paintTitleBar(QPainter *painter, const QRectF &repaintRegion);
-    void createShadow();
+    //* shared shadow for a resolved style (nullptr: no shadow)
+    static std::shared_ptr<KDecoration3::DecorationShadow> shadowFor(const ShadowStyle &style);
     void setScaledCornerRadius();
 
     //*@name border size
@@ -167,6 +174,10 @@ private:
 
     //*frame corner radius, scaled according to DPI
     qreal m_scaledCornerRadius = 3;
+
+    //* shadows of the focused and unfocused window (may be the same one)
+    std::shared_ptr<KDecoration3::DecorationShadow> m_activeShadow;
+    std::shared_ptr<KDecoration3::DecorationShadow> m_inactiveShadow;
 
 };
 
