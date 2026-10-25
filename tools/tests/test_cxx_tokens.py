@@ -46,6 +46,35 @@ def test_accessibility(tokens):
     assert re.search(r"^inline constexpr double AccessibilityReduceTransparencyAlpha = 1\.0;", header, re.M)
 
 
+def test_show_borders(tokens):
+    borders = tokens["accessibility"]["borders"]
+    header = cxx_tokens.header(tokens)
+    for name, key in (("EdgeShade", "edge_shade"), ("WindowOutlineContrast", "window_outline_contrast"),
+                      ("WindowShadowOutlineAlpha", "window_shadow_outline_alpha"), ("ControlAlpha", "control_alpha"),
+                      ("ToolbarButtonAlpha", "toolbar_button_alpha")):
+        assert float(constant(header, f"AccessibilityBorders{name}")) == borders[key]
+    borders["control_alpha"] = 1
+    assert re.search(r"^inline constexpr double AccessibilityBordersControlAlpha = 1\.0;", cxx_tokens.header(tokens), re.M)
+
+
+@pytest.mark.parametrize("key", gen_tokens.ACCESSIBILITY_BORDER_KEYS)
+@pytest.mark.parametrize("value", [-0.1, 1.01, float("nan"), True, "0.5", None])
+def test_invalid_show_borders_tokens(tokens, key, value):
+    gen_tokens.validate(tokens)
+    if value is None:
+        del tokens["accessibility"]["borders"][key]
+    else:
+        tokens["accessibility"]["borders"][key] = value
+    with pytest.raises(SystemExit, match=rf"\[accessibility\.borders\]\.{key}"):
+        gen_tokens.validate(tokens)
+
+
+def test_show_borders_section_is_required(tokens):
+    del tokens["accessibility"]["borders"]
+    with pytest.raises(SystemExit, match=r"\[accessibility\.borders\]"):
+        gen_tokens.validate(tokens)
+
+
 @pytest.mark.parametrize(("px", "index"), [
     (0, 0), (-5, 0),          # ShadowNone
     (1, 1), (24, 1),          # ShadowSmall

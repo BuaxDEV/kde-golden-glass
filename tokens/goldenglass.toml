@@ -292,6 +292,19 @@ reduce_motion = false         # fundidos en lugar de escalas, desplazamientos y 
 # Opacidad de las superficies de vidrio con «Reducir transparencia» (0..1)
 reduce_transparency_alpha = 1.0
 
+# «Mostrar bordes» (macOS 27: Accesibilidad › Pantalla): un borde fino de color
+# de texto en el vidrio, los campos, los botones y la toolbar. Opacidades 0..1
+# — calibrar
+[accessibility.borders]
+surface_alpha = 0.50                # filo exterior del vidrio del Plasma Style
+field_alpha = 0.45                  # filo de los campos del Plasma Style (KRunner, bloqueo)
+edge_shade = 0.35                   # oscurecido del borde en el efecto de refracción (sin seguir al nivel)
+window_outline_contrast = 0.5       # contorno de la ventana: mezcla del color de marco hacia el de texto
+window_shadow_outline_alpha = 0.8   # contorno de la ventana en la sombra (× la fuerza)
+control_alpha = 0.35                # filo de botones, campos y cápsulas del Finder
+toolbar_button_alpha = 0.22         # forma de los botones de toolbar sin el ratón encima
+gtk_alpha = 0.35                    # apps GTK (fase 2, pendiente del spike SP-02)
+
 # ---------------------------------------------------------------------------
 # Dolphin como el Finder de macOS 27 (estilo de apps + decoración)
 # ---------------------------------------------------------------------------

@@ -169,6 +169,10 @@ REQUIRED_SECTIONS = (
 # opacidad con «Reducir transparencia» (docs/ARCHITECTURE.md, «Accesibilidad»)
 ACCESSIBILITY_FLAGS = ("show_borders", "reduce_transparency", "reduce_motion")
 
+# [accessibility.borders]: «Show borders» (docs/MACOS27-PLAN.md §4.5)
+ACCESSIBILITY_BORDER_KEYS = ("surface_alpha", "field_alpha", "edge_shade", "window_outline_contrast",
+                             "window_shadow_outline_alpha", "control_alpha", "toolbar_button_alpha", "gtk_alpha")
+
 # [motion]: clave → si admite 0 (Motion.qml divide por kirigami_long_ms)
 MOTION_KEYS = {"kirigami_long_ms": False, "reduced_fade_ms": True}
 
@@ -323,6 +327,17 @@ def _validate_accessibility(section: dict) -> None:
     # bool es subclase de int: true/false no valen como opacidad
     if isinstance(alpha, bool) or not isinstance(alpha, (int, float)) or not 0.0 <= alpha <= 1.0:
         raise SystemExit(f"[accessibility].reduce_transparency_alpha debe ser un número entre 0 y 1, no {alpha!r}")
+    validate_borders(section.get("borders"))
+
+
+def validate_borders(borders: object) -> None:
+    """[accessibility.borders]: every «Show borders» value is a fraction in [0, 1]."""
+    if not isinstance(borders, dict):
+        raise SystemExit("missing section [accessibility.borders] in the tokens")
+    for key in ACCESSIBILITY_BORDER_KEYS:
+        value = borders.get(key)
+        if not _is_number(value) or not 0 <= value <= 1:
+            raise SystemExit(f"[accessibility.borders].{key} must be a number in [0, 1], not {value!r}")
 
 
 def main(argv: list[str] | None = None) -> int:
