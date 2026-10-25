@@ -977,3 +977,28 @@ finder_hover = "#FFFFFF0F"
 finder_selected = "#FFFFFF19"
 finder_stripe = "#FFFFFF0C"
 finder_sidebar_selected = "#FFFFFF22"
+
+# ---------------------------------------------------------------------------
+# HUD de volumen y brillo (macOS 27): una píldora de vidrio bajo la barra de
+# menús, pegada al borde derecho, con el icono y una barra segmentada, sin
+# porcentaje. La muestra el Centro de control (OsdHost de org.goldenglass.glass)
+# en lugar del OSD de Plasma. Ver «HUD de volumen y brillo» en
+# docs/ARCHITECTURE.md. Valores de macOS sin cifra pública: calibrar.
+# ---------------------------------------------------------------------------
+[osd]
+width = 200              # px de la píldora
+height = 36
+margin_top = 6           # px bajo el borde real de la barra de menús
+screen_margin = 8        # px hasta el borde derecho de la pantalla
+icon = 18                # px del icono; el margen interior es (height − icon) / 2
+segments = 16            # segmentos de la barra
+segment_gap = 2          # px entre segmentos
+bar_height = 6
+track_alpha = 0.20       # segmento vacío (color de texto)
+fill_alpha = 0.90        # segmento lleno (color de texto)
+alpha = 0.30             # fondo de vidrio, como las tarjetas del Centro de control
+timeout_ms = 1500        # visible tras el último cambio (espera, no se escala)
+open_ms = 260            # resorte breve al aparecer
+close_ms = 220           # fundido al irse
+open_scale = 0.9         # aparece desde esta escala
+open_overshoot = 1.2     # «overshoot» de Easing.OutBack al asentarse
