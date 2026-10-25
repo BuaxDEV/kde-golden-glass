@@ -15,30 +15,6 @@
   `goldenglassrc [Common]` y nunca supera a la activa. Las dos sombras se
   preparan de antemano: cambiar el foco no dibuja nada. La opacidad del
   contorno de la ventana sale del token `shadow.outline_alpha`.
-
-### Proyecto
-
-- Los colores, opacidades y sombras del squircle de los iconos de apps pasan a
-  la sección `[icon_tile]` de los tokens, sin cambio visual (los SVG generados
-  son idénticos byte a byte). `goldenglass-icons` instala
-  `/usr/share/goldenglass/icon-tile.json` con esos valores para que
-  `goldenglass-wrap-icons` siga sin depender de los tokens ni de otros paquetes.
-- **`goldenglass-glass`:** el módulo de Ajustes y el slider del Centro de
-  control ya no se pisan si lanzan la herramienta a la vez: toda operación que
-  escribe (`--level`, `--refraction`, `--menubar-background`, `--check`) toma
-  un `flock` exclusivo en `$XDG_RUNTIME_DIR/goldenglass-glass.lock` y la
-  segunda espera a la primera; `--get*` no esperan. El tema
-  `GoldenGlassTuned` se genera en un directorio hermano y se cambia de golpe,
-  así que Plasma nunca lo ve a medias.
-- **Atajos de ventana** (script `org.goldenglass.shortcuts`), como Fn+Ctrl+F/C/R
-  de macOS Sequoia con Meta en lugar de Fn: `Meta+Ctrl+F` llena la pantalla,
-  `Meta+Ctrl+C` centra la ventana y `Meta+Ctrl+R` la devuelve a su tamaño
-  anterior (maximizada, en mosaico o a pantalla completa). Las mitades siguen
-  siendo las nativas `Meta+flechas`, y los cuartos se alcanzan encadenándolas.
-  `Meta+Ctrl+R` también es el atajo por defecto de «Grabar ventana» de
-  Spectacle; cada uno se puede reasignar en Preferencias › Atajos. Las
-  instalaciones existentes reciben los atajos nuevos al recargar KWin o iniciar
-  sesión, sin cambiar los que ya hubieras reasignado.
 - **Atajos de ventana** (script `org.goldenglass.shortcuts`), como Fn+Ctrl+F/C
   de macOS Sequoia con Meta en lugar de Fn: `Meta+Ctrl+F` llena la pantalla y
   `Meta+Ctrl+C` centra la ventana. Para volver al tamaño anterior (maximizada,
@@ -54,6 +30,21 @@
   abren y cierran al momento. Con la velocidad normal todo dura lo mismo que
   antes. Las esperas (antes de mostrar el nombre de la app o de ocultar las
   miniaturas y la barra de desplazamiento) no cambian.
+- **`goldenglass-glass`:** el módulo de Ajustes y el slider del Centro de
+  control ya no se pisan si lanzan la herramienta a la vez: toda operación que
+  escribe (`--level`, `--refraction`, `--menubar-background`, `--check`) toma
+  un `flock` exclusivo en `$XDG_RUNTIME_DIR/goldenglass-glass.lock` y la
+  segunda espera a la primera; `--get*` no esperan. El tema
+  `GoldenGlassTuned` se genera en un directorio hermano y se cambia de golpe,
+  así que Plasma nunca lo ve a medias.
+
+### Proyecto
+
+- Los colores, opacidades y sombras del squircle de los iconos de apps pasan a
+  la sección `[icon_tile]` de los tokens, sin cambio visual (los SVG generados
+  son idénticos byte a byte). `goldenglass-icons` instala
+  `/usr/share/goldenglass/icon-tile.json` con esos valores para que
+  `goldenglass-wrap-icons` siga sin depender de los tokens ni de otros paquetes.
 
 ## 0.2.1 — 2026-10-15
 
