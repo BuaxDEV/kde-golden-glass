@@ -41,7 +41,9 @@ while IFS= read -r -d '' file; do
   [[ -e "$file.license" ]] && continue
   grep -qF "\"$file\"" REUSE.toml && continue
   # la cabecera va al principio: basta con mirar las primeras líneas
+  # REUSE-IgnoreStart
   head -n 20 -- "$file" | grep -q 'SPDX-License-Identifier:' && continue
+  # REUSE-IgnoreEnd
   echo "::error file=$file::archivo nuevo sin cabecera SPDX (SPDX-License-Identifier, ver CONTRIBUTING.md)"
   fail=1
 done < <(git diff -z --name-only --diff-filter=A "$base...$tip")
