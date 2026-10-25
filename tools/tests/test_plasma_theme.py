@@ -164,3 +164,16 @@ def test_the_menubar_radius_bounds_its_height(tokens: dict, tmp_path: Path) -> N
 def test_the_dock_radius_no_longer_bounds_the_menubar(tokens: dict, tmp_path: Path) -> None:
     tokens["radius"]["dock"] = tokens["plasma"]["menubar_height"]
     assert (_build(tokens, tmp_path) / "widgets" / "panel-background.svg").is_file()
+
+
+def test_square_menubar_tiles_hold_both_edge_lines(tokens: dict) -> None:
+    tokens["radius"]["menubar"] = 0
+    tiles = _tiles(plasma_theme.panel_background(tokens, alpha=0.65))
+    for name in ("bottom", "bottomleft"):
+        tile = tiles[f"north-{name}"]
+        fill = next(child for child in tile if child.get("class") == plasma_theme.BG)
+        top, bottom = float(fill.get("y")), float(fill.get("y")) + float(fill.get("height"))
+        for line in _edges(tile):
+            y = float(line.get("y"))
+            assert top <= y and y + float(line.get("height")) <= bottom, name
+

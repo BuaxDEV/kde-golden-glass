@@ -114,7 +114,9 @@ def frame(svg: Svg, prefix: str, radius: float, fill: Paint,
     `margins` = (top, right, bottom, left) → `hint-*-margin`.
     `inner_border` is a second line of the same width just inside `border`.
     """
-    c = max(radius, 1.0)
+    # square corners still hold every edge line inside their tile
+    edge_lines = sum(paint is not None for paint in (border, inner_border)) * border_width
+    c = max(radius, 1.0, edge_lines)
     x0, y0 = svg.reserve(2 * c + edge, 2 * c + edge)
     xs = (x0, x0 + c, x0 + c + edge)
     ys = (y0, y0 + c, y0 + c + edge)
