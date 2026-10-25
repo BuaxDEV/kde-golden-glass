@@ -9,6 +9,13 @@
   aunque la ventana siga sin foco (`traffic_lights.inactive_colored = false`).
   En las ventanas CSD de GTK4/libadwaita el grupo entero reacciona; en GTK3
   solo el botón bajo el ratón.
+- **`goldenglass-glass`:** el módulo de Ajustes y el slider del Centro de
+  control ya no se pisan si lanzan la herramienta a la vez: toda operación que
+  escribe (`--level`, `--refraction`, `--menubar-background`, `--check`) toma
+  un `flock` exclusivo en `$XDG_RUNTIME_DIR/goldenglass-glass.lock` y la
+  segunda espera a la primera; `--get*` no esperan. El tema
+  `GoldenGlassTuned` se genera en un directorio hermano y se cambia de golpe,
+  así que Plasma nunca lo ve a medias.
 
 ## 0.2.1 — 2026-10-15
 
