@@ -1023,11 +1023,13 @@ light_glyph_shade = 0.30
 glyph_floor = 0.40           # opacidad mínima de los colores fijos más oscuros del símbolo
 
 [icon_style.clear]
-# Relleno translúcido: blanco en claro, negro en oscuro
-light_fill = "#FFFFFF"
-light_fill_alpha = 0.30
+# Relleno translúcido: gris (claro) o negro (oscuro). Calibrado en SP-10c para
+# que el símbolo blanco tenga contraste ≥ 3:1 con el tile en el 90 % de los
+# casos sobre fondos claros y oscuros; un relleno blanco no pasa del 46 % en claro.
+light_fill = "#3C3C43"
+light_fill_alpha = 0.45
 dark_fill = "#000000"
-dark_fill_alpha = 0.30
+dark_fill_alpha = 0.35
 glyph = "#FFFFFF"            # símbolo blanco al 92 %
 glyph_alpha = 0.92
 glyph_floor = 0.40

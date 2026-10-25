@@ -138,7 +138,9 @@ def test_tinted_light_tile_is_the_accent_lightened(tt, st):
 
 def test_clear_tile_is_translucent_and_its_glyph_white(tt, st):
     img = render(icons_apps.APPS[0].svg(True, Style.CLEAR, tt, st))
-    assert 0 < img.pixelColor(*TILE).alpha() < 160
+    # at most the fill under the full specular: the wallpaper still shows through
+    c = st.clear
+    assert 0 < img.pixelColor(*TILE).alpha() <= 255 * (1 - (1 - c.dark_fill_alpha) * (1 - c.specular_alpha)) + 2
     glyph = img.pixelColor(*GLYPH)
     assert len(set(rgb(glyph))) == 1 and glyph.red() > 235   # white over the dark glass
     assert glyph.alpha() >= round(255 * st.clear.glyph_alpha)
