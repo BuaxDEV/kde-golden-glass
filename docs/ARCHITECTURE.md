@@ -662,9 +662,10 @@ dentro de «Vidrio».
   QPainter). Las medidas de los tokens son para una pantalla de 1080 líneas:
   el script escala con la altura de la pantalla, elige el juego de piezas más
   cercano por encima y lo ajusta a la medida exacta.
-- **Mismas proporciones que el splash de Plasma** (logo de 126 px, barra de
-  216×6 a 54 px, desplazados 36 px hacia arriba), para que arranque → login →
-  escritorio se vea continuo.
+- **Mismas proporciones y colores que el splash de Plasma** (logo de 126 px,
+  barra de 216×6 a 54 px, desplazados 36 px hacia arriba; fondo, barra y pista
+  de `[boot.dark]` o `[boot.light]` según el Global Theme), para que arranque →
+  login → escritorio se vea continuo.
 - **Barra de progreso fina** que sigue el progreso de arranque de Plymouth (lo
   estima con la duración de arranques anteriores) y se mueve con suavidad. El
   relleno es un recorte de la barra llena más su extremo redondeado aparte, así

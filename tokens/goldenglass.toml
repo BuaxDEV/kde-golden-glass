@@ -522,7 +522,8 @@ form_center = 0.66       # frontera avatar/contraseña (fracción del alto de la
 # Mac, con las proporciones del splash de Plasma. Medidas en px para una
 # pantalla de 1080 líneas; el script las escala con la altura de la pantalla.
 # El splash de Plasma (Global Themes, tools/lookandfeel.py) usa las mismas en
-# gridUnit: medida ÷ grid_unit (salvo bar_height, en px).
+# gridUnit: medida ÷ grid_unit (salvo bar_height, en px), y los colores de
+# [boot.dark] / [boot.light] (fondo, barra y pista) para no saltar al pasar.
 # ---------------------------------------------------------------------------
 [boot]
 grid_unit = 18           # gridUnit de Plasma con la fuente por defecto
@@ -554,7 +555,6 @@ track_alpha = 0.25       # pista de la barra (primer plano con esta opacidad)
 field_alpha = 0.14       # relleno del campo
 field_border_alpha = 0.30
 text_alpha = 0.65        # mensajes y petición de contraseña
-splash_track_alpha = 0.25    # pista de la barra del splash de Plasma (Global Theme)
 
 [boot.light]             # tema goldenglass-light
 background = "#E3E3E6"
@@ -563,7 +563,6 @@ track_alpha = 0.18
 field_alpha = 0.08
 field_border_alpha = 0.22
 text_alpha = 0.60
-splash_track_alpha = 0.149   # 0x26: no es track_alpha (decisión pendiente)
 
 # ---------------------------------------------------------------------------
 # Pantalla de inicio de sesión (tema de SDDM, tools/login.py): como la de
