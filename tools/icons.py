@@ -435,7 +435,7 @@ def build(tokens: dict, out: Path) -> list[Path]:
         size = int(rel.split("/")[1]) if rel.split("/")[1].isdigit() else canvas
         entries.append((rel, _svg(size, body, fallback, canvas), aliases))
     # Apps: dibujo distinto en claro y oscuro
-    for theme, rel, body, aliases in icons_apps.files():
+    for theme, rel, body, aliases in icons_apps.files(tokens):
         (entries if theme == "GoldenGlass" else dark_entries).append((rel, _svg(64, body, fallback), aliases))
 
     for theme_root, items in ((root, entries), (base / "GoldenGlass-Dark", dark_entries)):
