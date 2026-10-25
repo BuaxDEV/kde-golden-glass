@@ -4,7 +4,8 @@
 # Integración continua de GoldenGlass, dentro de un contenedor Arch Linux:
 #
 #   1. dependencias de compilación del PKGBUILD (pacman)
-#   2. comprobaciones rápidas: Python (ruff, pytest), shell (shellcheck), traducciones
+#   2. comprobaciones rápidas: Python (ruff, pytest), shell (shellcheck),
+#      traducciones (msgfmt y cobertura del español)
 #   3. compatibilidad con el Plasma actual de Arch (tools/check_plasma_compat.py)
 #   4. generadores (tools/gen_tokens.py) y qmllint de lo generado
 #   5. makepkg del commit actual: compila el C++, pasa ctest (check()) y deja
@@ -74,6 +75,8 @@ mapfile -t scripts < <(for f in "$WORK"/goldenglass/tools/*; do
   [[ -f $f ]] && head -n1 "$f" | grep -qE '^#!.*[/ ](ba)?sh$' && echo "$f"
 done)
 as_builder shellcheck "${scripts[@]}"
+# traducción al español completa (Messages.sh → .pot → msgcmp con cada .po)
+as_builder bash -c "cd '$WORK/goldenglass' && tools/check_i18n.sh"
 # pruebas de tools/ (tools/tests, con pytest)
 as_builder bash -c "cd '$WORK/goldenglass' && python -m pytest -q -p no:cacheprovider"
 
