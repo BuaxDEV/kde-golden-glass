@@ -229,6 +229,19 @@ list_selected_hover_lighter = 110
 show_icons = false
 
 # ---------------------------------------------------------------------------
+# Accesibilidad (como Ajustes › Accesibilidad › Pantalla de macOS)
+# ---------------------------------------------------------------------------
+# Valores de fábrica del grupo [Accessibility] de ~/.config/goldenglassrc
+# (claves ShowBorders, ReduceTransparency y ReduceMotion): el usuario los
+# cambia desde el módulo «Vidrio». Ver «Accesibilidad» en docs/ARCHITECTURE.md.
+[accessibility]
+show_borders = false          # borde oscuro fino en controles, campos y toolbar
+reduce_transparency = false   # superficies de vidrio opacas, sin blur ni refracción
+reduce_motion = false         # fundidos en lugar de escalas, desplazamientos y rebotes
+# Opacidad de las superficies de vidrio con «Reducir transparencia» (0..1)
+reduce_transparency_alpha = 1.0
+
+# ---------------------------------------------------------------------------
 # Dolphin como el Finder de macOS 27 (estilo de apps + decoración)
 # ---------------------------------------------------------------------------
 # Sin barra de título: los semáforos van sobre la barra lateral, que llega

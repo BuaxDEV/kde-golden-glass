@@ -29,6 +29,22 @@ def test_header_shape(tokens):
     assert constant(header, "IntegratedTitleBarApps") == '"' + ",".join(tokens["finder"]["apps"]) + '"'
 
 
+def test_accessibility(tokens):
+    header = cxx_tokens.header(tokens)
+    a = tokens["accessibility"]
+    assert constant(header, "AccessibilityShowBorders") == str(a["show_borders"]).lower()
+    assert constant(header, "AccessibilityReduceTransparency") == str(a["reduce_transparency"]).lower()
+    assert constant(header, "AccessibilityReduceMotion") == str(a["reduce_motion"]).lower()
+    assert float(constant(header, "AccessibilityReduceTransparencyAlpha")) == a["reduce_transparency_alpha"]
+    # bool en C++ (no int) y la opacidad como double aunque el TOML diga 1
+    assert re.search(r"^inline constexpr bool AccessibilityReduceMotion = ", header, re.M)
+    tokens["accessibility"]["reduce_motion"] = True
+    tokens["accessibility"]["reduce_transparency_alpha"] = 1
+    header = cxx_tokens.header(tokens)
+    assert constant(header, "AccessibilityReduceMotion") == "true"
+    assert re.search(r"^inline constexpr double AccessibilityReduceTransparencyAlpha = 1\.0;", header, re.M)
+
+
 @pytest.mark.parametrize(("px", "index"), [
     (0, 0), (-5, 0),          # ShadowNone
     (1, 1), (24, 1),          # ShadowSmall

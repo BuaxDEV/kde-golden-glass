@@ -159,8 +159,12 @@ def build_colors(tokens: dict, variant: str) -> str:
 REQUIRED_SECTIONS = (
     "meta", "radius", "focus_ring", "glass", "plasma", "shadow", "decoration", "menu", "finder",
     "font", "apps", "scroll", "traffic_lights", "dock", "control_center", "boot", "login",
-    "sounds", "light", "dark",
+    "sounds", "accessibility", "light", "dark",
 )
+
+# [accessibility]: valores de fábrica de goldenglassrc [Accessibility] y la
+# opacidad con «Reducir transparencia» (docs/ARCHITECTURE.md, «Accesibilidad»)
+ACCESSIBILITY_FLAGS = ("show_borders", "reduce_transparency", "reduce_motion")
 
 
 def validate(tokens: dict) -> None:
@@ -183,6 +187,20 @@ def validate(tokens: dict) -> None:
                 Color.parse(value)
             except ValueError as e:
                 raise SystemExit(f"[{variant}].{key}: {e}") from None
+
+    _validate_accessibility(tokens["accessibility"])
+
+
+def _validate_accessibility(section: dict) -> None:
+    for key in ACCESSIBILITY_FLAGS:
+        if key not in section:
+            raise SystemExit(f"falta [accessibility].{key} en los tokens")
+        if not isinstance(section[key], bool):
+            raise SystemExit(f"[accessibility].{key} debe ser true o false, no {section[key]!r}")
+    alpha = section.get("reduce_transparency_alpha")
+    # bool es subclase de int: true/false no valen como opacidad
+    if isinstance(alpha, bool) or not isinstance(alpha, (int, float)) or not 0.0 <= alpha <= 1.0:
+        raise SystemExit(f"[accessibility].reduce_transparency_alpha debe ser un número entre 0 y 1, no {alpha!r}")
 
 
 def main(argv: list[str] | None = None) -> int:

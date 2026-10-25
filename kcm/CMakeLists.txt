@@ -37,4 +37,11 @@ if(BUILD_TESTING)
         ENVIRONMENT_MODIFICATION
             "PATH=path_list_prepend:${CMAKE_CURRENT_SOURCE_DIR}/tests/bin;XDG_CONFIG_HOME=set:${KCM_APPLY_TEST_CONFIG};QT_QPA_PLATFORM=set:offscreen"
         TIMEOUT 60)
+
+    # Ese goldenglass-glass de prueba solo cambia su clave: no borra
+    # [Accessibility] ni otros grupos de goldenglassrc
+    add_test(NAME goldenglass_glass_stub_test
+             COMMAND sh "${CMAKE_CURRENT_SOURCE_DIR}/tests/goldenglass_glass_stub_test.sh"
+                     "${CMAKE_CURRENT_SOURCE_DIR}/tests/bin/goldenglass-glass")
+    set_tests_properties(goldenglass_glass_stub_test PROPERTIES TIMEOUT 60)
 endif()

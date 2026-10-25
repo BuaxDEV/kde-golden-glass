@@ -267,6 +267,42 @@ nivel y al fondo de fábrica; no hay "Aplicar". Traducción al
 español en `po/es`. `kcm_apply_test` pide 1,0 → 0,0 → 0,25 seguidos y
 comprueba que queda 0,25: en ctest con un `goldenglass-glass` de prueba
 (`kcm/tests/bin`) y configuración temporal; a mano, dentro de una sesión Plasma.
+Ese `goldenglass-glass` de prueba solo cambia `[Glass] Level`, como
+`kwriteconfig6`, sin borrar otros grupos de `goldenglassrc`
+(`goldenglass_glass_stub_test`).
+
+#### Accesibilidad (contrato; F12/F13, pendiente)
+
+Contrato común de «Mostrar bordes», «Reducir transparencia» y «Reducir
+movimiento» (detalle en [MACOS27-PLAN.md](MACOS27-PLAN.md) §3.1, §4.4, §4.5 y
+§4.7). **Hoy solo existe el contrato:** las claves se leen, pero nada las
+escribe ni las aplica todavía, y ningún módulo de Ajustes las muestra.
+
+| Clave en `goldenglassrc [Accessibility]` (bool) | Token de fábrica | La escribirá (pendiente) |
+|---|---|---|
+| `ShowBorders` | `accessibility.show_borders = false` | `goldenglass-glass --borders on\|off` (F12) |
+| `ReduceTransparency` | `accessibility.reduce_transparency = false` | `goldenglass-glass --reduce-transparency on\|off` (F12) |
+| `ReduceMotion` | `accessibility.reduce_motion = false` | `goldenglass-windows --reduce-motion on\|off` (F13) |
+
+- **Escritura:** siempre con aviso de cambio (`KConfig::Notify`, `kwriteconfig6
+  --notify`) y solo la clave propia, sin reescribir el archivo. El módulo
+  «Vidrio» llamará a cada herramienta según la clave.
+- **Tokens:** `[accessibility]` también trae `reduce_transparency_alpha = 1.0`,
+  la opacidad del vidrio con «Reducir transparencia». `gen_tokens.py` exige los
+  tres interruptores booleanos y el alfa en [0, 1].
+- **C++:** `goldenglass_tokens.h` exporta `AccessibilityShowBorders`,
+  `AccessibilityReduceTransparency`, `AccessibilityReduceMotion` y
+  `AccessibilityReduceTransparencyAlpha`. `kstyle/goldenglass.kcfg` y
+  `kdecoration/goldenglasssettingsdata.kcfg` (los dos sobre `goldenglassrc`)
+  tienen el grupo `Accessibility` con esos valores de fábrica:
+  `StyleConfigData::showBorders()` y `InternalSettings::showBorders()`, etc.
+  Guardar sus diálogos no escribe estas claves si no cambian.
+- **QML:** un solo tipo, `AccessibilitySettings` (módulo
+  `org.goldenglass.glass`, `qmlplugin/`), con `showBorders`,
+  `reduceTransparency` y `reduceMotion` (solo lectura, con NOTIFY). Como
+  `MenuBarSettings`, sigue el archivo con `KConfigWatcher` filtrado por el
+  grupo `Accessibility`. Pruebas: `accessibilitysettings_test` y
+  `accessibilitysettings_watch_test` (D-Bus).
 
 #### Otros módulos de Ajustes
 

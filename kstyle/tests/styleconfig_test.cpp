@@ -12,6 +12,7 @@
 #include <QStandardPaths>
 #include <QSignalSpy>
 
+#include "goldenglass_tokens.h"
 #include "goldenglassstyleconfigdata.h"
 
 class StyleConfigTest : public QObject
@@ -33,6 +34,9 @@ private Q_SLOTS:
     void testSliderSpinBoxSync();
     void testOpacityAlphaConversion();
     void testTransparencyConditionCheck();
+
+    // goldenglassrc [Accessibility]: valores de fábrica de los tokens (init() los pone)
+    void testAccessibilityDefaults();
 };
 
 void StyleConfigTest::initTestCase()
@@ -169,6 +173,22 @@ void StyleConfigTest::testTransparencyConditionCheck()
     // Back to 100 should not be transparent
     GoldenGlass::StyleConfigData::setDolphinViewOpacity(100);
     QVERIFY(!isTransparent());
+}
+
+void StyleConfigTest::testAccessibilityDefaults()
+{
+    using GoldenGlass::StyleConfigData;
+    QCOMPARE(StyleConfigData::showBorders(), GoldenGlass::Tokens::AccessibilityShowBorders);
+    QCOMPARE(StyleConfigData::reduceTransparency(), GoldenGlass::Tokens::AccessibilityReduceTransparency);
+    QCOMPARE(StyleConfigData::reduceMotion(), GoldenGlass::Tokens::AccessibilityReduceMotion);
+
+    // el grupo y las claves que escriben goldenglass-glass y goldenglass-windows
+    for (const char *key : {"ShowBorders", "ReduceTransparency", "ReduceMotion"}) {
+        const KConfigSkeletonItem *item = StyleConfigData::self()->findItem(QString::fromLatin1(key));
+        QVERIFY2(item, key);
+        QCOMPARE(item->group(), QStringLiteral("Accessibility"));
+        QCOMPARE(item->key(), QString::fromLatin1(key));
+    }
 }
 
 QTEST_MAIN(StyleConfigTest)

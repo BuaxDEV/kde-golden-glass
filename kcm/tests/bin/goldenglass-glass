@@ -5,11 +5,40 @@
 # Sustituto de goldenglass-glass para kcm_apply_test en ctest: guarda el nivel
 # en $XDG_CONFIG_HOME/goldenglassrc como el de verdad, sin tocar la sesión
 # (Plasma Style, KWin). Tarda un poco para que las peticiones se encolen.
+#
+# Como kwriteconfig6, solo cambia su clave: el resto del archivo (p. ej.
+# [Accessibility]) se conserva. Lo comprueba goldenglass_glass_stub_test.
 set -eu
+
+# set_entry ARCHIVO GRUPO CLAVE VALOR: escribe GRUPO/CLAVE=VALOR y deja intacto
+# lo demás; crea el grupo (y el archivo) si faltan. Reemplazo atómico.
+set_entry() {
+  file=$1 group=$2 key=$3 value=$4
+  tmp="$file.tmp.$$"
+  [ -e "$file" ] || : >"$file"
+  awk -v group="[$group]" -v key="$key" -v value="$value" '
+    function emit() { if (!done) { print key "=" value; done = 1 } }
+    /^\[.*\]$/ {
+      if (in_group) emit()
+      in_group = ($0 == group)
+      if (in_group) seen = 1
+      print
+      next
+    }
+    in_group && index($0, key "=") == 1 { emit(); next }
+    { print }
+    END {
+      if (in_group) emit()
+      else if (!seen) { if (NR > 0) print ""; print group; emit() }
+    }
+  ' "$file" >"$tmp"
+  mv -f "$tmp" "$file"
+}
+
 case "${1:-}" in
   --level)
     sleep 0.2
-    printf '[Glass]\nLevel=%s\n' "$2" >"${XDG_CONFIG_HOME:?}/goldenglassrc"
+    set_entry "${XDG_CONFIG_HOME:?}/goldenglassrc" Glass Level "$2"
     ;;
   --get-refraction) echo unavailable ;;
   --refraction) ;;

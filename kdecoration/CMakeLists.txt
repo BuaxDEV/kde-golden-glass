@@ -37,4 +37,16 @@ add_subdirectory(config)
 if(BUILD_TESTING)
     add_executable(trafficlight_preview tests/trafficlight_preview.cpp ${CMAKE_SOURCE_DIR}/libgoldenglasscommon/goldenglasstrafficlight.cpp)
     target_link_libraries(trafficlight_preview Qt6::Gui)
+
+    # Ajustes de la decoración (InternalSettings): [Accessibility] y sus
+    # valores de fábrica. Aislada con testbus.h de qmlplugin/tests.
+    find_package(Qt6 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Test DBus)
+    kconfig_add_kcfg_files(internalsettings_test_SRCS goldenglasssettings.kcfgc)
+    add_executable(internalsettings_test tests/internalsettings_test.cpp ${internalsettings_test_SRCS})
+    target_include_directories(internalsettings_test PRIVATE ${CMAKE_SOURCE_DIR}/qmlplugin/tests)
+    target_link_libraries(internalsettings_test Qt6::Gui Qt6::Test Qt6::DBus KF6::ConfigCore KF6::ConfigGui)
+    add_test(NAME internalsettings_test COMMAND internalsettings_test)
+    set_tests_properties(internalsettings_test PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;DBUS_SESSION_BUS_ADDRESS=disabled:"
+        TIMEOUT 60)
 endif()
