@@ -4,6 +4,17 @@
 
 ### Cambios
 
+- **Estilos de icono Tintado y Transparente** (macOS 27, Apariencia › «Icon &
+  widget style»), por ahora para las apps que dibuja GoldenGlass: cuatro
+  temas nuevos, `GoldenGlass-Tinted`, `GoldenGlass-Clear` y sus variantes
+  `-Dark`. Tintado pinta el símbolo con el color de acento del sistema (sobre
+  grafito en oscuro; oscurecido sobre el acento aclarado en claro) y lo cambia
+  en vivo con el acento; Transparente usa un vidrio translúcido con filo
+  marcado y el símbolo blanco. Solo llevan las apps y heredan lo demás del
+  tema de fábrica; no salen en Ajustes del sistema › Iconos, porque los
+  elegirá el módulo «Estilo de iconos». Valores en `[icon_style.tinted]` y
+  `[icon_style.clear]`, por calibrar. Los temas `GoldenGlass` y
+  `GoldenGlass-Dark` no cambian.
 - **Semáforos grises en ventanas inactivas**, como macOS: sin color ni glifo
   hasta que el ratón pasa por el grupo, que los colorea y muestra los glifos
   aunque la ventana siga sin foco (`traffic_lights.inactive_colored = false`).
