@@ -4,7 +4,8 @@
 # Módulo QML org.goldenglass.glass: le pasa a KWin la región de blur de las
 # piezas de vidrio de una ventana (p. ej. las tarjetas sueltas del Centro de
 # control), que Plasma no deja hacer desde QML, y da al shell los ajustes de
-# la barra de menús (MenuBarSettings).
+# la barra de menús (MenuBarSettings) y a Plasma los de accesibilidad
+# (AccessibilitySettings).
 include(ECMQmlModule)
 
 # Fuentes y bibliotecas del módulo, una por línea (cada PR añade las suyas):
@@ -14,6 +15,8 @@ set(GOLDENGLASS_QMLPLUGIN_SOURCES
     glassregion.h
     menubarsettings.cpp
     menubarsettings.h
+    accessibilitysettings.cpp
+    accessibilitysettings.h
 )
 set(GOLDENGLASS_QMLPLUGIN_LIBS
     Qt6::Quick
