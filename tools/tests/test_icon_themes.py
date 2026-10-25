@@ -124,7 +124,8 @@ def test_build_writes_the_style_json(built, _tokens):
     import json
 
     path = built / "icon-style.json"
-    assert json.loads(path.read_text(encoding="utf-8")) == {"icon_style": _tokens["icon_style"]}
+    light = {key: _tokens["light"][key] for key in ("accent", "label")}
+    assert json.loads(path.read_text(encoding="utf-8")) == {"icon_style": _tokens["icon_style"], "light": light}
 
 
 # --- resolution with QIcon.fromTheme ----------------------------------------------

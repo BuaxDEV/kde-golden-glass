@@ -34,6 +34,7 @@ import os
 import shutil
 from dataclasses import dataclass
 from enum import Enum
+from functools import cache
 from pathlib import Path
 
 from icons_style import STYLE_JSON, XLINK_NS, Style, theme_id, theme_name
@@ -423,8 +424,14 @@ def _resolves_to(name: str, ours: set[str]) -> str | None:
 
 def _theme_index(theme: str) -> dict[str, Path]:
     """nombre → mejor archivo (SVG escalable o el mayor) de un tema instalado."""
+    return _indexed_theme(theme, ICON_BASES)
+
+
+@cache
+def _indexed_theme(theme: str, bases: tuple[Path, ...]) -> dict[str, Path]:
+    """_theme_index() of the themes under `bases`; wrap_icons asks for the same themes once per styled theme."""
     best: dict[str, tuple[int, Path]] = {}
-    for base in ICON_BASES:
+    for base in bases:
         root = base / theme
         if not root.is_dir() or root.name.startswith("GoldenGlass"):
             continue
@@ -509,7 +516,7 @@ def _write_entries(theme_root: Path, entries: list[Entry]) -> None:
 def build(tokens: dict, out: Path) -> list[Path]:
     import icons_apps
 
-    fallback = {"accent": tokens["light"]["accent"], "text": tokens["light"]["label"][:7]}
+    fallback = icons_apps.color_scheme_fallback(tokens)
     base = out / "icons"
     for spec in THEME_SPECS:
         if (base / spec.id).exists():

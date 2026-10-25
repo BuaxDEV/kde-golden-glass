@@ -196,7 +196,7 @@ package_goldenglass-icons() {
   cp -a gen/icons/GoldenGlass gen/icons/GoldenGlass-* "$pkgdir/usr/share/icons/"
   # goldenglass-wrap-icons: encierra en squircle las apps de terceros, por
   # usuario (~/.local); al iniciar sesión, solo si cambiaron las apps.
-  install -Dm644 goldenglass/tools/{icons,icons_apps,icons_mime,icons_style,wrap_icons}.py -t "$pkgdir$_share/tools/"
+  install -Dm644 goldenglass/tools/{icons,icons_apps,icons_glyph,icons_mime,icons_style,wrap_icons}.py -t "$pkgdir$_share/tools/"
   # [icon_tile] de los tokens, que lee goldenglass-wrap-icons (los tokens no se instalan aquí)
   install -Dm644 gen/icons/icon-tile.json -t "$pkgdir$_share/"
   # [icon_style]: the Tinted and Clear styles, for the installed icon tools

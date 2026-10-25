@@ -99,6 +99,7 @@ class TileTokens:
 HERE = Path(__file__).resolve().parent
 REPO_TOKENS = HERE.parent / "tokens" / "goldenglass.toml"   # solo existe en el repositorio
 TILE_JSON = "icon-tile.json"                                  # lo genera icons.build()
+SCHEME_FALLBACK_KEYS = ("accent", "label")                    # [light] keys of color_scheme_fallback()
 
 
 def _data_dirs() -> list[Path]:
@@ -165,9 +166,23 @@ def write_tile_json(tokens: dict, path: Path) -> Path:
     return _write_json({"icon_tile": tokens["icon_tile"]}, path)
 
 
+def style_token_data() -> dict:
+    """The tokens that carry [icon_style] and the colour scheme fallback, from style_tokens_source()."""
+    return _load_tokens(STYLE_JSON)
+
+
+def color_scheme_fallback(tokens: dict | None = None) -> dict[str, str]:
+    """Colours of the ColorScheme-* classes outside KDE (KIconLoader replaces them):
+    the light accent and text of `tokens`, or of the default source."""
+    light = (tokens if tokens is not None else style_token_data())["light"]
+    return {"accent": light["accent"], "text": light["label"][:7]}
+
+
 def write_style_json(tokens: dict, path: Path) -> Path:
-    """Writes [icon_style] as JSON for the installed tools; later subsections go along unchanged."""
-    return _write_json({"icon_style": tokens["icon_style"]}, path)
+    """Writes [icon_style] as JSON for the installed tools, with the light colours
+    that color_scheme_fallback() needs; later subsections go along unchanged."""
+    light = {key: tokens["light"][key] for key in SCHEME_FALLBACK_KEYS}
+    return _write_json({"icon_style": tokens["icon_style"], "light": light}, path)
 
 
 def _write_json(data: dict, path: Path) -> Path:

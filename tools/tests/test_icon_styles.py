@@ -214,7 +214,7 @@ def test_validate_accepts_the_real_tokens(tokens):
 def test_installed_json_gives_the_same_style_tokens(tokens, tmp_path, monkeypatch):
     data = tmp_path / "share"
     path = icons_apps.write_style_json(tokens, data / "goldenglass" / STYLE_JSON)
-    assert json.loads(path.read_text(encoding="utf-8")) == {"icon_style": tokens["icon_style"]}
+    assert json.loads(path.read_text(encoding="utf-8"))["icon_style"] == tokens["icon_style"]
     monkeypatch.setattr(icons_apps, "REPO_TOKENS", tmp_path / "no-such.toml")
     monkeypatch.setattr(icons_apps, "HERE", tmp_path / "tools")
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "home"))
@@ -223,6 +223,7 @@ def test_installed_json_gives_the_same_style_tokens(tokens, tmp_path, monkeypatc
     try:
         assert icons_apps.style_tokens_source() == path
         assert icons_apps.style_tokens() == StyleTokens.from_tokens(tokens)
+        assert icons_apps.color_scheme_fallback() == icons_apps.color_scheme_fallback(tokens)
     finally:
         icons_apps._default_style_tokens.cache_clear()
 
