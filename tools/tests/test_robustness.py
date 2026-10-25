@@ -54,6 +54,33 @@ class TokensTest(unittest.TestCase):
             gen_tokens.validate(tokens)
         self.assertIn("radius", str(raised.exception))
 
+    def test_accessibility_flags_must_be_booleans(self) -> None:
+        for key in ("show_borders", "reduce_transparency", "reduce_motion"):
+            for bad in (1, "false", None):
+                tokens = _tokens()
+                if bad is None:
+                    del tokens["accessibility"][key]
+                else:
+                    tokens["accessibility"][key] = bad
+                with self.assertRaises(SystemExit) as raised:
+                    gen_tokens.validate(tokens)
+                self.assertIn(f"[accessibility].{key}", str(raised.exception))
+
+    def test_reduce_transparency_alpha_in_range(self) -> None:
+        for good in (0, 0.0, 0.5, 1, 1.0):
+            tokens = _tokens()
+            tokens["accessibility"]["reduce_transparency_alpha"] = good
+            gen_tokens.validate(tokens)
+        for bad in (-0.1, 1.01, float("nan"), True, "1.0", None):
+            tokens = _tokens()
+            if bad is None:
+                del tokens["accessibility"]["reduce_transparency_alpha"]
+            else:
+                tokens["accessibility"]["reduce_transparency_alpha"] = bad
+            with self.assertRaises(SystemExit) as raised:
+                gen_tokens.validate(tokens)
+            self.assertIn("reduce_transparency_alpha", str(raised.exception))
+
     def test_unknown_template_marker_names_template(self) -> None:
         tokens = {"dock": {"icon_size": 48}}
         self.assertEqual(ggcommon.fill_template("size: @dock.icon_size@", tokens, "x.qml"), "size: 48")
