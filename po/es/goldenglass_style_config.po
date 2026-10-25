@@ -102,15 +102,6 @@ msgstr "Usar el nuevo estilo de casillas"
 msgid "Tabs"
 msgstr "Pestañas"
 
-msgid "GoldenGlass"
-msgstr "GoldenGlass"
-
-msgid "Lightly Default"
-msgstr "Lightly predeterminado"
-
-msgid "Lightly Alternative"
-msgstr "Lightly alternativo"
-
 msgid "Tabs sometimes inside frame"
 msgstr "Pestañas a veces dentro del marco"
 

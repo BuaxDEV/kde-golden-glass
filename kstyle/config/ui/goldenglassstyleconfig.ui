@@ -546,30 +546,6 @@
           <number>4</number>
          </property>
          <item>
-          <widget class="QRadioButton" name="_defaultTabbar">
-           <property name="text">
-            <string>GoldenGlass</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="_oldTabbar">
-           <property name="text">
-            <string>Lightly Default</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="_tabBarAltStyle">
-           <property name="text">
-            <string>Lightly Alternative</string>
-           </property>
-          </widget>
-         </item>
-         <item>
           <widget class="QCheckBox" name="_documentModeTabs">
            <property name="text">
             <string>Tabs sometimes inside frame</string>

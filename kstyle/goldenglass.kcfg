@@ -191,10 +191,6 @@
       <default>true</default>
     </entry>
 
-    <entry name="OldTabbar" type="Bool">
-      <default>false</default>
-    </entry>
-
     <!-- tree views -->
     <entry name="ViewDrawTreeBranchLines" type="Bool">
       <default>true</default>
@@ -205,9 +201,6 @@
     </entry>
 
     <!-- tab bars -->
-    <entry name="TabBarAltStyle" type="Bool">
-      <default>false</default>
-    </entry>
     <entry name="DocumentModeTabs" type="Bool">
       <default>false</default>
     </entry>
