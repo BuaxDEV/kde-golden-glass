@@ -236,7 +236,7 @@ en `share/goldenglass`) aplica un nivel en vivo a las tres capas:
 
 | Capa | Cómo |
 |---|---|
-| Estilo de apps | `goldenglassrc [Style]` (menús, toolbars, barra lateral) + señal D-Bus `org.goldenglass.Style` → repinta las ventanas abiertas |
+| Estilo de apps | `goldenglassrc [Style]` (`MenuOpacity`, `ToolBarOpacity`, `DolphinSidebarOpacity`: menús, toolbars, barra lateral; el diálogo del estilo no tiene controles para ellas) + señal D-Bus `org.goldenglass.Style` → repinta las ventanas abiertas |
 | Decoración | misma opacidad (`ToolBarOpacity`) + `KWin.reconfigure` → relee `goldenglassrc` |
 | Plasma Style | nivel por defecto → tema del paquete `GoldenGlass`; otro nivel → genera `GoldenGlassTuned` en `~/.local/share` y cambia a él (con rebote por `GoldenGlass` si ya estaba activo). El tema del paquete nunca se sobrescribe |
 

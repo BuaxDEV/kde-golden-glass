@@ -80,13 +80,8 @@ StyleConfig::StyleConfig(QWidget *parent)
     connect(_scrollBarAddLineButtons, SIGNAL(currentIndexChanged(int)), SLOT(updateChanged()));
     connect(_scrollBarSubLineButtons, SIGNAL(currentIndexChanged(int)), SLOT(updateChanged()));
     connect(_windowDragMode, SIGNAL(currentIndexChanged(int)), SLOT(updateChanged()));
-    connect(_menuOpacity, &QAbstractSlider::valueChanged, this, &StyleConfig::updateChanged);
-    connect(_menuOpacity, SIGNAL(valueChanged(int)), _menuOpacitySpinBox, SLOT(setValue(int)));
-    connect(_menuOpacitySpinBox, SIGNAL(valueChanged(int)), _menuOpacity, SLOT(setValue(int)));
-
-    connect(_sidebarOpacity, &QAbstractSlider::valueChanged, this, &StyleConfig::updateChanged);
-    connect(_sidebarOpacity, SIGNAL(valueChanged(int)), _sidebarOpacitySpinBox, SLOT(setValue(int)));
-    connect(_sidebarOpacitySpinBox, SIGNAL(valueChanged(int)), _sidebarOpacity, SLOT(setValue(int)));
+    // MenuOpacity, ToolBarOpacity y DolphinSidebarOpacity no tienen control aquí:
+    // los escribe el nivel de vidrio (módulo «Vidrio», tools/glass.py)
 
     connect(_viewOpacity, &QAbstractSlider::valueChanged, this, &StyleConfig::updateChanged);
     connect(_viewOpacity, SIGNAL(valueChanged(int)), _viewOpacitySpinBox, SLOT(setValue(int)));
@@ -96,10 +91,6 @@ StyleConfig::StyleConfig(QWidget *parent)
     connect(_menuBarOpacity, &QAbstractSlider::valueChanged, this, &StyleConfig::updateChanged);
     connect(_menuBarOpacity, SIGNAL(valueChanged(int)), _menuBarOpacitySpinBox, SLOT(setValue(int)));
     connect(_menuBarOpacitySpinBox, SIGNAL(valueChanged(int)), _menuBarOpacity, SLOT(setValue(int)));
-
-    connect(_toolBarOpacity, &QAbstractSlider::valueChanged, this, &StyleConfig::updateChanged);
-    connect(_toolBarOpacity, SIGNAL(valueChanged(int)), _toolBarOpacitySpinBox, SLOT(setValue(int)));
-    connect(_toolBarOpacitySpinBox, SIGNAL(valueChanged(int)), _toolBarOpacity, SLOT(setValue(int)));
 
     connect(_tabBarOpacity, &QAbstractSlider::valueChanged, this, &StyleConfig::updateChanged);
     connect(_tabBarOpacity, SIGNAL(valueChanged(int)), _tabBarOpacitySpinBox, SLOT(setValue(int)));
@@ -161,11 +152,8 @@ void StyleConfig::save()
     StyleConfigData::setTabBarDrawCenteredTabs(_tabBarDrawCenteredTabs->isChecked());
     StyleConfigData::setAnimationsDuration(_animationsDuration->value());
     StyleConfigData::setWindowDragMode(_windowDragMode->currentIndex());
-    StyleConfigData::setMenuOpacity(_menuOpacity->value());
-    StyleConfigData::setDolphinSidebarOpacity(_sidebarOpacity->value());
     StyleConfigData::setDolphinViewOpacity(_viewOpacity->value());
     StyleConfigData::setMenuBarOpacity(_menuBarOpacity->value());
-    StyleConfigData::setToolBarOpacity(_toolBarOpacity->value());
     StyleConfigData::setTabBarOpacity(_tabBarOpacity->value());
     StyleConfigData::setKTextEditDrawFrame(_kTextEditDrawFrame->isChecked());
     StyleConfigData::setWidgetDrawShadow(_widgetDrawShadow->isChecked());
@@ -257,25 +245,16 @@ void StyleConfig::updateChanged()
         modified = true;
     else if (_windowDragMode->currentIndex() != StyleConfigData::windowDragMode())
         modified = true;
-    else if (_menuOpacity->value() != StyleConfigData::menuOpacity()) {
-        modified = true;
-        _menuOpacitySpinBox->setValue(_menuOpacity->value());
-    } else if (_buttonHeight->value() != StyleConfigData::buttonHeight()) {
+    else if (_buttonHeight->value() != StyleConfigData::buttonHeight()) {
         modified = true;
     } else if (_buttonWidth->value() != StyleConfigData::buttonWidth()) {
         modified = true;
-    } else if (_sidebarOpacity->value() != StyleConfigData::dolphinSidebarOpacity()) {
-        modified = true;
-        _sidebarOpacitySpinBox->setValue(_sidebarOpacity->value());
     } else if (_viewOpacity->value() != StyleConfigData::dolphinViewOpacity()) {
         modified = true;
         _viewOpacitySpinBox->setValue(_viewOpacity->value());
     } else if (_menuBarOpacity->value() != StyleConfigData::menuBarOpacity()) {
         modified = true;
         _menuBarOpacitySpinBox->setValue(_menuBarOpacity->value());
-    } else if (_toolBarOpacity->value() != StyleConfigData::toolBarOpacity()) {
-        modified = true;
-        _toolBarOpacitySpinBox->setValue(_toolBarOpacity->value());
     } else if (_tabBarOpacity->value() != StyleConfigData::tabBarOpacity()) {
         modified = true;
         _tabBarOpacitySpinBox->setValue(_tabBarOpacity->value());
@@ -382,10 +361,6 @@ void StyleConfig::loadWidgets()
     _animationsEnabled->setChecked(StyleConfigData::animationsEnabled());
     _animationsDuration->setValue(StyleConfigData::animationsDuration());
     _windowDragMode->setCurrentIndex(StyleConfigData::windowDragMode());
-    _menuOpacity->setValue(StyleConfigData::menuOpacity());
-    _menuOpacitySpinBox->setValue(StyleConfigData::menuOpacity());
-    _sidebarOpacity->setValue(StyleConfigData::dolphinSidebarOpacity());
-    _sidebarOpacitySpinBox->setValue(StyleConfigData::dolphinSidebarOpacity());
 
     // Migration: convert deprecated TransparentDolphinView checkbox to DolphinViewOpacity slider
     // Only migrate if the old setting is true AND the new setting hasn't been touched (default 100)
@@ -401,8 +376,6 @@ void StyleConfig::loadWidgets()
     _tabBarDrawCenteredTabs->setChecked(StyleConfigData::tabBarDrawCenteredTabs());
     _menuBarOpacity->setValue(StyleConfigData::menuBarOpacity());
     _menuBarOpacitySpinBox->setValue(StyleConfigData::menuBarOpacity());
-    _toolBarOpacity->setValue(StyleConfigData::toolBarOpacity());
-    _toolBarOpacitySpinBox->setValue(StyleConfigData::toolBarOpacity());
     _tabBarOpacity->setValue(StyleConfigData::tabBarOpacity());
     _tabBarOpacitySpinBox->setValue(StyleConfigData::tabBarOpacity());
     _buttonHeight->setValue(StyleConfigData::buttonHeight());
