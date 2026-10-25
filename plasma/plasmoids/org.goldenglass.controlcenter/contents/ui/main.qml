@@ -89,6 +89,27 @@ PlasmoidItem {
         panel.close();
     }
 
+    // --- Volume and brightness HUD ----------------------------------------------
+    // Under the menu bar of this screen, in place of Plasma's OSD. Hud.qml needs
+    // the org.goldenglass.glass module: without it only that file fails and
+    // Plasma's OSD stays.
+    Loader {
+        id: hud
+        source: "Hud.qml"
+    }
+    Binding {
+        target: hud.item
+        when: hud.item !== null
+        property: "menuBarHeight"
+        value: panel.menuBarHeight
+    }
+    Binding {
+        target: hud.item
+        when: hud.item !== null
+        property: "controlCenterOpen"
+        value: panel.visible
+    }
+
     // atajo de teclado del plasmoide
     Connections {
         target: Plasmoid

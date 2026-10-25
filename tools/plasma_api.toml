@@ -67,6 +67,7 @@
 [modules."org.kde.taskmanager"]
 files = [
   "plasma/plasmoids/org.goldenglass.appname/contents/ui/main.qml",
+  "plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/Hud.qml",
   "plasma/plasmoids/org.goldenglass.dock/contents/ui/DockView.qml",
   "plasma/shell/org.goldenglass.desktop/contents/views/Panel.qml",
 ]
