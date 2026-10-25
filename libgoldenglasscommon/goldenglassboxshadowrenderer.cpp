@@ -234,7 +234,7 @@ static inline void mirrorTopLeftQuadrant(QImage &image)
 
     for (int y = 0; y < centerY; ++y) {
         const uint8_t *in = image.scanLine(y) + alphaOffset;
-        uint8_t *out = image.scanLine(width - y - 1) + alphaOffset;
+        uint8_t *out = image.scanLine(height - y - 1) + alphaOffset;
 
         for (int x = 0; x < width; ++x, in += stride, out += stride) {
             *out = *in;
