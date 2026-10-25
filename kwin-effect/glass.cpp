@@ -320,24 +320,29 @@ void GlassEffect::reconfigure(ReconfigureFlags flags)
     // the effect could read the values of before goldenglass-glass ran
     goldenglassrc->reparseConfiguration();
     const double level = std::clamp(goldenglassrc->group(QStringLiteral("Glass")).readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel), 0.0, 1.0);
+    const KConfigGroup accessibility = goldenglassrc->group(QStringLiteral("Accessibility"));
+    // «Show borders»: the edge keeps its full strength at every level
+    const bool showBorders = accessibility.readEntry("ShowBorders", GoldenGlass::Tokens::AccessibilityShowBorders);
     const double lensFactor = 1.0 + (GoldenGlass::Tokens::RefractionOpaqueFactor - 1.0) * level;
-    const double rimFactor = 1.0 + (GoldenGlass::Tokens::RefractionRimOpaqueFactor - 1.0) * level;
+    const double rimFactor = showBorders ? 1.0 : 1.0 + (GoldenGlass::Tokens::RefractionRimOpaqueFactor - 1.0) * level;
     m_refractionEdge = GoldenGlass::Tokens::RefractionEdge;
     m_refractionStrength = GoldenGlass::Tokens::RefractionStrength * lensFactor;
     m_refractionDispersion = GoldenGlass::Tokens::RefractionDispersion;
     m_refractionTint = GoldenGlass::Tokens::RefractionTint;
     m_refractionClarity = GoldenGlass::Tokens::RefractionClarity * lensFactor;
     m_rimSpecular = GoldenGlass::Tokens::RefractionSpecular * rimFactor;
-    m_edgeShade = GoldenGlass::Tokens::RefractionEdgeShade * rimFactor;
+    m_edgeShade = (showBorders ? GoldenGlass::Tokens::AccessibilityBordersEdgeShade : GoldenGlass::Tokens::RefractionEdgeShade) * rimFactor;
     m_edgeShadeWidth = GoldenGlass::Tokens::RefractionEdgeShadeWidth;
 
     // «Reduce transparency»: opaque Plasma glass with no blur, lens or edge.
     // libplasma stops asking for blur behind its dialogs and panels when the
     // theme's plasmarc disables it, but windows that ask by themselves (the
     // GlassRegion of the plasmoids) do not (spike SP-03), so the effect drops
-    // every Plasma surface itself.
-    m_reduceTransparency = goldenglassrc->group(QStringLiteral("Accessibility"))
-                               .readEntry("ReduceTransparency", GoldenGlass::Tokens::AccessibilityReduceTransparency);
+    // every Plasma surface itself. That includes the edge pass, also with
+    // «Show borders»: the panels no longer ask for blur, so the effect could
+    // not draw it on all of them, and the Plasma Style already draws the
+    // text-coloured outline on the opaque glass.
+    m_reduceTransparency = accessibility.readEntry("ReduceTransparency", GoldenGlass::Tokens::AccessibilityReduceTransparency);
     if (m_reduceTransparency) {
         m_refractionStrength = m_refractionClarity = m_rimSpecular = m_edgeShade = 0;
     }
