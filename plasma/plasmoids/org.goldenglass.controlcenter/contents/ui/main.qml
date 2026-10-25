@@ -2,14 +2,14 @@
     SPDX-FileCopyrightText: 2026 GoldenGlass contributors
     SPDX-License-Identifier: GPL-3.0-or-later
 
-    Centro de control, como el de macOS 26: cuadrícula de 4 columnas con
-    píldoras (Wi‑Fi, Bluetooth, KDE Connect, Enfoque), Reproducción, botones
-    redondos (duplicar pantalla, captura, modo oscuro, luz nocturna) y, a lo
-    ancho, Pantalla, Sonido y Vidrio. Como en macOS, las tarjetas van sueltas
-    sobre el escritorio, cada una de vidrio (FloatingPanel), sin popup de
-    Plasma: el icono de la barra es la representación «completa». Toda la lógica es la de los módulos de
-    Plasma (networkmanagement, bluezqt, brightnesscontrolplugin, volume,
-    notificationmanager, mpris, kdeconnect) y de KWin (luz nocturna).
+    Control Center, as in macOS 26: a 4-column grid with pills (Wi‑Fi,
+    Bluetooth, KDE Connect, Focus), Now Playing, round buttons (screen
+    mirroring, screenshot, dark mode, night light) and, full width, Display,
+    Sound and Glass. As in macOS, the tiles lie loose on the desktop, each one
+    of glass (GlassOverlay), without a Plasma popup: the menu bar icon is the
+    "full" representation. All the logic is that of the Plasma modules
+    (networkmanagement, bluezqt, brightnesscontrolplugin, volume,
+    notificationmanager, mpris, kdeconnect) and of KWin (night light).
 */
 
 import QtQuick
@@ -74,8 +74,9 @@ PlasmoidItem {
     Component.onCompleted: executable.exec(glassCheck)
 
     // --- Abrir y cerrar -------------------------------------------------------
-    FloatingPanel {
+    GlassOverlay {
         id: panel
+        tokens: root.cc
         content: panelContent
         anchorItem: root.fullRepresentationItem
         onOpened: root.refreshGlassLevel()
@@ -253,8 +254,8 @@ PlasmoidItem {
         }
     }
 
-    // Contenido de FloatingPanel: la cuadrícula o, al pulsar un módulo, su
-    // vista de detalle (como macOS 26)
+    // Content of the GlassOverlay: the grid or, after clicking a module, its
+    // detail view (as in macOS 26)
     Component {
         id: panelContent
 
@@ -266,6 +267,20 @@ PlasmoidItem {
 
             implicitWidth: detail !== "" ? detailView.implicitWidth : gridView.implicitWidth
             implicitHeight: detail !== "" ? detailView.implicitHeight : gridView.implicitHeight
+
+            // every opening starts at the grid
+            function resetContent() {
+                detail = "";
+            }
+
+            // Esc goes back from a detail view to the grid before closing
+            function goBack() {
+                if (detail === "") {
+                    return false;
+                }
+                detail = "";
+                return true;
+            }
 
             // la vista que entra (detalle o cuadrícula) brota con el mismo
             // resorte que el Centro de control al abrirse; con la ventana
