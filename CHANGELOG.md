@@ -9,6 +9,15 @@
   aunque la ventana siga sin foco (`traffic_lights.inactive_colored = false`).
   En las ventanas CSD de GTK4/libadwaita el grupo entero reacciona; en GTK3
   solo el botón bajo el ratón.
+- **Atajos de ventana** (script `org.goldenglass.shortcuts`), como Fn+Ctrl+F/C/R
+  de macOS Sequoia con Meta en lugar de Fn: `Meta+Ctrl+F` llena la pantalla,
+  `Meta+Ctrl+C` centra la ventana y `Meta+Ctrl+R` la devuelve a su tamaño
+  anterior (maximizada, en mosaico o a pantalla completa). Las mitades siguen
+  siendo las nativas `Meta+flechas`, y los cuartos se alcanzan encadenándolas.
+  `Meta+Ctrl+R` también es el atajo por defecto de «Grabar ventana» de
+  Spectacle; cada uno se puede reasignar en Preferencias › Atajos. Las
+  instalaciones existentes reciben los atajos nuevos al recargar KWin o iniciar
+  sesión, sin cambiar los que ya hubieras reasignado.
 
 ## 0.2.1 — 2026-10-15
 
