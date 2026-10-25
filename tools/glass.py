@@ -291,6 +291,10 @@ def apply(tokens: dict, *, level: float | None = None, reduce_transparency: bool
     # 3. Apps (QStyle) y KWin (decoración).
     dbus("--type=signal", "/GoldenGlassStyle", "org.goldenglass.Style.reparseConfiguration")
     dbus("--type=method_call", "--dest=org.kde.KWin", "/KWin", "org.kde.KWin.reconfigure")
+    # KWin.reconfigure does not reach the effects: the glass effect rereads
+    # the level and «Reduce transparency» only when asked by name
+    dbus("--type=method_call", "--dest=org.kde.KWin", "/Effects", "org.kde.kwin.Effects.reconfigureEffect",
+         f"string:{EFFECT}")
 
 
 # --- refracción (efecto de KWin goldenglass_glass) -----------------------------

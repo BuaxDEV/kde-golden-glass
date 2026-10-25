@@ -24,6 +24,7 @@ class Rc:
 
     def __init__(self) -> None:
         self.values: dict[tuple[str, str, str], str] = {}
+        self.dbus: list[tuple[str, ...]] = []
 
     def kread(self, file: str, group: str, key: str, default: str = "") -> str:
         return self.values.get((file, group, key), default)
@@ -37,7 +38,7 @@ def rc(monkeypatch, tmp_path: Path) -> Rc:
     store = Rc()
     monkeypatch.setattr(glass, "kread", store.kread)
     monkeypatch.setattr(glass, "kwrite", store.kwrite)
-    monkeypatch.setattr(glass, "dbus", lambda *args: None)
+    monkeypatch.setattr(glass, "dbus", lambda *args: store.dbus.append(args))
     monkeypatch.setattr(glass, "set_plasma_theme", lambda name: store.kwrite("plasmarc", "Theme", "name", name))
     monkeypatch.setattr(glass, "BOUNCE_DELAY", 0)
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
@@ -138,3 +139,9 @@ def test_cli_writes_reduce_transparency_and_reads_it_back(tokens, rc, tuned, cap
     assert capsys.readouterr().out.strip() == "on"
     assert glass.main(["--reduce-transparency", "off", "--no-plasma-reload"]) == 0
     assert rc.kread("goldenglassrc", "Accessibility", "ReduceTransparency") == "false"
+
+
+def test_apply_asks_the_kwin_effect_to_reread_goldenglassrc(tokens, rc, tuned) -> None:
+    glass.apply(tokens, reduce_transparency=True)
+    assert ("--type=method_call", "--dest=org.kde.KWin", "/Effects", "org.kde.kwin.Effects.reconfigureEffect",
+            f"string:{glass.EFFECT}") in rc.dbus

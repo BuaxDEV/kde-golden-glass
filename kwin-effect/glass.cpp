@@ -317,6 +317,9 @@ void GlassEffect::reconfigure(ReconfigureFlags flags)
     // KWin.reconfigure al cambiar el nivel. The edge keeps more of itself on
     // opaque glass (RefractionRimOpaqueFactor): its contrast matters more there.
     const KSharedConfig::Ptr goldenglassrc = KSharedConfig::openConfig(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig);
+    // the decoration keeps this shared config open in KWin: without a reparse
+    // the effect could read the values of before goldenglass-glass ran
+    goldenglassrc->reparseConfiguration();
     const double level = std::clamp(goldenglassrc->group(QStringLiteral("Glass")).readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel), 0.0, 1.0);
     const double lensFactor = 1.0 + (GoldenGlass::Tokens::RefractionOpaqueFactor - 1.0) * level;
     const double rimFactor = 1.0 + (GoldenGlass::Tokens::RefractionRimOpaqueFactor - 1.0) * level;
