@@ -50,7 +50,14 @@ Item {
     property int bouncesLeft: 0
     readonly property real bounceHeight: size * T.tokens.dock.bounce
 
+    // con duración 0 (animaciones globales desactivadas) el rebote no arranca:
+    // reiniciarlo en onFinished sería un bucle por fotograma
+    readonly property bool bounceEnabled: T.tokens.dock.bounce_ms > 1 && Kirigami.Units.longDuration > 1
+
     function bounce(times) {
+        if (!bounceEnabled) {
+            return;
+        }
         bouncesLeft = Math.max(bouncesLeft, times);
         if (!bounceAnimation.running) {
             bounceAnimation.start();
@@ -87,7 +94,7 @@ Item {
         onFinished: {
             // mientras arranca, rebota sin parar; si pide atención, las veces que queden
             tile.bouncesLeft = Math.max(0, tile.bouncesLeft - 1);
-            if (tile.launching || (tile.demandsAttention && tile.bouncesLeft > 0)) {
+            if (tile.bounceEnabled && (tile.launching || (tile.demandsAttention && tile.bouncesLeft > 0))) {
                 start();
             }
         }
