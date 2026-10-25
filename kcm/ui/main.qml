@@ -111,20 +111,25 @@ KCM.SimpleKCM {
                     }
                 }
 
-                RowLayout {
+                // Extremos a los lados y «Por defecto» bajo el nivel de fábrica
+                // (token glass.default_level), sin salirse de la fila.
+                Item {
+                    id: labelRow
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 20
+                    implicitHeight: defaultLabel.implicitHeight
+
                     QQC2.Label {
-                        Layout.fillWidth: true
+                        anchors.left: parent.left
                         text: i18nc("@item:inrange glass level", "Clearer")
                     }
                     QQC2.Label {
-                        Layout.fillWidth: true
-                        horizontalAlignment: Text.AlignHCenter
+                        id: defaultLabel
+                        x: Math.max(0, Math.min(labelRow.width - width,
+                            slider.leftPadding + kcm.defaultLevel * slider.availableWidth - width / 2))
                         text: i18nc("@item:inrange glass level", "Default")
                     }
                     QQC2.Label {
-                        Layout.fillWidth: true
-                        horizontalAlignment: Text.AlignRight
+                        anchors.right: parent.right
                         text: i18nc("@item:inrange glass level", "More opaque")
                     }
                 }

@@ -36,6 +36,21 @@ def _shadow_strength(alpha: float) -> int:
     return max(25, min(255, round(alpha * 255)))
 
 
+def _shadow_size(tokens: dict, option: str) -> list[tuple]:
+    """Constantes de una opción de ShadowSize: ShadowSmallRadius, … (px, 0..1)."""
+    name = option.removeprefix("Shadow")
+    key = "".join("_" + c.lower() if c.isupper() else c for c in name).lstrip("_")
+    s = tokens["shadow"]["sizes"][key]
+    return [
+        (f"Shadow{name}Offset", int(s["offset"]), f"shadow.sizes.{key}: desplazamiento vertical del conjunto"),
+        (f"Shadow{name}Radius", int(s["radius"]), "sombra principal: radio"),
+        (f"Shadow{name}Alpha", float(s["alpha"]), "sombra principal: opacidad"),
+        (f"Shadow{name}AmbientOffset", int(s["ambient_offset"]), "segunda sombra: desplazamiento vertical"),
+        (f"Shadow{name}AmbientRadius", int(s["ambient_radius"]), "segunda sombra: radio"),
+        (f"Shadow{name}AmbientAlpha", float(s["ambient_alpha"]), "segunda sombra: opacidad"),
+    ]
+
+
 def _camel(key: str) -> str:
     """search_handle_end → SearchHandleEnd."""
     return "".join(word.title() for word in key.split("_"))
@@ -85,19 +100,21 @@ def header(tokens: dict) -> str:
         ("ShadowSize", _shadow_size_index(shadow["size"]),
          f"{SHADOW_SIZES[_shadow_size_index(shadow['size'])]} ({shadow['size']} px)"),
         ("ShadowStrength", _shadow_strength(shadow["strength"]), f"{shadow['strength']} de opacidad"),
+        *(item for size in SHADOW_SIZES[1:] for item in _shadow_size(tokens, size)),
+        ("Animaciones (estilo y decoración)", None, None),
+        ("AnimationsDuration", int(tokens["animation"]["controls_ms"]), "controles de las apps y botones de la ventana (ms)"),
         ("Decoración", None, None),
         ("TitleAlignment", TITLE_ALIGNMENTS.index(align), align),
         ("GlassTitleBar", bool(tokens["decoration"]["glass_titlebar"]), "barra de título translúcida como la toolbar"),
-        ("DecorationAnimationsDuration", int(tokens["decoration"]["animation_ms"]), "animaciones de los botones (ms)"),
+        ("FloatingTitlebar", bool(tokens["decoration"]["floating_titlebar"]), "barra de título flotante (decoración y blur del estilo)"),
         ("DecorationTitleGradientLighter", int(tokens["decoration"]["title_gradient_lighter"]),
          "degradado de la barra de título (QColor::lighter)"),
         ("DecorationHighlightThreshold", int(tokens["decoration"]["highlight_threshold"]), "filo claro bajo este qGray"),
         ("DecorationHighlightAlpha", _alpha8(tokens["decoration"]["highlight_alpha"]), "opacidad del filo claro (0..255)"),
         ("Estilo de aplicaciones", None, None),
-        ("StyleAnimationsDuration", int(tokens["style"]["animation_ms"]), "animaciones de los controles (ms)"),
         ("StyleProgressBarBusyStepDuration", int(tokens["style"]["progress_busy_step_ms"]), "progreso indeterminado (ms)"),
         ("DolphinViewOpacity", round(tokens["style"]["dolphin_view_alpha"] * 100), "% de opacidad de la vista de Dolphin"),
-        ("ListHoverAlpha", float(tokens["style"]["list_hover_alpha"]), "resaltado de listas (color de selección)"),
+        ("ListHoverAlpha", float(tokens["plasma"]["item_hover_alpha"]), "resaltado de listas (color de texto, como Plasma)"),
         ("ListSelectedHoverLighter", int(tokens["style"]["list_selected_hover_lighter"]), "selección bajo el cursor (QColor::lighter)"),
         ("Refracción (efecto de KWin goldenglass_glass, px lógicos)", None, None),
         ("RefractionEdge", float(tokens["glass"]["refraction"]["edge"]), "ancho de la zona curvada"),
@@ -116,12 +133,10 @@ def header(tokens: dict) -> str:
         ("DockMagnification", bool(tokens["dock"]["magnification"]), "ampliación bajo el cursor"),
         ("DockMagnificationSize", int(tokens["dock"]["magnification_size"]), "tamaño del icono ampliado (px)"),
         ("DockShowRecent", bool(tokens["dock"]["show_recent"]), "apps recientes en el dock"),
-        ("DockSettingsIconSizeMin", int(tokens["dock"]["settings_icon_size_min"]), "deslizador del tamaño (px)"),
-        ("DockSettingsIconSizeMax", int(tokens["dock"]["settings_icon_size_max"]), "deslizador del tamaño (px)"),
-        ("DockSettingsMagnificationSizeMin", int(tokens["dock"]["settings_magnification_size_min"]),
-         "deslizador de la ampliación (px; nunca menos que el icono)"),
-        ("DockSettingsMagnificationSizeMax", int(tokens["dock"]["settings_magnification_size_max"]),
-         "deslizador de la ampliación (px)"),
+        ("DockIconSizeMin", int(tokens["dock"]["icon_size_min"]), "tamaño de los iconos: mínimo (px)"),
+        ("DockIconSizeMax", int(tokens["dock"]["icon_size_max"]), "tamaño de los iconos: máximo (px)"),
+        ("DockMagnificationSizeMax", int(tokens["dock"]["magnification_size_max"]),
+         "ampliación: máximo (px; el mínimo es el tamaño del icono)"),
         ("Menús", None, None),
         ("MenuIcons", bool(tokens["menu"]["show_icons"]), "iconos junto a los comandos de los menús"),
         ("Finder (Dolphin con la barra de título integrada; px lógicos, ms)", None, None),

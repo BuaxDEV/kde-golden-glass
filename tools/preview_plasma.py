@@ -127,7 +127,7 @@ def main() -> int:
     tokens = json.loads((ROOT / "build" / "tokens.json").read_text())
     pal = tokens[args.variant]
     colors = {"Background": pal["window"], "Text": flatten(pal["label"], pal["window"]),
-              "Highlight": pal["accent"]}
+              "Highlight": pal["accent"], "NeutralText": pal["neutral"]}
     plasma = tokens["plasma"]
 
     app = QGuiApplication(sys.argv[:1])  # noqa: F841

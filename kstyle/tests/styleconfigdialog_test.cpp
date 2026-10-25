@@ -45,6 +45,17 @@ private Q_SLOTS:
         QCOMPARE(sizes->count(), count);
     }
 
+    void glassLevelKeysHaveNoControls()
+    {
+        // MenuOpacity, ToolBarOpacity y DolphinSidebarOpacity los escribe el
+        // nivel de vidrio (tools/glass.py): el diálogo no los edita
+        StyleConfig config(nullptr);
+        for (const auto *name : {"_menuOpacity", "_toolBarOpacity", "_sidebarOpacity"}) {
+            QVERIFY2(!config.findChild<QWidget *>(QString::fromLatin1(name)), name);
+        }
+        QVERIFY(config.findChild<QWidget *>(QStringLiteral("_menuBarOpacity")));
+    }
+
     void shadowStrengthMarksChanged()
     {
         StyleConfig config(nullptr);

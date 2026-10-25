@@ -8,10 +8,19 @@
   <group name="General">
     <!-- apps fijadas (URL de lanzador de TasksModel) -->
     <entry name="launchers" type="StringList"><default></default></entry>
-    <!-- lo cambia el módulo «Dock» (goldenglass-dock) -->
-    <entry name="iconSize" type="Int"><default>@plasma.dock_icon_size@</default></entry>
+    <!-- lo cambia el módulo «Dock» (goldenglass-dock, que lee de aquí los
+         límites); la ampliación nunca es menor que el icono (DockView.qml) -->
+    <entry name="iconSize" type="Int">
+      <default>@plasma.dock_icon_size@</default>
+      <min>@dock.icon_size_min@</min>
+      <max>@dock.icon_size_max@</max>
+    </entry>
     <entry name="magnification" type="Bool"><default>@dock.magnification@</default></entry>
-    <entry name="magnificationSize" type="Int"><default>@dock.magnification_size@</default></entry>
+    <entry name="magnificationSize" type="Int">
+      <default>@dock.magnification_size@</default>
+      <min>@dock.icon_size_min@</min>
+      <max>@dock.magnification_size_max@</max>
+    </entry>
     <entry name="showRecent" type="Bool"><default>@dock.show_recent@</default></entry>
     <!-- panel Apps (AppsPanel.qml): grid | list -->
     <entry name="viewMode" type="String"><default>grid</default></entry>

@@ -120,13 +120,13 @@ tooltip_shadow = 12
 tooltip_shadow_alpha = 0.22
 task_dot_size = 4        # indicador de app abierta en el dock
 # gestor de tareas del Plasma Style (widgets/tasks.svg): opacidad del punto
-# (color de texto) según el estado de la app
+# (color de texto) según el estado de la app. Si pide atención, el punto es
+# naranja: el neutral de la paleta activa (light.neutral / dark.neutral)
 task_dot_alpha = 0.55            # abierta (y al pasar el ratón: macOS no resalta)
 task_dot_minimized_alpha = 0.35
 task_dot_focus_alpha = 0.85
-task_dot_attention = "#FF9500"   # pide atención; el mismo en claro y oscuro (decisión pendiente)
 task_progress_alpha = 0.35       # progreso (color de acento)
-item_hover_alpha = 0.10  # resaltado de listas (sobre color de texto)
+item_hover_alpha = 0.10  # resaltado de listas bajo el cursor (sobre color de texto); también en las apps (estilo)
 item_selected_alpha = 0.28  # selección de listas (sobre color de acento)
 item_selected_hover_boost = 0.08  # selección bajo el cursor: item_selected_alpha + esto
 item_padding_v = 4       # margen del contenido de cada elemento de lista
@@ -144,13 +144,53 @@ field_padding_h = 10
 [shadow]
 color = "#000000"    # sombras de ventanas (decoración) y de menús (estilo)
 
+# Valores de fábrica de la decoración: tamaño (px, se redondea a la opción
+# ShadowSize más cercana) y fuerza (ShadowStrength)
 [shadow.active]
 size = 64
 strength = 0.45
 
-[shadow.inactive]
-size = 40
-strength = 0.25
+# Cada opción de ShadowSize (las de Breeze): dos sombras superpuestas, una
+# principal centrada (radius, alpha) y otra más corta (ambient_*), y el
+# conjunto bajado offset px. Las opacidades se multiplican por ShadowStrength.
+[shadow.sizes.small]
+offset = 4
+radius = 16
+alpha = 1.0
+ambient_offset = -2
+ambient_radius = 8
+ambient_alpha = 0.4
+
+[shadow.sizes.medium]
+offset = 8
+radius = 32
+alpha = 0.9
+ambient_offset = -4
+ambient_radius = 16
+ambient_alpha = 0.3
+
+[shadow.sizes.large]
+offset = 12
+radius = 48
+alpha = 0.8
+ambient_offset = -6
+ambient_radius = 24
+ambient_alpha = 0.2
+
+[shadow.sizes.very_large]
+offset = 16
+radius = 64
+alpha = 0.7
+ambient_offset = -8
+ambient_radius = 32
+ambient_alpha = 0.1
+
+# ---------------------------------------------------------------------------
+# Animaciones de los controles de las apps (estilo) y de los botones de la
+# ventana (decoración): una sola duración, ajustable en cada módulo
+# ---------------------------------------------------------------------------
+[animation]
+controls_ms = 150
 
 # ---------------------------------------------------------------------------
 # Decoración de ventanas
@@ -161,7 +201,10 @@ title_alignment = "AlignCenterFullWidth"  # AlignLeft | AlignCenter | AlignCente
 # Barra de título de vidrio con la misma opacidad que la toolbar: ambas se ven
 # como una sola superficie (toolbar unificada).
 glass_titlebar = true
-animation_ms = 150       # animaciones de los botones (el estilo usa style.animation_ms)
+# Barra de título flotante (opción heredada de Lightly): separada del contenido
+# con su propio redondeo. Apagada, como la dibuja la decoración de fábrica; el
+# estilo la lee para redondear el blur de la ventana.
+floating_titlebar = false
 # Opciones de la decoración heredadas de Breeze, apagadas de fábrica:
 title_gradient_lighter = 120   # degradado de la barra de título: arriba, QColor::lighter(%)
 highlight_threshold = 130      # filo claro arriba solo en barras más oscuras que esto (qGray)
@@ -171,13 +214,10 @@ highlight_alpha = 0.118        # opacidad de ese filo blanco (30/255)
 # Estilo de aplicaciones (kstyle): valores de fábrica de sus ajustes
 # ---------------------------------------------------------------------------
 [style]
-animation_ms = 250       # animaciones de los controles (la decoración usa decoration.animation_ms)
 progress_busy_step_ms = 800  # barra de progreso indeterminada: duración de cada paso
 dolphin_view_alpha = 1.0     # opacidad de la vista de archivos de Dolphin
-# Listas de las apps: resaltado bajo el cursor (opacidad del color de
-# selección; Plasma usa plasma.item_hover_alpha sobre el color de texto) y
-# selección bajo el cursor (QColor::lighter, %)
-list_hover_alpha = 0.2
+# Listas de las apps: selección bajo el cursor (QColor::lighter, %). El
+# resaltado bajo el cursor es plasma.item_hover_alpha, como en Plasma.
 list_selected_hover_lighter = 110
 
 # ---------------------------------------------------------------------------
@@ -412,13 +452,15 @@ dot_alpha = 0.8          # punto de app abierta (color de texto)
 separator_height = 0.78  # separador de apps recientes (fracción del alto)
 separator_alpha = 0.22
 label_delay_ms = 400     # espera antes del nombre de la app al pasar el ratón
-# Rangos de los deslizadores del módulo «Dock» (px). goldenglass-dock acepta
-# otros más amplios (24–128 y 24–256) y el main.xml del plasmoid no pone
-# límites: decisión pendiente unificarlos.
-settings_icon_size_min = 32
-settings_icon_size_max = 80
-settings_magnification_size_min = 48   # y nunca menos que el tamaño del icono
-settings_magnification_size_max = 128
+# Rangos (px) del tamaño de icono y de la ampliación: los mismos en los
+# deslizadores del módulo «Dock», en el main.xml del plasmoid (<min>/<max>:
+# Plasma ajusta a ellos lo que lee) y en goldenglass-dock (los lee del main.xml
+# instalado). Icono: icon_size_min–icon_size_max. Ampliación: del tamaño del
+# icono a magnification_size_max (en main.xml, desde icon_size_min, porque no
+# puede depender de otra opción).
+icon_size_min = 32
+icon_size_max = 80
+magnification_size_max = 128
 
 # ---------------------------------------------------------------------------
 # Texto e iconos secundarios de los plasmoids: opacidad sobre el color de texto
@@ -515,7 +557,8 @@ form_center = 0.66       # frontera avatar/contraseña (fracción del alto de la
 # Mac, con las proporciones del splash de Plasma. Medidas en px para una
 # pantalla de 1080 líneas; el script las escala con la altura de la pantalla.
 # El splash de Plasma (Global Themes, tools/lookandfeel.py) usa las mismas en
-# gridUnit: medida ÷ grid_unit (salvo bar_height, en px).
+# gridUnit: medida ÷ grid_unit (salvo bar_height, en px), y los colores de
+# [boot.dark] / [boot.light] (fondo, barra y pista) para no saltar al pasar.
 # ---------------------------------------------------------------------------
 [boot]
 grid_unit = 18           # gridUnit de Plasma con la fuente por defecto
@@ -547,7 +590,6 @@ track_alpha = 0.25       # pista de la barra (primer plano con esta opacidad)
 field_alpha = 0.14       # relleno del campo
 field_border_alpha = 0.30
 text_alpha = 0.65        # mensajes y petición de contraseña
-splash_track_alpha = 0.25    # pista de la barra del splash de Plasma (Global Theme)
 
 [boot.light]             # tema goldenglass-light
 background = "#E3E3E6"
@@ -556,7 +598,6 @@ track_alpha = 0.18
 field_alpha = 0.08
 field_border_alpha = 0.22
 text_alpha = 0.60
-splash_track_alpha = 0.149   # 0x26: no es track_alpha (decisión pendiente)
 
 # ---------------------------------------------------------------------------
 # Pantalla de inicio de sesión (tema de SDDM, tools/login.py): como la de

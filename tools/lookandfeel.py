@@ -16,7 +16,7 @@ import shutil
 from pathlib import Path
 
 import plasmoids
-from ggcommon import fill_template, flatten
+from ggcommon import fill_template
 
 ROOT = Path(__file__).resolve().parent.parent
 COMMON = ROOT / "plasma" / "look-and-feel" / "common"
@@ -59,13 +59,10 @@ def _dock_height(tokens: dict) -> int:
 def values(tokens: dict, variant: str) -> dict:
     """Tokens para las plantillas: los de goldenglass.toml y, en «lookandfeel»,
     los calculados para esta variante."""
-    pal = tokens[variant]
-    label = flatten(pal["label"], pal["window"])
-    if variant == "light":
-        splash_bg, splash_fg = pal["window"], label
-    else:
-        splash_bg, splash_fg = pal["complementary"], flatten(pal["label"], pal["complementary"])
-    track_alpha = f"{round(tokens['boot'][variant]['splash_track_alpha'] * 255):02X}"
+    # el splash sigue al arranque (Plymouth) sin saltos: sus mismos colores
+    boot = tokens["boot"][variant]
+    splash_bg, splash_fg = boot["background"], boot["foreground"]
+    track_alpha = f"{round(boot['track_alpha'] * 255):02X}"
     return {**tokens, "lookandfeel": {
         "dock_height": _dock_height(tokens),
         # el applet de bandeja separa los iconos en múltiplos de smallSpacing (4 px)

@@ -32,6 +32,7 @@ _STYLE = """<style type="text/css" id="current-color-scheme">
   .ColorScheme-Text { color:#232629; }
   .ColorScheme-Background { color:#eff0f1; }
   .ColorScheme-Highlight { color:#3daee9; }
+  .ColorScheme-NeutralText { color:#f67400; }
 </style>"""
 
 
@@ -57,6 +58,7 @@ class Paint:
 BG = "ColorScheme-Background"
 TEXT = "ColorScheme-Text"
 HIGHLIGHT = "ColorScheme-Highlight"
+NEUTRAL = "ColorScheme-NeutralText"
 BLACK = Paint(None, 1.0, "#000000")
 
 
@@ -270,7 +272,7 @@ def tasks_svg(tokens: dict) -> str:
         "normal": (None, Paint(TEXT, p["task_dot_alpha"])),
         "minimized": (None, Paint(TEXT, p["task_dot_minimized_alpha"])),
         "focus": (None, Paint(TEXT, p["task_dot_focus_alpha"])),
-        "attention": (None, Paint(None, 1.0, p["task_dot_attention"])),
+        "attention": (None, Paint(NEUTRAL, 1.0)),  # naranja del esquema (claro u oscuro)
         "hover": (None, Paint(TEXT, p["task_dot_alpha"])),  # el Dock de macOS no resalta al pasar
         "progress": (Paint(HIGHLIGHT, p["task_progress_alpha"]), None),
     }

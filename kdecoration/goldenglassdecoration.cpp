@@ -94,17 +94,27 @@ struct CompositeShadowParams {
     ShadowParams shadow2;
 };
 
+// tamaños de sombra: tokens [shadow.sizes.*]
+namespace T = GoldenGlass::Tokens;
 const CompositeShadowParams s_shadowParams[] = {
     // None
     CompositeShadowParams(),
     // Small
-    CompositeShadowParams(QPoint(0, 4), ShadowParams(QPoint(0, 0), 16, 1), ShadowParams(QPoint(0, -2), 8, 0.4)),
+    CompositeShadowParams(QPoint(0, T::ShadowSmallOffset),
+                          ShadowParams(QPoint(0, 0), T::ShadowSmallRadius, T::ShadowSmallAlpha),
+                          ShadowParams(QPoint(0, T::ShadowSmallAmbientOffset), T::ShadowSmallAmbientRadius, T::ShadowSmallAmbientAlpha)),
     // Medium
-    CompositeShadowParams(QPoint(0, 8), ShadowParams(QPoint(0, 0), 32, 0.9), ShadowParams(QPoint(0, -4), 16, 0.3)),
+    CompositeShadowParams(QPoint(0, T::ShadowMediumOffset),
+                          ShadowParams(QPoint(0, 0), T::ShadowMediumRadius, T::ShadowMediumAlpha),
+                          ShadowParams(QPoint(0, T::ShadowMediumAmbientOffset), T::ShadowMediumAmbientRadius, T::ShadowMediumAmbientAlpha)),
     // Large
-    CompositeShadowParams(QPoint(0, 12), ShadowParams(QPoint(0, 0), 48, 0.8), ShadowParams(QPoint(0, -6), 24, 0.2)),
+    CompositeShadowParams(QPoint(0, T::ShadowLargeOffset),
+                          ShadowParams(QPoint(0, 0), T::ShadowLargeRadius, T::ShadowLargeAlpha),
+                          ShadowParams(QPoint(0, T::ShadowLargeAmbientOffset), T::ShadowLargeAmbientRadius, T::ShadowLargeAmbientAlpha)),
     // Very large
-    CompositeShadowParams(QPoint(0, 16), ShadowParams(QPoint(0, 0), 64, 0.7), ShadowParams(QPoint(0, -8), 32, 0.1)),
+    CompositeShadowParams(QPoint(0, T::ShadowVeryLargeOffset),
+                          ShadowParams(QPoint(0, 0), T::ShadowVeryLargeRadius, T::ShadowVeryLargeAlpha),
+                          ShadowParams(QPoint(0, T::ShadowVeryLargeAmbientOffset), T::ShadowVeryLargeAmbientRadius, T::ShadowVeryLargeAmbientAlpha)),
 };
 
 inline CompositeShadowParams lookupShadowParams(int size)

@@ -102,15 +102,6 @@ msgstr "Usar el nuevo estilo de casillas"
 msgid "Tabs"
 msgstr "Pestañas"
 
-msgid "GoldenGlass"
-msgstr "GoldenGlass"
-
-msgid "Lightly Default"
-msgstr "Lightly predeterminado"
-
-msgid "Lightly Alternative"
-msgstr "Lightly alternativo"
-
 msgid "Tabs sometimes inside frame"
 msgstr "Pestañas a veces dentro del marco"
 
@@ -234,20 +225,8 @@ msgstr "Transparente"
 msgid "Opaque"
 msgstr "Opaco"
 
-msgid "This changes the transparency of context menus and popup menus"
-msgstr "Cambia la transparencia de los menús contextuales y emergentes"
-
-msgid "Context Menu:"
-msgstr "Menú contextual:"
-
 msgid "%"
 msgstr "%"
-
-msgid "Dolphin sidebar transparency. Requires \"Draw frame around dockable panels\" to be disabled."
-msgstr "Transparencia de la barra lateral de Dolphin. Requiere desactivar «Dibujar un marco alrededor de los paneles acoplables»."
-
-msgid "Si&debar:"
-msgstr "Barra &lateral:"
 
 msgid "This changes the transparency of the Dolphin main file view area"
 msgstr "Cambia la transparencia de la vista principal de archivos de Dolphin"
@@ -261,14 +240,11 @@ msgstr "Barra de menús:"
 msgid "This changes the menubar opacity"
 msgstr "Cambia la opacidad de la barra de menús"
 
-msgid "Toolbar:"
-msgstr "Barra de herramientas:"
-
-msgid "This changes the toolbar opacity"
-msgstr "Cambia la opacidad de la barra de herramientas"
-
 msgid "This changes the tabbar opacity inside Dolphin & Konsole"
 msgstr "Cambia la opacidad de la barra de pestañas en Dolphin y Konsole"
+
+msgid "Menus, toolbars and the Dolphin sidebar follow the Glass level in System Settings."
+msgstr "Los menús, las barras de herramientas y la barra lateral de Dolphin siguen el nivel de Vidrio de Preferencias del sistema."
 
 msgid "Tabbar:"
 msgstr "Barra de pestañas:"

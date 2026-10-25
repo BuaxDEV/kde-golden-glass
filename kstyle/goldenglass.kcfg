@@ -17,8 +17,9 @@
       <max>255</max>
     </entry>
 
+    <!-- compartida por el estilo y la decoración: un solo valor de fábrica -->
     <entry name="FloatingTitlebar" type = "Bool">
-      <default>true</default>
+      <default code="true">GoldenGlass::Tokens::FloatingTitlebar</default>
     </entry>
 
     <!-- GoldenGlass: apps sin barra de título de KWin (app_id de Wayland): el
@@ -125,12 +126,8 @@
       <default>true</default>
     </entry>
 
-    <entry name="AnimationSteps" type="Int">
-      <default>30</default>
-    </entry>
-
     <entry name="AnimationsDuration" type="Int">
-      <default code="true">GoldenGlass::Tokens::StyleAnimationsDuration</default>
+      <default code="true">GoldenGlass::Tokens::AnimationsDuration</default>
     </entry>
 
     <!-- transition flags -->
@@ -195,10 +192,6 @@
       <default>true</default>
     </entry>
 
-    <entry name="OldTabbar" type="Bool">
-      <default>false</default>
-    </entry>
-
     <!-- tree views -->
     <entry name="ViewDrawTreeBranchLines" type="Bool">
       <default>true</default>
@@ -209,9 +202,6 @@
     </entry>
 
     <!-- tab bars -->
-    <entry name="TabBarAltStyle" type="Bool">
-      <default>false</default>
-    </entry>
     <entry name="DocumentModeTabs" type="Bool">
       <default>false</default>
     </entry>

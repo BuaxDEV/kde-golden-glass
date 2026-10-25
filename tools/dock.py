@@ -10,18 +10,51 @@
 Escribe la configuración del plasmoid org.goldenglass.dock en todos los
 paneles con el script de plasmashell (como el módulo de Ajustes «Dock», que
 lo usa); el dock la aplica al momento y ajusta el grosor de su panel. Los
-valores de fábrica son los de los tokens (main.xml del plasmoid).
+valores de fábrica y los límites de los tamaños son los de los tokens: se
+leen del main.xml del plasmoid instalado (esta herramienta no tiene los tokens).
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
 
 KEYS = {"iconSize": int, "magnification": bool, "magnificationSize": int, "showRecent": bool}
-LIMITS = {"iconSize": (24, 128), "magnificationSize": (24, 256)}
+PLASMOID = "org.goldenglass.dock"
+KCFG = "{http://www.kde.org/standards/kcfg/1.0}"
+
+
+def main_xml() -> Path | None:
+    """main.xml del plasmoid instalado, con el orden de búsqueda de XDG."""
+    home = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
+    dirs = [home, *(os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":")]
+    for d in dirs:
+        path = Path(d) / "plasma" / "plasmoids" / PLASMOID / "contents" / "config" / "main.xml"
+        if d and path.is_file():
+            return path
+    return None
+
+
+def limits(path: Path | None = None) -> dict[str, tuple[int, int]]:
+    """<min>/<max> de las opciones enteras del main.xml (vacío si no está)."""
+    path = path or main_xml()
+    if path is None:
+        return {}
+    try:
+        tree = ET.parse(path)
+    except (OSError, ET.ParseError):
+        return {}
+    result = {}
+    for entry in tree.iter(f"{KCFG}entry"):
+        low, high = entry.findtext(f"{KCFG}min"), entry.findtext(f"{KCFG}max")
+        if entry.get("name") in KEYS and low is not None and high is not None:
+            result[entry.get("name")] = (int(low), int(high))
+    return result
 
 
 def evaluate(script: str) -> str:
@@ -100,9 +133,11 @@ def main(argv: list[str] | None = None) -> int:
     values = {k: v for k, v in values.items() if v is not None}
     if not values:
         ap.error("nada que cambiar (o --get)")
-    for key, (low, high) in LIMITS.items():
+    for key, (low, high) in limits().items():
         if key in values and not low <= values[key] <= high:
             ap.error(f"{key} fuera de rango ({low}–{high})")
+    if values.get("magnificationSize", sys.maxsize) < values.get("iconSize", 0):
+        ap.error("magnificationSize no puede ser menor que iconSize")
     set_values(values)
     return 0
 

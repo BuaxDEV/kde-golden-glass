@@ -236,7 +236,7 @@ en `share/goldenglass`) aplica un nivel en vivo a las tres capas:
 
 | Capa | Cómo |
 |---|---|
-| Estilo de apps | `goldenglassrc [Style]` (menús, toolbars, barra lateral) + señal D-Bus `org.goldenglass.Style` → repinta las ventanas abiertas |
+| Estilo de apps | `goldenglassrc [Style]` (`MenuOpacity`, `ToolBarOpacity`, `DolphinSidebarOpacity`: menús, toolbars, barra lateral; el diálogo del estilo no tiene controles para ellas) + señal D-Bus `org.goldenglass.Style` → repinta las ventanas abiertas |
 | Decoración | misma opacidad (`ToolBarOpacity`) + `KWin.reconfigure` → relee `goldenglassrc` |
 | Plasma Style | nivel por defecto → tema del paquete `GoldenGlass`; otro nivel → genera `GoldenGlassTuned` en `~/.local/share` y cambia a él (con rebote por `GoldenGlass` si ya estaba activo). El tema del paquete nunca se sobrescribe |
 
@@ -662,9 +662,10 @@ dentro de «Vidrio».
   QPainter). Las medidas de los tokens son para una pantalla de 1080 líneas:
   el script escala con la altura de la pantalla, elige el juego de piezas más
   cercano por encima y lo ajusta a la medida exacta.
-- **Mismas proporciones que el splash de Plasma** (logo de 126 px, barra de
-  216×6 a 54 px, desplazados 36 px hacia arriba), para que arranque → login →
-  escritorio se vea continuo.
+- **Mismas proporciones y colores que el splash de Plasma** (logo de 126 px,
+  barra de 216×6 a 54 px, desplazados 36 px hacia arriba; fondo, barra y pista
+  de `[boot.dark]` o `[boot.light]` según el Global Theme), para que arranque →
+  login → escritorio se vea continuo.
 - **Barra de progreso fina** que sigue el progreso de arranque de Plymouth (lo
   estima con la duración de arranques anteriores) y se mueve con suavidad. El
   relleno es un recorte de la barra llena más su extremo redondeado aparte, así
@@ -847,7 +848,11 @@ dentro de «Vidrio».
   del plasmoid con el script de plasmashell (`iconSize`, `magnification`,
   `magnificationSize`, `showRecent`); el dock la aplica al momento y ajusta el
   grosor. Valores de fábrica en `[dock]` y `[plasma]` de los tokens (el
-  `main.xml` del plasmoid es una plantilla). El módulo «Dock» lo llama.
+  `main.xml` del plasmoid es una plantilla). El módulo «Dock» lo llama. Un solo
+  rango de tamaños (`[dock] icon_size_min/max`, `magnification_size_max`; la
+  ampliación nunca por debajo del icono) en los deslizadores del módulo, en el
+  `<min>`/`<max>` del `main.xml` y en `goldenglass-dock`, que lo lee del
+  `main.xml` instalado.
 - **Pruebas:** en el sandbox, el dock real con una app abierta y el panel de
   Apps abierto desde el dock (también que el dock oculto aparece al abrir Apps
   con `activateLauncherMenu` y se oculta al cerrarlo); `goldenglass-dock` y el
