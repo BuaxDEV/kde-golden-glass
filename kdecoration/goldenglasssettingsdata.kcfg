@@ -136,7 +136,7 @@
     </entry>
 
     <entry name="AnimationsDuration" type = "Int">
-       <default code="true">GoldenGlass::Tokens::DecorationAnimationsDuration</default>
+       <default code="true">GoldenGlass::Tokens::AnimationsDuration</default>
     </entry>
 
     <!-- hide title bar -->
