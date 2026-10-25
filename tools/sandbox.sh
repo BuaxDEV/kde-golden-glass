@@ -22,8 +22,10 @@
 #  - Los lanzadores que instala tools/install.sh (goldenglass-system, goldenglass-dock)
 #    van a GOLDENGLASS_BIN_DIR, dentro del sandbox, que se añade al PATH: el HOME
 #    real no recibe ningún archivo.
-#  - Cada ejecución marca su entorno con GG_SANDBOX_ID; al terminar se cierran
-#    todos los procesos con esa marca (los servicios activados sobreviven al bus).
+#  - Each run tags its environment with GG_SANDBOX_ID and names the KWin socket
+#    after it; on exit every process carrying either mark is closed (activated
+#    services outlive the bus, and kwin_wayland's environ is unreadable because
+#    of its file capabilities).
 
 set -euo pipefail
 
@@ -38,15 +40,20 @@ case "$VARIANT" in light|dark) ;; *) echo "uso: $0 [light|dark]" >&2; exit 2 ;; 
 
 log() { printf '[sandbox] %s\n' "$*"; }
 
-# Cierra todos los procesos del usuario marcados con este GG_SANDBOX_ID.
+sandbox_socket() { printf 'gg-sandbox-%s' "$1"; }
+
+is_sandbox_process() {
+  local pid=$1 id=$2
+  { tr '\0' '\n' <"/proc/$pid/environ"; } 2>/dev/null | grep -qxF "GG_SANDBOX_ID=$id" && return 0
+  { tr '\0' '\n' <"/proc/$pid/cmdline"; } 2>/dev/null | grep -qxF -- "$(sandbox_socket "$id")"
+}
+
 reap() {
   local id=$1 sig pid
   for sig in TERM TERM KILL; do
     for pid in $(pgrep -u "$USER"); do
       [[ $pid == "$$" ]] && continue
-      if { tr '\0' '\n' <"/proc/$pid/environ"; } 2>/dev/null | grep -qx "GG_SANDBOX_ID=$id"; then
-        kill "-$sig" "$pid" 2>/dev/null || true
-      fi
+      is_sandbox_process "$pid" "$id" && kill "-$sig" "$pid" 2>/dev/null || true
     done
     sleep 1
   done
@@ -132,7 +139,7 @@ sed -i 's/property bool uiVisible: false/property bool uiVisible: true/' "$LOCK_
 log "aplicando org.goldenglass.$VARIANT.desktop"
 QT_QPA_PLATFORM=offscreen plasma-apply-lookandfeel -a "org.goldenglass.$VARIANT.desktop" --resetLayout || true
 
-SOCK="goldenglass-sandbox-$$"
+SOCK="$(sandbox_socket "$GG_SANDBOX_ID")"
 log "arrancando KWin virtual ${WIDTH}x${HEIGHT}"
 kwin_wayland --virtual --width "$WIDTH" --height "$HEIGHT" --socket "$SOCK" --no-lockscreen &
 for _ in $(seq 100); do [[ -S $XDG_RUNTIME_DIR/$SOCK ]] && break; sleep 0.1; done
