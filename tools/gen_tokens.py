@@ -10,6 +10,7 @@ Salidas (en build/, no versionado):
   build/plasma/desktoptheme/GoldenGlass/   (Plasma Style)
   build/plasma/look-and-feel/org.goldenglass.{light,dark}.desktop/
   build/plasma/plasmoids/<id>/            (plasmoids con sus traducciones)
+  build/plasma/shells/org.goldenglass.desktop/  (shell: pantalla de bloqueo y panel)
   build/wallpapers/GoldenGlass/           (fondo día/noche; se cachea)
   build/cursors/GoldenGlass-cursors/      (tema de cursores; se cachea)
   build/icons/GoldenGlass{,-Dark}/        (tema de iconos)
@@ -43,6 +44,7 @@ import lookandfeel  # noqa: E402
 import plasma_theme  # noqa: E402
 import plasmoids  # noqa: E402
 import plymouth  # noqa: E402
+import shell  # noqa: E402
 import sounds  # noqa: E402
 import wallpaper  # noqa: E402
 from ggcommon import Color, load_tokens  # noqa: E402
@@ -215,6 +217,7 @@ def main(argv: list[str] | None = None) -> int:
     written += plasma_theme.build(tokens, args.out, args.glass_level)
     written += lookandfeel.build(tokens, args.out)
     written += plasmoids.build(args.out, tokens)
+    written += shell.build(tokens, args.out)
     written += wallpaper.build(args.out)
     written += cursors.build(args.out)
     written += icons.build(tokens, args.out)

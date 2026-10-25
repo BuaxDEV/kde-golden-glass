@@ -373,6 +373,17 @@ switch_width = 36            # interruptor de la cabecera
 switch_height = 20
 
 # ---------------------------------------------------------------------------
+# Pantalla de bloqueo (shell org.goldenglass.desktop, tools/shell.py): fecha y
+# hora grandes arriba, avatar y contraseña en el tercio inferior, como macOS.
+# ---------------------------------------------------------------------------
+[lock_screen]
+clock_top = 4            # gridUnit del borde superior a la fecha
+date_scale = 1.6         # fecha respecto al texto normal
+clock_scale = 8          # hora respecto al texto normal
+clock_alpha = 0.9        # opacidad de la fecha y la hora
+form_center = 0.66       # frontera avatar/contraseña (fracción del alto de la pantalla)
+
+# ---------------------------------------------------------------------------
 # Arranque (Plymouth, tools/plymouth.py): logo y barra fina como el arranque de
 # Mac, con las proporciones del splash de Plasma. Medidas en px para una
 # pantalla de 1080 líneas; el script las escala con la altura de la pantalla.

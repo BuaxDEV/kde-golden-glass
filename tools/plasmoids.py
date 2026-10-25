@@ -51,6 +51,14 @@ def fill_templates(src: Path, dst: Path, tokens: dict) -> list[Path]:
     return written
 
 
+def write_tokens_js(path: Path, tokens: dict) -> Path:
+    """tokens.js con todos los tokens (en QML: import "tokens.js" as T)."""
+    path.write_text("// Generado por tools/gen_tokens.py desde tokens/goldenglass.toml — NO EDITAR\n"
+                    ".pragma library\n\nvar tokens = " + json.dumps(tokens, ensure_ascii=False) + ";\n",
+                    encoding="utf-8")
+    return path
+
+
 def _catalogs(src: Path, plugin_id: str) -> dict[str, list[Path]]:
     """idioma → .po del plasmoid y de los plasmoids de los que comparte archivos."""
     found: dict[str, list[Path]] = {}
@@ -76,10 +84,7 @@ def build(out: Path, tokens: dict | None = None) -> list[Path]:
                 shutil.copy2(SOURCES / origin / "contents" / "ui" / name, dst / "contents" / "ui" / name)
         if tokens is not None:
             written += fill_templates(src, dst, tokens)
-            js = dst / "contents" / "ui" / "tokens.js"
-            js.write_text("// Generado por tools/gen_tokens.py desde tokens/goldenglass.toml — NO EDITAR\n"
-                          ".pragma library\n\nvar tokens = " + json.dumps(tokens, ensure_ascii=False) + ";\n",
-                          encoding="utf-8")
+            write_tokens_js(dst / "contents" / "ui" / "tokens.js", tokens)
 
         for lang, pos in _catalogs(src, plugin_id).items():
             mo = dst / "contents" / "locale" / lang / "LC_MESSAGES" / f"plasma_applet_{plugin_id}.mo"

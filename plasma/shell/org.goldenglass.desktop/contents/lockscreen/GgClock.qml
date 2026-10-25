@@ -11,6 +11,8 @@ import QtQuick.Layouts
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 
+import "tokens.js" as T
+
 ColumnLayout {
     id: clock
 
@@ -33,8 +35,8 @@ ColumnLayout {
         text: Qt.locale().toString(clock.now, "dddd d MMMM")
         textFormat: Text.PlainText
         color: Kirigami.Theme.textColor
-        opacity: 0.9
-        font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.6
+        opacity: T.tokens.lock_screen.clock_alpha
+        font.pointSize: Kirigami.Theme.defaultFont.pointSize * T.tokens.lock_screen.date_scale
         font.weight: Font.DemiBold
         font.capitalization: Font.Capitalize
     }
@@ -44,8 +46,8 @@ ColumnLayout {
         text: Qt.locale().toString(clock.now, Qt.locale().timeFormat(Locale.ShortFormat).replace(/\s*[aApP]+$/, ""))
         textFormat: Text.PlainText
         color: Kirigami.Theme.textColor
-        opacity: 0.9
-        font.pointSize: Kirigami.Theme.defaultFont.pointSize * 8
+        opacity: T.tokens.lock_screen.clock_alpha
+        font.pointSize: Kirigami.Theme.defaultFont.pointSize * T.tokens.lock_screen.clock_scale
         font.weight: Font.Bold
     }
 }

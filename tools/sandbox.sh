@@ -114,7 +114,7 @@ log "instalando en el sandbox"
 # campo de contraseña sin simular entrada.
 LOCK_UI="$XDG_DATA_HOME/plasma/shells/org.goldenglass.desktop-ui"
 rm -rf -- "$LOCK_UI"
-cp -r -- "$ROOT/plasma/shell/org.goldenglass.desktop" "$LOCK_UI"
+cp -r -- "$ROOT/build/plasma/shells/org.goldenglass.desktop" "$LOCK_UI"
 sed -i 's/"Id": "org.goldenglass.desktop"/"Id": "org.goldenglass.desktop-ui"/' "$LOCK_UI/metadata.json"
 sed -i 's/property bool uiVisible: false/property bool uiVisible: true/' "$LOCK_UI/contents/lockscreen/LockScreenUi.qml"
 

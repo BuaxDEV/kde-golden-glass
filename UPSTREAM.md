@@ -53,7 +53,8 @@ unmodified copy of `/usr/share/plasma/shells/org.kde.plasma.desktop/contents/loc
 from **plasma-desktop 6.7.5** (GPL-2.0-or-later / LGPL-2.0-or-later, original
 headers kept). The copy is commit `e3a0932`; GoldenGlass changes are on top of
 it (`git diff e3a0932 -- plasma/shell`). GoldenGlass changes are only in
-`LockScreenUi.qml` (the clock and the height of the stack view); `GgClock.qml`
+`LockScreenUi.qml` (the clock, the height of the stack view and the import of
+the generated `tokens.js` that holds those values); `GgClock.qml`
 is new.
 
 Ported since the copy: **plasma-desktop 6.8.1** (new authentication flow in
