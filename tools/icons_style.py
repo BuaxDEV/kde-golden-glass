@@ -37,10 +37,29 @@ class Style(Enum):
     TINTED = "tinted"
 
 
+class Appearance(Enum):
+    """Light or dark icons; AUTO follows the colour scheme."""
+
+    LIGHT = "light"
+    DARK = "dark"
+    AUTO = "auto"
+
+
 def theme_id(style: Style, dark: bool) -> str:
     """Icon theme folder of a style and appearance: GoldenGlass[-Clear|-Tinted][-Dark]."""
     style_suffix = "" if style is Style.DEFAULT else f"-{style.value.capitalize()}"
     return f"{THEME_FAMILY}{style_suffix}{DARK_SUFFIX if dark else ''}"
+
+
+def resolve(style: Style, appearance: Appearance, dark_scheme: bool) -> str:
+    """The icon theme of a style and appearance under a light or dark colour scheme."""
+    dark = appearance is Appearance.DARK or (appearance is Appearance.AUTO and dark_scheme)
+    return theme_id(style, dark)
+
+
+def family() -> tuple[str, ...]:
+    """Every icon theme of the GoldenGlass family, the ones resolve() can give."""
+    return tuple(theme_id(style, dark) for style in Style for dark in (False, True))
 
 
 def theme_name(style: Style, dark: bool) -> str:

@@ -11,8 +11,8 @@ import pytest
 
 import icons_apps
 from gen_tokens import validate_icon_style
-from icons_style import (ACCENT_CLASS, STYLE_JSON, ClearTokens, Style, StyleTokens, TintedTokens, theme_id,
-                         theme_name)
+from icons_style import (ACCENT_CLASS, STYLE_JSON, Appearance, ClearTokens, Style, StyleTokens, TintedTokens,
+                         family, resolve, theme_id, theme_name)
 
 STYLES = (Style.TINTED, Style.CLEAR)
 ACCENT = "#AF52DE"
@@ -36,6 +36,40 @@ def st(tokens) -> StyleTokens:
 def test_theme_id(style, dark, expected):
     assert theme_id(style, dark) == expected
     assert theme_name(style, dark) == expected.replace("-", " ")
+
+
+RESOLVE_TABLE = [
+    # style, appearance, dark colour scheme, theme
+    (Style.DEFAULT, Appearance.LIGHT, False, "GoldenGlass"),
+    (Style.DEFAULT, Appearance.LIGHT, True, "GoldenGlass"),
+    (Style.DEFAULT, Appearance.DARK, False, "GoldenGlass-Dark"),
+    (Style.DEFAULT, Appearance.DARK, True, "GoldenGlass-Dark"),
+    (Style.DEFAULT, Appearance.AUTO, False, "GoldenGlass"),
+    (Style.DEFAULT, Appearance.AUTO, True, "GoldenGlass-Dark"),
+    (Style.CLEAR, Appearance.LIGHT, False, "GoldenGlass-Clear"),
+    (Style.CLEAR, Appearance.LIGHT, True, "GoldenGlass-Clear"),
+    (Style.CLEAR, Appearance.DARK, False, "GoldenGlass-Clear-Dark"),
+    (Style.CLEAR, Appearance.DARK, True, "GoldenGlass-Clear-Dark"),
+    (Style.CLEAR, Appearance.AUTO, False, "GoldenGlass-Clear"),
+    (Style.CLEAR, Appearance.AUTO, True, "GoldenGlass-Clear-Dark"),
+    (Style.TINTED, Appearance.LIGHT, False, "GoldenGlass-Tinted"),
+    (Style.TINTED, Appearance.LIGHT, True, "GoldenGlass-Tinted"),
+    (Style.TINTED, Appearance.DARK, False, "GoldenGlass-Tinted-Dark"),
+    (Style.TINTED, Appearance.DARK, True, "GoldenGlass-Tinted-Dark"),
+    (Style.TINTED, Appearance.AUTO, False, "GoldenGlass-Tinted"),
+    (Style.TINTED, Appearance.AUTO, True, "GoldenGlass-Tinted-Dark"),
+]
+
+
+@pytest.mark.parametrize("style, appearance, dark_scheme, expected", RESOLVE_TABLE)
+def test_resolve(style, appearance, dark_scheme, expected):
+    assert resolve(style, appearance, dark_scheme) == expected
+
+
+def test_resolve_table_covers_every_combination():
+    assert len({row[:3] for row in RESOLVE_TABLE}) == len(Style) * len(Appearance) * 2 == 18
+    assert {row[3] for row in RESOLVE_TABLE} == set(family())
+    assert len(family()) == 6
 
 
 # --- glyph mask ------------------------------------------------------------------
