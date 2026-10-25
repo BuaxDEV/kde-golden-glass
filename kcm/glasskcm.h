@@ -69,5 +69,6 @@ private:
     QProcess *m_refractionProcess = nullptr;
     bool m_refraction = false;
     bool m_refractionAvailable = false;
+    int m_refractionQuery = 0;
     bool m_menubarBackground;
 };

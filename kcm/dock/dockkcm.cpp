@@ -5,6 +5,7 @@
 #include "dockkcm.h"
 
 #include "goldenglass_tokens.h"
+#include "../processquery.h"
 
 #include <KLocalizedString>
 #include <KPluginFactory>
@@ -144,18 +145,26 @@ void DockKcm::load()
     if (path.isEmpty()) {
         return;
     }
-    QProcess get;
-    get.start(path, {QStringLiteral("--get")});
-    const bool ok = get.waitForFinished(5000) && get.exitCode() == 0;
-    if (m_available != ok) {
-        m_available = ok;
-        Q_EMIT availableChanged();
-    }
-    if (!ok) {
-        return; // sin dock: el módulo lo explica
-    }
+    // asíncrono: esperar aquí congelaría la interfaz; solo cuenta la última consulta
+    const int query = ++m_getQuery;
+    GoldenGlass::runQuery(this, path, {QStringLiteral("--get")}, [this, query](bool ok, const QByteArray &output, const QString &) {
+        if (query != m_getQuery) {
+            return;
+        }
+        if (m_available != ok) {
+            m_available = ok;
+            Q_EMIT availableChanged();
+        }
+        if (ok) {
+            applySettings(QJsonDocument::fromJson(output).object());
+        }
+        // sin dock: el módulo lo explica
+    });
+}
+
+void DockKcm::applySettings(const QJsonObject &s)
+{
     // null = valor de fábrica (los tokens)
-    const QJsonObject s = QJsonDocument::fromJson(get.readAllStandardOutput()).object();
     m_iconSize = s.value(QStringLiteral("iconSize")).toInt(GoldenGlass::Tokens::DockIconSize);
     m_magnification = s.value(QStringLiteral("magnification")).toBool(GoldenGlass::Tokens::DockMagnification);
     m_magnificationSize = s.value(QStringLiteral("magnificationSize")).toInt(GoldenGlass::Tokens::DockMagnificationSize);

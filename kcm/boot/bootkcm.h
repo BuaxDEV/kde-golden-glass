@@ -8,6 +8,7 @@
 
 #include <QStringList>
 
+class QJsonObject;
 class QProcess;
 
 //* Módulo de Ajustes «Arranque e inicio de sesión»: tema de Plymouth de
@@ -71,11 +72,13 @@ Q_SIGNALS:
 private:
     QString program();
     void startNext();
+    void applyStatus(const QJsonObject &state);
     void setErrorText(const QString &text);
     void updateState();
 
     QProcess *m_process = nullptr;
     QList<QStringList> m_queue; // argumentos de goldenglass-system pendientes
+    int m_statusQuery = 0;
 
     QString m_plymouth = QStringLiteral("system");
     QString m_loadedPlymouth = QStringLiteral("system");
