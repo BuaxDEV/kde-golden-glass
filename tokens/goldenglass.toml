@@ -380,6 +380,39 @@ close_unblur_at = 0.5    # fracción del cierre a la que se quita el blur de KWi
 glass_update_ms = 32
 glyph_alpha = 0.8        # glifo de Apps junto al buscador y puntos del botón «⋯»
 
+# ---------------------------------------------------------------------------
+# Iconos de apps: el squircle de vidrio (tools/icons_apps.py, wrap_icons.py)
+# ---------------------------------------------------------------------------
+[icon_tile]
+# Colores de fondo y de símbolo; cada par es el degradado (arriba, abajo).
+white = ["#FFFFFF", "#ECEFF5"]      # símbolo del icono claro
+graphite = ["#3A3A3E", "#1C1C1F"]   # fondo del icono oscuro
+paper = ["#FFFFFF", "#E4E6EB"]      # fondo «papel» (Filelight, Fuentes, Apps…)
+wrap_paper = ["#FFFFFF", "#E6E8EC"] # fondo claro de las apps de terceros encerradas
+highlight = "#FFFFFF"               # color del brillo (sheen) y del filo (rim)
+shadow_color = "#000000"            # color de las sombras y del contorno fino
+# Sombra del squircle (filtro SVG: desenfoque gaussiano, desplazamiento y opacidad)
+shadow_blur = 1.3
+shadow_dy = 1.2
+shadow_alpha = 0.30
+# Sombra del símbolo
+glyph_shadow_blur = 0.8
+glyph_shadow_dy = 0.8
+glyph_shadow_alpha = 0.22
+# Brillo: degradado blanco de arriba hacia el centro (opacidad arriba)
+sheen_light = 0.28
+sheen_dark = 0.10
+# Filo de vidrio: trazo de 1 con degradado vertical (arriba, centro, abajo)
+rim_width = 1
+rim_top_light = 0.55
+rim_top_dark = 0.30
+rim_mid = 0.06
+rim_bottom_light = 0.22
+rim_bottom_dark = 0.12
+# Contorno fino exterior
+edge_alpha = 0.14
+edge_width = 0.4
+
 # Reloj de la barra de menús (plasmoid org.goldenglass.clock)
 [clock]
 calendar_border_alpha = 0.25 # rejilla del calendario
