@@ -53,8 +53,6 @@ SPDX-License-Identifier = "GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accept
 path = [
     "kdecoration/config/goldenglassconfigwidget.cpp",
     "kdecoration/config/goldenglassconfigwidget.h",
-    "kdecoration/config/goldenglassdetectwidget.cpp",
-    "kdecoration/config/goldenglassdetectwidget.h",
     "kdecoration/config/goldenglassexceptiondialog.cpp",
     "kdecoration/config/goldenglassexceptiondialog.h",
     "kdecoration/config/goldenglassexceptionlistwidget.cpp",

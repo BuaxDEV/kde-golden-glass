@@ -184,32 +184,19 @@ void ShadowHelper::loadConfig()
 //_______________________________________________________
 bool ShadowHelper::eventFilter(QObject *object, QEvent *event)
 {
-    if (Helper::isX11()) {
-        // check event type
-        if (event->type() != QEvent::WinIdChange)
-            return false;
+    if (event->type() != QEvent::PlatformSurface)
+        return false;
 
-        // cast widget
-        QWidget *widget(static_cast<QWidget *>(object));
+    QWidget *widget(static_cast<QWidget *>(object));
+    QPlatformSurfaceEvent *surfaceEvent(static_cast<QPlatformSurfaceEvent *>(event));
 
-        // install shadows and update winId
+    switch (surfaceEvent->surfaceEventType()) {
+    case QPlatformSurfaceEvent::SurfaceCreated:
         installShadows(widget);
-
-    } else {
-        if (event->type() != QEvent::PlatformSurface)
-            return false;
-
-        QWidget *widget(static_cast<QWidget *>(object));
-        QPlatformSurfaceEvent *surfaceEvent(static_cast<QPlatformSurfaceEvent *>(event));
-
-        switch (surfaceEvent->surfaceEventType()) {
-        case QPlatformSurfaceEvent::SurfaceCreated:
-            installShadows(widget);
-            break;
-        case QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed:
-            // Don't care.
-            break;
-        }
+        break;
+    case QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed:
+        // Don't care.
+        break;
     }
 
     return false;

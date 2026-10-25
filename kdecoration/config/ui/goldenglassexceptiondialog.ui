@@ -46,13 +46,6 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="2">
-       <widget class="QPushButton" name="detectDialogButton">
-        <property name="text">
-         <string>Detect Window Properties</string>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="1" colspan="2">
        <widget class="QLineEdit" name="exceptionEditor">
         <property name="showClearButton" stdset="0">

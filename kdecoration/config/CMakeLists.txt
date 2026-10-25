@@ -3,7 +3,6 @@
 set(goldenglassdecoration_config_SRCS
   ../goldenglassexceptionlist.cpp
     goldenglassconfigwidget.cpp
-    goldenglassdetectwidget.cpp
     goldenglassexceptiondialog.cpp
     goldenglassexceptionlistwidget.cpp
     goldenglassexceptionmodel.cpp
@@ -11,7 +10,6 @@ set(goldenglassdecoration_config_SRCS
 )
 ki18n_wrap_ui(goldenglassdecoration_config_SRCS
     ui/goldenglassconfigurationui.ui
-    ui/goldenglassdetectwidget.ui
     ui/goldenglassexceptiondialog.ui
     ui/goldenglassexceptionlistwidget.ui
 )

@@ -22,7 +22,6 @@
 
 #include "goldenglassdecoration.h"
 
-#include "config-goldenglass.h"
 #include "goldenglass.h"
 #include "goldenglass_tokens.h"
 #include "goldenglasssettingsprovider.h"
@@ -45,10 +44,6 @@
 #include <QTextStream>
 #include <QTimer>
 #include <QVariantAnimation>
-
-#if GOLDENGLASS_HAVE_X11
-#include <QX11Info>
-#endif
 
 #include <cmath>
 

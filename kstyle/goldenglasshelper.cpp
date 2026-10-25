@@ -31,14 +31,6 @@
 #include <QPainter>
 #include <QtMath>
 
-#if __has_include(<KX11Extras>)
-#include <KX11Extras>
-#endif
-
-#if GOLDENGLASS_HAVE_X11
-#include <QX11Info>
-#endif
-
 #include <QDialog>
 #include <algorithm>
 
@@ -1715,17 +1707,6 @@ void Helper::renderTransparentArea(QPainter *painter, const QRect &rect) const
 }
 
 //______________________________________________________________________________
-bool Helper::isX11()
-{
-#if GOLDENGLASS_HAVE_X11
-    static const bool s_isX11 = KWindowSystem::isPlatformX11();
-    return s_isX11;
-#endif
-
-    return false;
-}
-
-//______________________________________________________________________________
 bool Helper::isWayland()
 {
     static const bool s_isWayland = KWindowSystem::isPlatformWayland();
@@ -1803,14 +1784,7 @@ QPainterPath Helper::roundedPath(const QRectF &rect, Corners corners, qreal radi
 //________________________________________________________________________________________________________
 bool Helper::compositingActive() const
 {
-#if GOLDENGLASS_HAVE_X11
-    if (isX11()) {
-#if __has_include(<KX11Extras>)
-        return KX11Extras::compositingActive();
-#endif
-    }
-#endif
-
+    // en Wayland siempre hay composición
     return true;
 }
 

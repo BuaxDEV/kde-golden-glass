@@ -1,8 +1,5 @@
 add_definitions(-DTRANSLATION_DOMAIN="goldenglass_kwin_deco")
 
-################# configuration #################
-configure_file(config-goldenglass.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-goldenglass.h )
-
 ################# includes #################
 include_directories(${CMAKE_SOURCE_DIR}/libgoldenglasscommon)
 include_directories(${CMAKE_BINARY_DIR}/libgoldenglasscommon)
