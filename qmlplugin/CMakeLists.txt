@@ -13,6 +13,8 @@ ecm_add_qml_module(goldenglassglassplugin
 )
 
 target_sources(goldenglassglassplugin PRIVATE glassregion.cpp glassregion.h menubarsettings.cpp menubarsettings.h)
+# goldenglassroundedregion.h (solo cabecera, compartida con el estilo)
+target_include_directories(goldenglassglassplugin PRIVATE ${CMAKE_SOURCE_DIR}/libgoldenglasscommon)
 
 target_link_libraries(goldenglassglassplugin PRIVATE
     Qt6::Quick
