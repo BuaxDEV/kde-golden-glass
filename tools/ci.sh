@@ -44,9 +44,10 @@ if [[ ${GOLDENGLASS_CI_REPOS:-} == kde-unstable ]]; then
 fi
 
 step "Dependencias de compilación"
-# startdir lo usa el PKGBUILD y makedepends viene de él
+# startdir lo usa el PKGBUILD; makedepends y checkdepends (dbus-run-session de
+# las pruebas D-Bus de ctest) vienen de él
 # shellcheck disable=SC1091,SC2034,SC2154
-mapfile -t makedeps < <(cd "$ROOT/packaging/goldenglass" && startdir=$PWD && source PKGBUILD && printf '%s\n' "${makedepends[@]}")
+mapfile -t makedeps < <(cd "$ROOT/packaging/goldenglass" && startdir=$PWD && source PKGBUILD && printf '%s\n' "${makedepends[@]}" "${checkdepends[@]}")
 # herramientas que solo usa la CI (no son dependencias del paquete)
 citools=(ruff shellcheck python-pytest)
 pacman -Syu --noconfirm --needed base-devel "${makedeps[@]}" "${citools[@]}"

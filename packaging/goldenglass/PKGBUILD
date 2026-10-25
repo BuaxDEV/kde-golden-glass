@@ -46,6 +46,9 @@ makedepends=(
   # adw-gtk3 apuntan a ellos
   breeze-icons adw-gtk-theme
 )
+# dbus-run-session: las pruebas D-Bus de qmlplugin/tests corren en un bus de
+# sesión propio (ctest lo lanza solo; sin él se omiten)
+checkdepends=(dbus)
 # Rama explícita: sin ella makepkg reutiliza el HEAD guardado en su copia del
 # repositorio (de la primera ejecución) y puede compilar código antiguo.
 source=("goldenglass::git+file://${startdir}/../..#branch=${GOLDENGLASS_BRANCH:-main}")
@@ -71,6 +74,8 @@ build() {
 }
 
 check() {
+  # QT_QPA_PLATFORM también lo fija cada prueba; las D-Bus se envuelven solas
+  # en dbus-run-session (qmlplugin/tests/CMakeLists.txt)
   QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure
 }
 
