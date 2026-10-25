@@ -1,0 +1,17 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Sustituto de goldenglass-glass para kcm_apply_test en ctest: guarda el nivel
+# en $XDG_CONFIG_HOME/goldenglassrc como el de verdad, sin tocar la sesión
+# (Plasma Style, KWin). Tarda un poco para que las peticiones se encolen.
+set -eu
+case "${1:-}" in
+  --level)
+    sleep 0.2
+    printf '[Glass]\nLevel=%s\n' "$2" >"${XDG_CONFIG_HOME:?}/goldenglassrc"
+    ;;
+  --get-refraction) echo unavailable ;;
+  --refraction) ;;
+  *) echo "goldenglass-glass (prueba): orden desconocida: $*" >&2; exit 2 ;;
+esac

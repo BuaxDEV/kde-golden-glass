@@ -192,7 +192,7 @@ def shadow(svg: Svg, radius: float, size: float, alpha: float) -> None:
         gid = svg.uid("shadowcorner")
         x, y = svg.reserve(corner, corner)
         cx, cy = x + sx * corner, y + sy * corner
-        stops = [f'<stop offset="0" stop-color="#000" stop-opacity="0"/>',
+        stops = ['<stop offset="0" stop-color="#000" stop-opacity="0"/>',
                  f'<stop offset="{_f(inner)}" stop-color="#000" stop-opacity="0"/>']
         stops += [f'<stop offset="{_f(inner + t * (1 - inner) + (1e-3 if t == 0 else 0))}" '
                   f'stop-color="#000" stop-opacity="{_f(alpha * k)}"/>' for t, k in falloff]
@@ -277,7 +277,6 @@ def tasks_svg(tokens: dict) -> str:
 
     for orient, side in orientations.items():
         for state, (fill, dot_paint) in states.items():
-            prefix = f"{orient}{state}-"
             # Sin hint-*-margin: KSvg usa el tamaño de cada borde como margen,
             # así el icono queda separado del punto solo en el lado exterior.
             _dot_frame(svg, f"{orient}{state}-", side, fill or none, dot_paint, corner, span, thick, dot)

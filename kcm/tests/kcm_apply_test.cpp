@@ -6,6 +6,8 @@
  * GG_SANDBOX_HOOK en tools/sandbox.sh, y goldenglass-glass en el PATH):
  *   kcm_apply_test /ruta/a/kcm_goldenglass.so
  * Pide tres niveles seguidos (1.0, 0.0, 0.25): el último debe quedar aplicado.
+ * En ctest corre sin sesión, con el goldenglass-glass de prueba de tests/bin y
+ * XDG_CONFIG_HOME temporal (ver kcm/CMakeLists.txt).
  */
 
 #include <KConfig>

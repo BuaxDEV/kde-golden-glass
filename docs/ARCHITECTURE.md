@@ -262,8 +262,9 @@ cerca) y valores intermedios; se aplica en vivo al soltar ejecutando
 El interruptor «Mostrar fondo de la barra de menús» escribe `goldenglassrc`
 directamente (con aviso de cambio, sin procesos). "Predeterminados" vuelve al
 nivel y al fondo de fábrica; no hay "Aplicar". Traducción al
-español en `po/es`. `kcm_apply_test` (prueba de integración, dentro de una
-sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
+español en `po/es`. `kcm_apply_test` pide 1,0 → 0,0 → 0,25 seguidos y
+comprueba que queda 0,25: en ctest con un `goldenglass-glass` de prueba
+(`kcm/tests/bin`) y configuración temporal; a mano, dentro de una sesión Plasma.
 
 #### Otros módulos de Ajustes
 
@@ -944,11 +945,24 @@ dentro de «Vidrio».
   `--dev` crea symlinks para iterar sin reinstalar.
 - **CI ✅** (`.github/workflows/ci.yml` → `tools/ci.sh`): en cada PR y push a
   `main`, en un contenedor `archlinux:latest`, instala las dependencias de
-  compilación del PKGBUILD (con caché de pacman), comprueba Python, bash y las
-  traducciones, comprueba los módulos QML y la versión del shell contra el
-  Plasma de Arch (`tools/check_plasma_compat.py`), ejecuta los generadores,
-  compila el C++ y pasa ctest, y hace `makepkg` del commit; los paquetes quedan
-  como artefacto. El mismo script se ejecuta en local con `podman run --rm -v
+  compilación del PKGBUILD (con caché de pacman) y comprueba:
+  - Python con ruff (reglas en `pyproject.toml`: errores, no estilo) y las
+    pruebas de `tools/tests` con pytest (colores y cabecera C++ de los tokens,
+    `goldenglass-system` con sustitutos de kreadconfig6/kwriteconfig6/Plymouth
+    en directorios temporales);
+  - los scripts de `tools/` con shellcheck;
+  - las traducciones: `msgfmt --check` y `tools/check_i18n.sh`, que extrae los
+    textos con los `Messages.sh` (como los scripts de KDE) y exige que el
+    catálogo en español los tenga todos;
+  - los módulos QML y la versión del shell contra el Plasma de Arch
+    (`tools/check_plasma_compat.py`);
+  - el QML generado, el shell y los módulos de Ajustes con qmllint (solo las
+    categorías que son errores; la lista está en `tools/ci.sh`).
+
+  Al final hace `makepkg` del commit, que compila el C++ y pasa ctest
+  (`check()`) una sola vez; los paquetes quedan como artefacto.
+
+  El mismo script se ejecuta en local con `podman run --rm -v
   "$PWD":/src:Z -w /src docker.io/library/archlinux:latest tools/ci.sh`.
 - **Plasma next** (`.github/workflows/plasma-next.yml`): cada lunes, la misma CI
   sobre `main` contra el Arch actual y contra `[kde-unstable]`
@@ -966,7 +980,9 @@ dentro de «Vidrio».
   cláusula de KDE e.V. en `kstyle/`, `kdecoration/`, `libgoldenglasscommon/`,
   `kwin-effect/` y la pantalla de bloqueo). Sus cabeceras no se tocan;
   `REUSE.toml` declara la licencia de todo archivo sin etiquetas SPDX y la CI
-  comprueba el cumplimiento REUSE (`reuse lint`).
+  comprueba el cumplimiento REUSE (`reuse lint`) y que los archivos nuevos de
+  cada PR traigan su cabecera SPDX (`tools/check_spdx.sh`: con la licencia por
+  defecto de `REUSE.toml`, `reuse lint` no lo detecta).
 - Comunidad: `CONTRIBUTING.md` (DCO), `CODE_OF_CONDUCT.md`, `SECURITY.md`
   (reporte privado de GitHub), plantillas en `.github/`.
 - No se incluye ningún asset, fuente ni marca de Apple. El nombre del proyecto

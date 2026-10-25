@@ -154,7 +154,6 @@ def main() -> int:
     # Diálogo / popup con sombra.
     dlg = Frame(THEME / "translucent/dialogs/background.svg", colors)
     rect = QRectF(60, 80, 340, 220)
-    s = plasma["popup_shadow"]
     paint_shadow(dlg, p, rect)
     dlg.paint(p, rect)
     m = dlg.margins()
@@ -168,7 +167,6 @@ def main() -> int:
     # Tooltip.
     tip = Frame(THEME / "translucent/widgets/tooltip.svg", colors)
     trect = QRectF(460, 90, 180, 34)
-    ts = plasma["tooltip_shadow"]
     paint_shadow(tip, p, trect)
     tip.paint(p, trect)
     label(trect.left() + 12, trect.top() + 22, "Tooltip de vidrio")

@@ -31,7 +31,7 @@ namespace GoldenGlass
 {
 
 //_______________________________________________
-const QString ExceptionModel::m_columnTitles[ExceptionModel::nColumns] = {QStringLiteral(""), i18n("Exception Type"), i18n("Regular Expression")};
+const KLazyLocalizedString ExceptionModel::m_columnTitles[ExceptionModel::nColumns] = {KLazyLocalizedString(), kli18n("Exception Type"), kli18n("Regular Expression")};
 
 //__________________________________________________________________
 QVariant ExceptionModel::data(const QModelIndex &index, int role) const
@@ -78,7 +78,7 @@ QVariant ExceptionModel::data(const QModelIndex &index, int role) const
 QVariant ExceptionModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole && section >= 0 && section < nColumns) {
-        return m_columnTitles[section];
+        return m_columnTitles[section].isEmpty() ? QString() : m_columnTitles[section].toString();
     }
 
     // return empty

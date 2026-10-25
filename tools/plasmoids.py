@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Prepara los plasmoids de plasma/plasmoids/ en build/plasma/plasmoids/.
 
-Copia cada paquete, compila sus traducciones (po/<idioma>.po) dentro del
+Copia cada paquete (sin po/ ni Messages.sh, que solo sirven para traducir),
+compila sus traducciones (po/<idioma>.po) dentro del
 propio paquete, en contents/locale/<idioma>/LC_MESSAGES/plasma_applet_<id>.mo,
 donde Plasma las busca para los plasmoids instalados como paquete, y escribe
 contents/ui/tokens.js con los tokens (en QML: import "tokens.js" as T).
@@ -77,7 +78,7 @@ def build(out: Path, tokens: dict | None = None) -> list[Path]:
         dst = out / "plasma" / "plasmoids" / plugin_id
         if dst.exists():
             shutil.rmtree(dst)
-        shutil.copytree(src, dst, ignore=shutil.ignore_patterns("po"))
+        shutil.copytree(src, dst, ignore=shutil.ignore_patterns("po", "Messages.sh"))
         written.append(dst)
         for origin, files in SHARED.get(plugin_id, {}).items():
             for name in files:

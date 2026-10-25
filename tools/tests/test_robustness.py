@@ -9,6 +9,7 @@ respuesta. Se ejecuta con:
 
 from __future__ import annotations
 
+import argparse
 import contextlib
 import io
 import json
@@ -129,7 +130,7 @@ class GlassLevelTest(unittest.TestCase):
     def test_level_argument_must_be_finite(self) -> None:
         self.assertEqual(glass._level_arg("0.25"), 0.25)
         for text in ("nan", "inf", "-inf", "abc"):
-            with self.assertRaises(Exception, msg=text):
+            with self.assertRaises(argparse.ArgumentTypeError, msg=text):
                 glass._level_arg(text)
 
     def test_set_level_rejects_nan(self) -> None:

@@ -46,17 +46,18 @@ StyleConfig::StyleConfig(QWidget *parent)
 {
     setupUi(this);
 
+    // _shadowSizes son claves: solo se traduce el texto que se muestra
     for (QString &item : _shadowSizes) {
         if (item == "None") {
-            _shadowSize->addItem(item, "ShadowNone");
+            _shadowSize->addItem(i18nc("@item:inlistbox shadow size", "None"), "ShadowNone");
         } else if (item == "Small") {
-            _shadowSize->addItem(item, "ShadowSmall");
+            _shadowSize->addItem(i18nc("@item:inlistbox shadow size", "Small"), "ShadowSmall");
         } else if (item == "Medium") {
-            _shadowSize->addItem(item, "ShadowMedium");
+            _shadowSize->addItem(i18nc("@item:inlistbox shadow size", "Medium"), "ShadowMedium");
         } else if (item == "Large") {
-            _shadowSize->addItem(item, "ShadowLarge");
+            _shadowSize->addItem(i18nc("@item:inlistbox shadow size", "Large"), "ShadowLarge");
         } else if (item == "VeryLarge") {
-            _shadowSize->addItem(item, "ShadowVeryLarge");
+            _shadowSize->addItem(i18nc("@item:inlistbox shadow size", "Very Large"), "ShadowVeryLarge");
         }
     }
 

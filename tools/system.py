@@ -257,7 +257,7 @@ def _set_plymouth(theme: str | None) -> None:
     except subprocess.CalledProcessError:
         subprocess.run([args[0], previous], check=False)
         raise SystemExit("goldenglass-system: no se pudo regenerar el initramfs; "
-                         f"se mantiene el tema de Plymouth {previous}")
+                         f"se mantiene el tema de Plymouth {previous}") from None
 
 
 def enable_plymouth(variant: str, state: dict) -> None:

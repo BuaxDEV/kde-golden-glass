@@ -13,6 +13,7 @@
         "Id": "org.goldenglass.launchpad",
         "License": "GPL-3.0-or-later",
         "Name": "Apps",
+        "Name[es]": "Apps",
         "Website": "https://github.com/BuaxDEV/kde-golden-glass"
     },
     "X-Plasma-API-Minimum-Version": "6.0",

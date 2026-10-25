@@ -391,7 +391,7 @@ Item {
 
     KSvg.FrameSvgItem {
 
-        Accessible.name: i18nc("@info:whatsthis Accessible name", "Panel Focus Indicator")
+        Accessible.name: i18ndc("plasma_shell_org.kde.plasma.desktop", "@info:whatsthis Accessible name", "Panel Focus Indicator")
 
         x: root.verticalPanel || !panel.activeFocusItem
             ? translucentItem.x

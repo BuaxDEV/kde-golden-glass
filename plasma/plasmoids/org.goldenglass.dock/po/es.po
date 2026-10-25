@@ -24,3 +24,11 @@ msgstr "Mantener en el Dock"
 
 msgid "Quit"
 msgstr "Salir"
+
+# DockView.qml (la Papelera del dock) y TaskMenu.qml: propios del dock, aunque
+# los plasmoids de origen también los traducen
+msgid "Trash"
+msgstr "Papelera"
+
+msgid "Open"
+msgstr "Abrir"

@@ -1,0 +1,257 @@
+# Traducción al español de la decoración de ventanas de GoldenGlass y su
+# módulo de configuración (incluidas las excepciones por ventana).
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: goldenglass_kwin_deco\n"
+"Language: es\n"
+"PO-Revision-Date: 2026-10-24 18:00+0000\n"
+"Last-Translator: GoldenGlass contributors\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgid "New Exception - GoldenGlass Settings"
+msgstr "Nueva excepción - Ajustes de GoldenGlass"
+
+msgid "Edit Exception - GoldenGlass Settings"
+msgstr "Editar excepción - Ajustes de GoldenGlass"
+
+msgid "Question - GoldenGlass Settings"
+msgstr "Pregunta - Ajustes de GoldenGlass"
+
+msgid "Remove selected exception?"
+msgstr "¿Quitar la excepción seleccionada?"
+
+msgid "Remove"
+msgstr "Quitar"
+
+msgid "Warning - GoldenGlass Settings"
+msgstr "Advertencia - Ajustes de GoldenGlass"
+
+msgid "Regular Expression syntax is incorrect"
+msgstr "La sintaxis de la expresión regular no es correcta"
+
+msgid "Exception Type"
+msgstr "Tipo de excepción"
+
+msgid "Regular Expression"
+msgstr "Expresión regular"
+
+msgid "Window Title"
+msgstr "Título de la ventana"
+
+msgid "Window Class Name"
+msgstr "Nombre de la clase de la ventana"
+
+msgid "Enable/disable this exception"
+msgstr "Activar o desactivar esta excepción"
+
+msgid "General"
+msgstr "General"
+
+msgid "Tit&le alignment:"
+msgstr "A&lineación del título:"
+
+msgid "Tiny"
+msgstr "Diminuto"
+
+msgctxt "@item:inlistbox Button size:"
+msgid "Small"
+msgstr "Pequeño"
+
+msgctxt "@item:inlistbox Button size:"
+msgid "Medium"
+msgstr "Mediano"
+
+msgctxt "@item:inlistbox Button size:"
+msgid "Large"
+msgstr "Grande"
+
+msgctxt "@item:inlistbox Button size:"
+msgid "Very Large"
+msgstr "Muy grande"
+
+msgid "Round bottom corners with no borders"
+msgstr "Redondear las esquinas inferiores sin bordes"
+
+msgid "Draw separator under active window's titlebar"
+msgstr "Dibujar un separador bajo la barra de título de la ventana activa"
+
+msgid "Draw titlebar background gradient"
+msgstr "Dibujar un degradado en el fondo de la barra de título"
+
+msgid " px"
+msgstr " px"
+
+msgid "Allow resizing maximized windows from window edges"
+msgstr "Permitir cambiar el tamaño de las ventanas maximizadas desde los bordes"
+
+msgid "Draw a circle around close button"
+msgstr "Dibujar un círculo alrededor del botón de cerrar"
+
+msgid "B&utton size:"
+msgstr "Tamaño de los &botones:"
+
+msgid "Left"
+msgstr "Izquierda"
+
+msgid "Center"
+msgstr "Centro"
+
+msgid "Center (Full Width)"
+msgstr "Centro (ancho completo)"
+
+msgid "Right"
+msgstr "Derecha"
+
+msgid "Window corner radius:"
+msgstr "Radio de las esquinas de las ventanas:"
+
+msgid "Floating titlebar"
+msgstr "Barra de título flotante"
+
+msgid "Make the title bar translucent and blurred, matched to the toolbar opacity so the top of the window is seamless."
+msgstr "La barra de título se vuelve translúcida y desenfocada, con la misma opacidad que la barra de herramientas, para que la parte superior de la ventana sea continua."
+
+msgid "Transparent, blurred title bar"
+msgstr "Barra de título transparente y desenfocada"
+
+msgid "Keep the titlebar background and text colors identical whether the window is focused or not, so unfocused windows don't appear lighter or more transparent."
+msgstr "Mantiene iguales los colores de fondo y de texto de la barra de título tenga o no el foco la ventana, para que las ventanas sin foco no se vean más claras ni más transparentes."
+
+msgid "Use active titlebar colors for inactive windows"
+msgstr "Usar los colores de la barra de título activa en las ventanas inactivas"
+
+msgid "Animations"
+msgstr "Animaciones"
+
+msgid "Anima&tions duration:"
+msgstr "Duración de las anima&ciones:"
+
+msgid " ms"
+msgstr " ms"
+
+msgid "Enable animations"
+msgstr "Activar las animaciones"
+
+msgid "Shadows"
+msgstr "Sombras"
+
+msgid "Si&ze:"
+msgstr "&Tamaño:"
+
+msgctxt "@item:inlistbox Button size:"
+msgid "None"
+msgstr "Ninguno"
+
+msgid "Color:"
+msgstr "Color:"
+
+msgctxt "strength of the shadow (from transparent to opaque)"
+msgid "S&trength:"
+msgstr "&Intensidad:"
+
+msgid "%"
+msgstr "%"
+
+msgid "Window-Specific Overrides"
+msgstr "Ajustes específicos de ventanas"
+
+msgid "Dialog"
+msgstr "Diálogo"
+
+msgid "Information about Selected Window"
+msgstr "Información de la ventana seleccionada"
+
+msgid "Class: "
+msgstr "Clase: "
+
+msgid "Title: "
+msgstr "Título: "
+
+msgid "Window Property Selection"
+msgstr "Selección de propiedades de la ventana"
+
+msgid "Use window class (whole application)"
+msgstr "Usar la clase de la ventana (toda la aplicación)"
+
+msgid "Use window title"
+msgstr "Usar el título de la ventana"
+
+msgid "Window Identification"
+msgstr "Identificación de la ventana"
+
+msgid "&Matching window property: "
+msgstr "&Propiedad de la ventana que debe coincidir: "
+
+msgid "Regular expression &to match: "
+msgstr "&Expresión regular que debe coincidir: "
+
+msgid "Detect Window Properties"
+msgstr "Detectar las propiedades de la ventana"
+
+msgid "Decoration Options"
+msgstr "Opciones de decoración"
+
+msgid "Border size:"
+msgstr "Tamaño del borde:"
+
+msgid "Hide window title bar"
+msgstr "Ocultar la barra de título de la ventana"
+
+msgctxt "@item:inlistbox Border size:"
+msgid "No Border"
+msgstr "Sin borde"
+
+msgctxt "@item:inlistbox Border size:"
+msgid "No Side Borders"
+msgstr "Sin bordes laterales"
+
+msgctxt "@item:inlistbox Border size:"
+msgid "Tiny"
+msgstr "Diminuto"
+
+msgctxt "@item:inlistbox Border size:"
+msgid "Normal"
+msgstr "Normal"
+
+msgctxt "@item:inlistbox Border size:"
+msgid "Large"
+msgstr "Grande"
+
+msgctxt "@item:inlistbox Border size:"
+msgid "Very Large"
+msgstr "Muy grande"
+
+msgctxt "@item:inlistbox Border size:"
+msgid "Huge"
+msgstr "Enorme"
+
+msgctxt "@item:inlistbox Border size:"
+msgid "Very Huge"
+msgstr "Muy enorme"
+
+msgctxt "@item:inlistbox Border size:"
+msgid "Oversized"
+msgstr "Descomunal"
+
+msgid "Move Up"
+msgstr "Subir"
+
+msgid "Move Down"
+msgstr "Bajar"
+
+msgid "Add"
+msgstr "Añadir"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Applications whose main windows draw the window buttons in their toolbar"
+msgstr "Aplicaciones cuyas ventanas principales dibujan los botones de la ventana en su barra de herramientas"
+
+msgid "Corner radius of windows, in pixels"
+msgstr "Radio de las esquinas de las ventanas, en píxeles"

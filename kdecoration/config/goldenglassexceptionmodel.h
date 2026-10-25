@@ -29,6 +29,8 @@
 #include "goldenglasslistmodel.h"
 #include "goldenglasssettings.h"
 
+#include <KLazyLocalizedString>
+
 namespace GoldenGlass
 {
 
@@ -72,8 +74,8 @@ protected:
     }
 
 private:
-    //* column titles
-    static const QString m_columnTitles[nColumns];
+    //* column titles: se traducen al mostrarse (al inicializar los static aún no está cargado el catálogo)
+    static const KLazyLocalizedString m_columnTitles[nColumns];
 };
 
 }

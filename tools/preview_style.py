@@ -58,7 +58,7 @@ def prepare_environment(variant: str, workdir: Path) -> dict[str, str]:
 
 def render(out: Path) -> int:
     from PyQt6.QtCore import QPoint, Qt
-    from PyQt6.QtGui import QAction, QColor, QIcon, QImage, QPainter
+    from PyQt6.QtGui import QColor, QIcon, QImage, QPainter
     from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QLineEdit, QMenu, QPushButton,
                                  QSlider, QVBoxLayout, QWidget)
 
