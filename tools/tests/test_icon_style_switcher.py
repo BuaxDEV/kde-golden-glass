@@ -312,13 +312,26 @@ def test_watch_gives_up_on_a_theme_that_keeps_coming_back(session, capsys):
     clock = Clock()
     corrector = switcher.Corrector(clock)
     for _ in range(switcher.MAX_CORRECTIONS + 3):
-        session.set("kdeglobals", "Icons", "Theme", "GoldenGlass")
+        session.set("kdeglobals", "Icons", "Theme", "GoldenGlass")    # the other tool, right away
         corrector.reconcile()
         clock.now += 1
     assert len(session.changes()) == switcher.MAX_CORRECTIONS
-    assert "keeps changing" in capsys.readouterr().err
-    clock.now += switcher.CORRECTION_WINDOW_S
+    assert capsys.readouterr().err.count("keeps changing") == 1
+    clock.now += switcher.BACKOFF_S
     assert corrector.reconcile() == "GoldenGlass-Tinted"
+
+
+def test_watch_corrects_changes_a_person_makes(session):
+    """Global themes and colour schemes changed by hand, seconds apart, are all corrected."""
+    wrap(session)
+    session.set("goldenglassrc", "Icons", "Style", "tinted")
+    clock = Clock()
+    corrector = switcher.Corrector(clock)
+    for dark in (True, False, True, False, True, False):
+        session.set("kdeglobals", "Icons", "Theme", "GoldenGlass-Dark" if dark else "GoldenGlass")
+        session.scheme(dark)
+        assert corrector.reconcile() == ("GoldenGlass-Tinted-Dark" if dark else "GoldenGlass-Tinted")
+        clock.now += switcher.CORRECTION_WINDOW_S / (switcher.MAX_CORRECTIONS - 1)
 
 
 def test_watch_does_not_loop_on_its_own_change(session):
@@ -341,3 +354,17 @@ def test_watch_does_not_loop_on_its_own_change(session):
     assert rounds == 2
     assert session.changes() == ["GoldenGlass-Tinted-Dark"]
     assert session.theme() == "GoldenGlass-Tinted-Dark"
+
+
+def test_watch_announces_each_palette_once(session):
+    corrector = switcher.Corrector()
+    session.set("kdeglobals", "Colors:View", "DecorationFocus", "0,122,255")
+    assert corrector.palette_changed() is False          # at login it only remembers
+    assert corrector.palette_changed() is False          # its own announcement: same palette
+    session.set("kdeglobals", "Colors:View", "DecorationFocus", "175,82,222")     # --accent-color
+    assert corrector.palette_changed() is True
+    assert corrector.palette_changed() is False
+    session.scheme(dark=True)
+    assert corrector.palette_changed() is True
+    session.set("kdeglobals", "Icons", "Theme", "GoldenGlass-Dark")              # not the palette
+    assert corrector.palette_changed() is False

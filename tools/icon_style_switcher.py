@@ -19,8 +19,9 @@ a GoldenGlass global theme writes the default theme of its variant, and with
 Appearance=auto a light/dark colour scheme change asks for the other variant.
 It only corrects a theme of the GoldenGlass family (another theme chosen in
 System Settings › Icons stays) and only once the user made a choice in the
-module. Corrections are rate limited, so two tools fighting over the theme
-cannot loop.
+module. If another tool keeps writing the theme back, the daemon stops
+correcting for a minute instead of looping. When the palette changes it
+announces it once more (see announce_palette()).
 
 Every write (setters, --apply and each correction of --watch) takes an
 exclusive flock in $XDG_RUNTIME_DIR/goldenglass-icon-style.lock: the module and
@@ -81,10 +82,19 @@ PREVIEW_APPS = ("dolphin", "konsole", "systemsettings", "kate")
 # --watch: a global theme or a colour scheme writes kdeglobals several times in a
 # row; the daemon waits for the last write before it looks
 SETTLE_MS = 500
-# --watch never corrects more than this many times in this many seconds: if
-# another tool keeps writing the theme back, the daemon gives up instead of looping
+# --watch: if another tool writes the theme back right after each correction,
+# MAX_CORRECTIONS within CORRECTION_WINDOW_S stop the daemon for BACKOFF_S instead
+# of looping. A person changes the global theme or the colour scheme far less often.
 MAX_CORRECTIONS = 3
-CORRECTION_WINDOW_S = 30.0
+CORRECTION_WINDOW_S = 10.0
+BACKOFF_S = 60.0
+# KGlobalSettings::ChangeType::PaletteChanged, sent as notifyChange(type, 0)
+PALETTE_CHANGED = 0
+# kdeglobals keys that tell one palette from another: the accent (which
+# plasma-apply-colorscheme --accent-color writes as DecorationFocus of every
+# colour group), the selection and the window background
+PALETTE_KEYS = (("Colors:View", "DecorationFocus"), ("Colors:Selection", "BackgroundNormal"),
+                ("Colors:Window", "BackgroundNormal"))
 
 
 # --- configuration --------------------------------------------------------------
@@ -277,13 +287,22 @@ class Corrector:
     def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
         self._clock = clock
         self._recent: deque[float] = deque()
-        self.gave_up = False
+        self._backoff_until = float("-inf")
+        self._palette: tuple[str, ...] | None = None
 
-    def _allowed(self) -> bool:
+    def _allowed(self, current: str, theme: str) -> bool:
         now = self._clock()
+        if now < self._backoff_until:
+            return False
         while self._recent and now - self._recent[0] > CORRECTION_WINDOW_S:
             self._recent.popleft()
-        return len(self._recent) < MAX_CORRECTIONS
+        if len(self._recent) < MAX_CORRECTIONS:
+            return True
+        self._recent.clear()
+        self._backoff_until = now + BACKOFF_S
+        print(f"{PROG}: the icon theme keeps changing to {current}; not correcting it to {theme} "
+              f"for {BACKOFF_S:g} s", file=sys.stderr)
+        return False
 
     def reconcile(self) -> str | None:
         """Puts back the chosen theme over another GoldenGlass one; the theme it set, if any."""
@@ -294,18 +313,31 @@ class Corrector:
         if current not in family():
             return None
         theme = target_theme(choice)
-        if current == theme:
+        if current == theme or not self._allowed(current, theme):
             return None
-        if not self._allowed():
-            if not self.gave_up:
-                print(f"{PROG}: the icon theme keeps changing to {current}; not correcting it to {theme} "
-                      f"for a while", file=sys.stderr)
-            self.gave_up = True
-            return None
-        self.gave_up = False
         self._recent.append(self._clock())
         change_icons(theme)
         return theme
+
+    def palette_changed(self) -> bool:
+        """The palette differs from the one of the previous call (the first call only remembers it)."""
+        palette = tuple(kread("kdeglobals", group, key) for group, key in PALETTE_KEYS)
+        changed = self._palette is not None and palette != self._palette
+        self._palette = palette
+        return changed
+
+
+def announce_palette() -> None:
+    """notifyChange(PaletteChanged) again, now that kdeglobals holds the new palette.
+
+    plasma-apply-colorscheme --accent-color announces the change before
+    kdeglobals has it, so every app keeps the previous palette, and the Tinted
+    icons the previous accent, until the next change (SP-10a, SP-10e). The
+    daemon hears its own announcement, but the palette it remembers is already
+    this one.
+    """
+    subprocess.run(["dbus-send", "--session", "--type=signal", "/KGlobalSettings",
+                    "org.kde.KGlobalSettings.notifyChange", f"int32:{PALETTE_CHANGED}", "int32:0"], check=False)
 
 
 def watch() -> int:
@@ -314,9 +346,12 @@ def watch() -> int:
 
     app = QCoreApplication(sys.argv[:1])
     corrector = Corrector()
+    corrector.palette_changed()
 
     def settle() -> None:
         try:
+            if corrector.palette_changed():
+                announce_palette()
             with session_lock():
                 theme = corrector.reconcile()
         except (subprocess.SubprocessError, OSError, SystemExit) as exc:
