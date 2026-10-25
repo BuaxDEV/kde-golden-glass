@@ -1,5 +1,15 @@
 # Cambios
 
+## [Unreleased]
+
+### Cambios
+
+- **Semáforos grises en ventanas inactivas**, como macOS: sin color ni glifo
+  hasta que el ratón pasa por el grupo, que los colorea y muestra los glifos
+  aunque la ventana siga sin foco (`traffic_lights.inactive_colored = false`).
+  En las ventanas CSD de GTK4/libadwaita el grupo entero reacciona; en GTK3
+  solo el botón bajo el ratón.
+
 ## 0.2.1 — 2026-10-15
 
 Correcciones de seguridad, compatibilidad con KWin 6.8 y publicación como

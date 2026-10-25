@@ -397,7 +397,7 @@ edge_fade = 28           # px del borde difuminado bajo las etiquetas
 # de Big Sur–Tahoe, con brillo arriba y abajo. Glifo tintado por botón.
 diameter = 14        # px
 gap = 8              # px entre bordes de círculos (centros a diameter + gap)
-inactive_colored = true  # también en color en ventanas sin foco (macOS los pone grises)
+inactive_colored = false  # true: también en color en ventanas sin foco; false: grises hasta pasar el ratón por el grupo (macOS)
 close = "#FF5F57"
 close_border = "#E0443E"
 close_glyph = "#4D0000"
