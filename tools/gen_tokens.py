@@ -188,6 +188,7 @@ def validate(tokens: dict) -> None:
             except ValueError as e:
                 raise SystemExit(f"[{variant}].{key}: {e}") from None
     validate_shadow(tokens["shadow"])
+    _validate_accessibility(tokens["accessibility"])
 
 
 def validate_shadow(shadow: dict) -> None:
@@ -210,8 +211,6 @@ def validate_shadow(shadow: dict) -> None:
     alpha = shadow.get("outline_alpha")
     if isinstance(alpha, bool) or not isinstance(alpha, int | float) or not 0 <= alpha <= 1:
         raise SystemExit(f"[shadow].outline_alpha debe estar en 0..1 (es {alpha!r})")
-
-    _validate_accessibility(tokens["accessibility"])
 
 
 def _validate_accessibility(section: dict) -> None:
