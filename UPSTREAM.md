@@ -69,9 +69,17 @@ copy is commit `2fc7611`; GoldenGlass changes are on top of it
 (`git log -- plasma/shell/org.goldenglass.desktop/contents/views/Panel.qml`):
 the dock slab (`goldenglassDockSlab`: background, blur mask and shadow follow
 the glass slab of `org.goldenglass.dock`; the containment keeps its normal
-place), `goldenglassSetThickness()` and the menu bar (no background unless
-enabled, dimmed on the screen without focus). Every other panel behaves as
-upstream.
+place), `goldenglassSetThickness()`, the menu bar (no background unless
+enabled, dimmed on the screen without focus) and a guard on `minPanelHeight`
+(0 until the containment arrives). Every other panel behaves as upstream.
+
+The guard is needed because `minPanelHeight` is the only lower bound of a
+panel's thickness in Plasma 6.8.1 (PanelView has none of its own) and PanelView
+saves the clipped value. Before the containment arrives, `adjustPrefix()` has
+not run: the frame has no edge prefix and every border is on, so the bound is
+the dock's corners (`radius.dock`), not the menu bar's `north-` frame. Without
+the guard a menu bar thinner than `2 × radius.dock` is clipped on every start
+and the clipped height is saved.
 
 Ported since the copy: **plasma-desktop 6.8.1** (`org.kde.plasma.shell.panel`
 merged into `org.kde.plasma.shell`, `ContainmentItem`, the virtual keyboard

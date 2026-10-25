@@ -134,7 +134,10 @@ Item {
     readonly property int leftPadding: Math.round(Math.min(thickPanelSvg.fixedMargins.left + Kirigami.Units.smallSpacing, spacingAtMinSize));
     readonly property int rightPadding: Math.round(Math.min(thickPanelSvg.fixedMargins.right + Kirigami.Units.smallSpacing, spacingAtMinSize));
 
-    readonly property int minPanelHeight: translucentItem.minimumDrawingHeight
+    // GoldenGlass: before the containment arrives the frame has no edge prefix
+    // and every border on, so Plasma would clip a thin menu bar to the dock's
+    // corners and save that height. No minimum until the prefix is known.
+    readonly property int minPanelHeight: containment ? translucentItem.minimumDrawingHeight : 0
     readonly property int minPanelWidth: translucentItem.minimumDrawingWidth
 
     // This value is read from panelview.cpp which needs it to decide which border should be enabled
