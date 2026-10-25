@@ -16,6 +16,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # acepta si son caracteres válidos de pkgver, o sed podría ejecutar comandos
 # (GNU sed tiene «e»). El filtro va entero aquí y no en un script versionado,
 # que un PR también podría cambiar.
+# shellcheck disable=SC2016 # comillas simples a propósito: lo expande git al filtrar
 git config filter.pkgver.clean 'v=$(cat VERSION) && case $v in ""|*[!0-9A-Za-z._]*) echo "filtro pkgver: VERSION no válido" >&2; exit 1;; esac && sed "s/^pkgver=.*/pkgver=$v/"'
 git config filter.pkgver.smudge cat
 git config filter.pkgver.required false

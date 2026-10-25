@@ -50,6 +50,7 @@ declare -A TARGETS=(
 )
 
 mode=copy
+# shellcheck disable=SC2209 # «link» es un valor, no el comando link(1)
 case "${1:-}" in
   --dev) mode=link ;;
   --uninstall) mode=uninstall ;;
