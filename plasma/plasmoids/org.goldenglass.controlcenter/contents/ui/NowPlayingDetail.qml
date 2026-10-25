@@ -33,7 +33,7 @@ DetailView {
         interval: 1000
         repeat: true
         running: view.playing
-        onTriggered: view.player.updatePosition()
+        onTriggered: if (view.hasPlayer) view.player.updatePosition()
     }
 
     function time(microseconds) {
@@ -129,7 +129,8 @@ DetailView {
             wheelEnabled: false
             from: 0
             to: view.hasPlayer ? view.player.length : 0
-            onPressedChanged: if (!pressed) view.player.position = value
+            // el reproductor puede cerrarse mientras se arrastra
+            onPressedChanged: if (!pressed && view.hasPlayer) view.player.position = value
 
             Binding on value {
                 value: view.hasPlayer ? view.player.position : 0

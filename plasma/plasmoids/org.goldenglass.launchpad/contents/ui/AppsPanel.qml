@@ -235,9 +235,18 @@ PlasmaCore.Dialog {
         if (entry.bridge) {
             openSpotlight(entry.name);
         } else {
-            entry.model.trigger(entry.row, "", null);
+            trigger(entry, "", null);
         }
         close();
+    }
+
+    // El modelo de Kicker de una entrada puede haberse destruido (la lista se
+    // rehace con retraso al cambiar las apps o la búsqueda): entonces no se hace nada
+    function trigger(entry, actionId, argument) {
+        const model = entry ? entry.model : null;
+        if (model && typeof model.trigger === "function") {
+            model.trigger(entry.row, actionId, argument);
+        }
     }
 
     // URL del .desktop de una entrada ("" si no es una app)
@@ -473,8 +482,7 @@ PlasmaCore.Dialog {
                 text: modelData.text
                 icon: typeof modelData.icon === "string" ? modelData.icon : ""
                 onClicked: {
-                    const e = contextMenu.entry;
-                    e.model.trigger(e.row, modelData.actionId, modelData.actionArgument);
+                    panel.trigger(contextMenu.entry, modelData.actionId, modelData.actionArgument);
                     panel.close();
                 }
             }
