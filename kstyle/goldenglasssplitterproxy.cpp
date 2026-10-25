@@ -195,18 +195,6 @@ bool SplitterProxy::eventFilter(QObject *object, QEvent *event)
 bool SplitterProxy::event(QEvent *event)
 {
     switch (event->type()) {
-#if 0
-            case QEvent::Paint:
-            {
-                QPainter painter( this );
-                painter.setClipRegion( static_cast<QPaintEvent*>( event )->region() );
-                painter.setRenderHints( QPainter::Antialiasing );
-                painter.setPen( Qt::red );
-                painter.drawRect( QRectF( rect() ).adjusted( 0.5, 0.5, -0.5, -0.5 ) );
-                return true;
-            }
-#endif
-
     case QEvent::MouseMove:
     case QEvent::MouseButtonPress:
     case QEvent::MouseButtonRelease: {

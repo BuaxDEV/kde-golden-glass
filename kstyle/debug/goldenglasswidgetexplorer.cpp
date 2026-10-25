@@ -46,8 +46,6 @@ WidgetExplorer::WidgetExplorer(QObject *parent)
 
     _eventTypes.insert(QEvent::FocusIn, QStringLiteral("FocusIn"));
     _eventTypes.insert(QEvent::FocusOut, QStringLiteral("FocusOut"));
-
-    // _eventTypes.insert( QEvent::Paint, "Paint" );
 }
 
 //________________________________________________
@@ -65,16 +63,6 @@ void WidgetExplorer::setEnabled(bool value)
 //________________________________________________
 bool WidgetExplorer::eventFilter(QObject *object, QEvent *event)
 {
-    //         if( object->isWidgetType() )
-    //         {
-    //             QString type( _eventTypes[event->type()] );
-    //             if( !type.isEmpty() )
-    //             {
-    //                 QTextStream( stdout ) << "GoldenGlass::WidgetExplorer::eventFilter - widget: " << object << " (" << object->metaObject()->className() << ")";
-    //                 QTextStream( stdout ) << " type: " << type  << endl;
-    //             }
-    //         }
-
     switch (event->type()) {
     case QEvent::Paint:
         if (_drawWidgetRects) {

@@ -284,15 +284,6 @@ TileSet ShadowHelper::shadowTiles(const int frameRadius, CustomShadowParams shad
         return TileSet();
     }
 
-    // auto withOpacity = [](const QColor &color, qreal opacity) -> QColor {
-    //     QColor c(color);
-    //     c.setAlphaF(opacity);
-    //     return c;
-    // };
-
-    // const QColor color = StyleConfigData::shadowColor();
-    // const qreal strength = static_cast<qreal>(StyleConfigData::shadowStrength()) / 255.0;
-
     const QSize boxSize = BoxShadowRenderer::calculateMinimumBoxSize(shadow1.radius).expandedTo(BoxShadowRenderer::calculateMinimumBoxSize(shadow2.radius));
 
     BoxShadowRenderer shadowRenderer;
@@ -324,15 +315,6 @@ TileSet ShadowHelper::shadowTiles(const int frameRadius, CustomShadowParams shad
         painter.setBrush(Qt::black);
         painter.setCompositionMode(QPainter::CompositionMode_DestinationOut);
         painter.drawRoundedRect(outerRect - margins, frameRadius, frameRadius);
-
-        // Draw outline.
-        /*painter.setPen(withOpacity(Qt::black, 0.3));
-        painter.setBrush(Qt::NoBrush);
-        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-        painter.drawRoundedRect(
-            outerRect - margins,
-            frameRadius-1,
-            frameRadius-1);*/
 
         // We're done.
         painter.end();
@@ -538,8 +520,6 @@ QMargins ShadowHelper::shadowMargins(QWidget *widget) const
             margins.setBottom(margins.bottom() - diff);
         }
     }
-
-    // margins *= _helper.devicePixelRatio(_shadowTiles.pixmap(0));
 
     return margins.toMargins();
 }

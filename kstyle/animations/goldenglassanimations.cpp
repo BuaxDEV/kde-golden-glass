@@ -68,7 +68,6 @@ void Animations::setupEngines()
 
     const bool animationsEnabled(StyleConfigData::animationsEnabled());
     const int animationsDuration(StyleConfigData::animationsDuration());
-    // const int animationsDuration( 1000 );
 
     _widgetEnabilityEngine->setEnabled(animationsEnabled);
     _comboBoxEngine->setEnabled(animationsEnabled);

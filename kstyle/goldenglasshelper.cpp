@@ -118,7 +118,6 @@ void Helper::loadConfig()
 QColor Helper::frameOutlineColor(const QPalette &palette, bool mouseOver, bool hasFocus, qreal opacity, AnimationMode mode) const
 {
     QColor outline(KColorUtils::mix(palette.color(QPalette::Window), palette.color(QPalette::WindowText), 0.25));
-    // QColor outline( palette.color( QPalette::QPalette::AlternateBase ) );
 
     // focus takes precedence over hover
     if (mode == AnimationFocus) {
@@ -484,16 +483,11 @@ void Helper::renderFrame(QPainter *painter, const QRect &rect, const QColor &col
 {
     painter->setRenderHint(QPainter::Antialiasing);
 
-    // QRectF frameRect( rect.adjusted( 1, 1, -1, -1 ) );
     QRectF frameRect(rect.adjusted(Metrics::Frame_FrameWidth, Metrics::Frame_FrameWidth, StyleConfigData::fancyMargins() ? -6 : -Metrics::Frame_FrameWidth, -Metrics::Frame_FrameWidth));
-    // QRectF frameRect(rect);
     qreal radius(frameRadius(PenWidth::NoPen, -1));
     painter->setPen(Qt::NoPen);
 
     if (enabled) {
-        /*if( isDarkTheme( palette ) )
-            renderRectShadow(painter, frameRect, QColor( Qt::black ), 6, 2, 1, 0, 1, radius-1, true, 10);
-        else*/
         renderBoxShadow(painter, frameRect, 0, 1, 5, QColor(0, 0, 0, 215), radius, windowActive);
 
     } else
@@ -503,8 +497,6 @@ void Helper::renderFrame(QPainter *painter, const QRect &rect, const QColor &col
     painter->setPen(Qt::NoPen);
 
     // set brush
-    /*if( color.isValid() ) painter->setBrush( color );
-    else*/
     painter->setBrush(color);
 
     // render
@@ -885,7 +877,6 @@ void Helper::renderTabWidgetFrame(QPainter *painter, const QRect &rect, const QC
 {
     painter->setRenderHint(QPainter::Antialiasing);
 
-    // QRectF frameRect( rect.adjusted( 1, 1, -1, -1 ) );
     QRectF frameRect(rect.adjusted(Metrics::Frame_FrameWidth, Metrics::Frame_FrameWidth, -Metrics::Frame_FrameWidth, -Metrics::Frame_FrameWidth));
     qreal radius(frameRadius(PenWidth::NoPen, -1));
 
@@ -997,15 +988,8 @@ void Helper::renderGroupBox(QPainter *painter, const QRect &rect, const QColor &
     qreal radius(frameRadius(PenWidth::NoPen, -1));
 
     // draw shadow
-    /*if( mouseOver ) {
-
-        renderBoxShadow( painter, frameRect, CustomShadowParams( QPoint( 0, 1 ), 7, QColor(0,0,0,125) ), radius );
-        renderOutline( painter, frameRect, radius, 6);
-    }
-    else {*/
     renderBoxShadow(painter, frameRect, 0, 1, 4, QColor(0, 0, 0, 70), radius, true);
     renderOutline(painter, frameRect, radius, 6);
-    //}
     painter->setPen(Qt::NoPen);
 
     // set brush
@@ -1016,11 +1000,6 @@ void Helper::renderGroupBox(QPainter *painter, const QRect &rect, const QColor &
 
     // render
     painter->drawRoundedRect(frameRect, radius, radius);
-
-    /*if( mouseOver ) {
-        painter->setBrush(QColor(255, 255, 255, 30));
-        painter->drawRoundedRect( frameRect, radius, radius );
-    }*/
 }
 
 //______________________________________________________________________________
@@ -1170,7 +1149,6 @@ void Helper::renderCheckBox(QPainter *painter,
                 renderBoxShadow(painter, frameRect, 0, 1, 2, QColor(0, 0, 0, 90), radius, windowActive);
             }
             painter->setBrush(mouseOver ? background.lighter(110) : background);
-            // painter->setBrush(background);
             painter->drawRoundedRect(frameRect, radius, radius);
 
             background = mouseOver ? palette.color(QPalette::Highlight).lighter(110) : palette.color(QPalette::Highlight);
