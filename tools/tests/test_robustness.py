@@ -13,8 +13,11 @@ import argparse
 import contextlib
 import io
 import json
+import os
 import sys
 import tempfile
+import threading
+import time
 import tomllib
 import unittest
 from pathlib import Path
@@ -173,6 +176,155 @@ class GlassLevelTest(unittest.TestCase):
                 self.assertEqual(glass.get_level(), default, stored)
         with mock.patch.object(glass, "kread", return_value="0.4"):
             self.assertEqual(glass.get_level(), 0.4)
+
+
+class GlassConcurrencyTest(unittest.TestCase):
+    """Dos goldenglass-glass a la vez (KCM y slider del Centro de control)."""
+
+    def setUp(self) -> None:
+        # HOME, XDG_* y cerrojo temporales; kread/kwrite/D-Bus sustituidos
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+        for sub in ("home", "data", "cache", "run"):
+            (self.tmp / sub).mkdir()
+        env = mock.patch.dict(os.environ, {"HOME": str(self.tmp / "home"), "XDG_DATA_HOME": str(self.tmp / "data"),
+                                           "XDG_CACHE_HOME": str(self.tmp / "cache"),
+                                           "XDG_RUNTIME_DIR": str(self.tmp / "run")})
+        env.start()
+        self.addCleanup(env.stop)
+        self.writes: list[tuple] = []
+        self._patch("kwrite", side_effect=lambda *a: self.writes.append(a))
+        self._patch("kread", return_value="")
+        self._patch("set_plasma_theme")
+        self._patch("dbus")
+        self.theme_dir = self.tmp / "data" / "plasma" / "desktoptheme"
+
+    def _patch(self, name: str, **kwargs) -> mock.Mock:
+        patcher = mock.patch.object(glass, name, **kwargs)
+        self.addCleanup(patcher.stop)
+        return patcher.start()
+
+    def _in_thread(self, argv: list[str]) -> threading.Thread:
+        thread = threading.Thread(target=glass.main, args=(argv,))
+        thread.start()
+        self.addCleanup(thread.join, 10)
+        return thread
+
+    def test_lock_path_follows_xdg_runtime_dir_with_a_fallback(self) -> None:
+        self.assertEqual(glass.lock_path(), self.tmp / "run" / "goldenglass-glass.lock")
+        with mock.patch.dict(os.environ, {"XDG_RUNTIME_DIR": str(self.tmp / "missing")}):
+            self.assertEqual(glass.lock_path(), Path(tempfile.gettempdir()) / f"goldenglass-glass-{os.getuid()}.lock")
+        with mock.patch.dict(os.environ):
+            del os.environ["XDG_RUNTIME_DIR"]
+            self.assertEqual(glass.lock_path().name, f"goldenglass-glass-{os.getuid()}.lock")
+
+    def test_reads_do_not_wait_for_the_lock(self) -> None:
+        with glass.session_lock(), mock.patch.object(glass, "effect_available", return_value=True), \
+                contextlib.redirect_stdout(io.StringIO()) as out:
+            start = time.monotonic()
+            for flag in ("--get", "--get-refraction", "--get-menubar-background"):
+                self.assertEqual(glass.main([flag]), 0, flag)
+            self.assertLess(time.monotonic() - start, 2)
+        self.assertEqual(len(out.getvalue().split()), 3)
+
+    def test_writes_wait_for_the_lock(self) -> None:
+        for argv in (["--menubar-background", "on"], ["--level", "0.8", "--no-plasma-reload"],
+                     ["--refraction", "off"], ["--check"]):
+            with self.subTest(argv=argv), mock.patch.object(glass, "effect_available", return_value=True), \
+                    mock.patch.object(glass, "effects_call", return_value=""), \
+                    mock.patch.object(glass, "write_tuned_theme"):
+                self.writes.clear()
+                with glass.session_lock():
+                    thread = self._in_thread(argv)
+                    thread.join(0.3)
+                    self.assertTrue(thread.is_alive())
+                    self.assertEqual(self.writes, [])
+                thread.join(10)
+                self.assertFalse(thread.is_alive())
+                self.assertTrue(self.writes)
+
+    def test_concurrent_levels_are_serialized_and_the_final_state_is_coherent(self) -> None:
+        inside = 0
+        overlaps: list[int] = []
+        guard = threading.Lock()
+        real_write = glass.write_tuned_theme
+
+        def slow_write(tokens: dict, level: float) -> None:
+            nonlocal inside
+            with guard:
+                inside += 1
+                overlaps.append(inside)
+            time.sleep(0.15)
+            real_write(tokens, level)
+            with guard:
+                inside -= 1
+
+        self._patch("write_tuned_theme", side_effect=slow_write)
+        threads = [threading.Thread(target=glass.main, args=(["--level", level, "--no-plasma-reload"],))
+                   for level in ("0.1", "0.9", "0.2", "0.8")]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(60)
+            self.assertFalse(thread.is_alive())
+        self.assertEqual(max(overlaps), 1)
+        # lo último escrito en goldenglassrc y el tema Tuned son del mismo nivel
+        last = [w for w in self.writes if w[1:3] == ("Glass", "Level")][-1][3]
+        meta = json.loads((self.theme_dir / glass.TUNED_ID / "metadata.json").read_text(encoding="utf-8"))
+        self.assertIn(f"level {float(last):.2f} ", meta["KPlugin"]["Description"])
+        self.assertTrue((self.theme_dir / glass.TUNED_ID / "metadata.json").is_file())
+
+    def test_lock_leaves_only_its_own_file(self) -> None:
+        for _ in range(2):
+            with glass.session_lock():
+                pass
+        self.assertEqual([p.name for p in (self.tmp / "run").iterdir()], ["goldenglass-glass.lock"])
+        # el archivo sigue ahí: borrarlo dejaría que dos procesos tuvieran cerrojos distintos
+        self.assertEqual((self.tmp / "run" / "goldenglass-glass.lock").stat().st_mode & 0o777, 0o600)
+
+    def test_lock_that_cannot_be_opened_does_not_block_the_tool(self) -> None:
+        lock = self.tmp / "run" / "goldenglass-glass.lock"
+        lock.symlink_to(self.tmp / "elsewhere")
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), glass.session_lock():
+            pass
+        self.assertIn("sin cerrojo", stderr.getvalue())
+
+    def _build(self, level: float) -> None:
+        glass.write_tuned_theme(ggcommon.load_tokens(), level)
+
+    def _description(self) -> str:
+        meta = json.loads((self.theme_dir / glass.TUNED_ID / "metadata.json").read_text(encoding="utf-8"))
+        return meta["KPlugin"]["Description"]
+
+    def test_tuned_theme_is_replaced_whole_and_leaves_no_staging_dirs(self) -> None:
+        cache = self.tmp / "cache" / f"plasma_theme_{glass.TUNED_ID}.kcache"
+        self._build(0.2)
+        self.assertIn("level 0.20", self._description())
+        cache.write_text("stale")
+        stale = self.theme_dir / glass.TUNED_ID / "stale-file"
+        stale.write_text("x")
+        self._build(0.8)
+        self.assertIn("level 0.80", self._description())
+        self.assertFalse(stale.exists(), "el tema nuevo reemplaza al anterior entero")
+        self.assertFalse(cache.exists())
+        self.assertEqual([p.name for p in self.theme_dir.iterdir()], [glass.TUNED_ID])
+
+    def test_tuned_theme_replacement_without_renameat2(self) -> None:
+        self._build(0.2)
+        with mock.patch.object(glass, "_exchange", return_value=False):
+            self._build(0.8)
+        self.assertIn("level 0.80", self._description())
+        self.assertEqual([p.name for p in self.theme_dir.iterdir()], [glass.TUNED_ID])
+
+    def test_failed_generation_keeps_the_previous_tuned_theme(self) -> None:
+        self._build(0.2)
+        with mock.patch.object(glass.shutil, "copytree", side_effect=OSError("disco lleno")), \
+                self.assertRaises(OSError):
+            self._build(0.8)
+        self.assertIn("level 0.20", self._description())
+        self.assertEqual([p.name for p in self.theme_dir.iterdir()], [glass.TUNED_ID])
 
 
 class GtkSyncTest(unittest.TestCase):

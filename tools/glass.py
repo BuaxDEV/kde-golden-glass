@@ -28,6 +28,13 @@ activa (es el valor de fábrica); si está pedido pero KWin no lo cargó (KWin
 actualizado sin recompilar goldenglass-kstyle) vuelve a cargar el Blur; si sí
 lo cargó, se asegura de que el Blur no esté cargado.
 
+Concurrencia: toda operación que escribe (--level, --refraction,
+--menubar-background, --check) toma un flock exclusivo en
+$XDG_RUNTIME_DIR/goldenglass-glass.lock (sin esa variable, en
+/tmp/goldenglass-glass-UID.lock); la segunda espera a la primera. --get* no
+esperan. GoldenGlassTuned se escribe en un directorio hermano y se cambia de
+golpe, así Plasma nunca lo ve a medias.
+
 Fondo de la barra de menús: solo escribe goldenglassrc [Plasma]
 MenubarBackground (con aviso de cambio); el Panel.qml del shell lo lee en vivo
 con MenuBarSettings (módulo QML org.goldenglass.glass). No toca el Plasma Style.
@@ -36,6 +43,9 @@ con MenuBarSettings (módulo QML org.goldenglass.glass). No toca el Plasma Style
 from __future__ import annotations
 
 import argparse
+import contextlib
+import ctypes
+import fcntl
 import json
 import math
 import os
@@ -104,8 +114,73 @@ def set_plasma_theme(name: str) -> None:
         kwrite("plasmarc", "Theme", "name", name)
 
 
+def lock_path() -> Path:
+    """Archivo del cerrojo: en $XDG_RUNTIME_DIR (de cada usuario, se vacía al cerrar la sesión); sin él, en /tmp."""
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if runtime and os.path.isdir(runtime):
+        return Path(runtime) / "goldenglass-glass.lock"
+    return Path(tempfile.gettempdir()) / f"goldenglass-glass-{os.getuid()}.lock"
+
+
+@contextlib.contextmanager
+def session_lock():
+    """Serializa las operaciones que escriben (flock exclusivo).
+
+    El módulo de Ajustes y el slider del Centro de control pueden lanzar dos
+    goldenglass-glass a la vez; sin cerrojo se pisarían al regenerar
+    GoldenGlassTuned y al escribir goldenglassrc. El segundo espera a que
+    termine el primero. El archivo no se borra nunca (borrarlo permitiría que
+    dos procesos tuvieran cerrojos de archivos distintos); el kernel suelta el
+    cerrojo si el proceso muere. Las lecturas (--get*) no lo toman.
+    Si el archivo no se puede abrir de forma segura, sigue sin cerrojo.
+    """
+    path = lock_path()
+    try:
+        fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600)
+    except OSError as e:
+        print(f"goldenglass-glass: sin cerrojo ({path}: {e.strerror})", file=sys.stderr)
+        fd = -1
+    if fd >= 0 and os.fstat(fd).st_uid != os.getuid():
+        # /tmp compartido: otro usuario creó el archivo
+        os.close(fd)
+        print(f"goldenglass-glass: sin cerrojo ({path} es de otro usuario)", file=sys.stderr)
+        fd = -1
+    try:
+        if fd >= 0:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        if fd >= 0:
+            os.close(fd)  # suelta el cerrojo
+
+
+def _exchange(a: Path, b: Path) -> bool:
+    """Intercambia dos rutas de forma atómica (renameat2 con RENAME_EXCHANGE, Linux 3.15 o posterior)."""
+    try:
+        renameat2 = ctypes.CDLL(None, use_errno=True).renameat2
+    except (AttributeError, OSError):
+        return False
+    at_fdcwd, rename_exchange = -100, 2
+    return renameat2(at_fdcwd, os.fsencode(a), at_fdcwd, os.fsencode(b), rename_exchange) == 0
+
+
+def _swap_dir(new: Path, dst: Path, stage: Path) -> None:
+    """Deja `new` en `dst` sin que se vea un `dst` a medias; el tema anterior queda en `stage`."""
+    if not dst.exists():
+        new.rename(dst)
+    elif not _exchange(new, dst):
+        # sin renameat2: dos renombrados; solo falta `dst` un instante
+        dst.rename(stage / "old")
+        new.rename(dst)
+    # con el intercambio, `new` pasa a ser el tema anterior y `stage` se borra con él
+
+
 def write_tuned_theme(tokens: dict, level: float) -> None:
-    """Genera GoldenGlassTuned al nivel dado en ~/.local/share/plasma/desktoptheme."""
+    """Genera GoldenGlassTuned al nivel dado en ~/.local/share/plasma/desktoptheme.
+
+    Se escribe en un directorio hermano y se cambia de golpe por el tema
+    anterior: Plasma nunca ve un tema a medias.
+    """
     with tempfile.TemporaryDirectory(prefix="goldenglass-glass.") as tmp:
         plasma_theme.build(tokens, Path(tmp), level)
         src = Path(tmp) / "plasma" / "desktoptheme" / BASE_ID
@@ -117,16 +192,21 @@ def write_tuned_theme(tokens: dict, level: float) -> None:
         meta_path.write_text(json.dumps(meta, indent=4) + "\n", encoding="utf-8")
 
         dst = data_home() / "plasma" / "desktoptheme" / TUNED_ID
-        if dst.exists():
-            shutil.rmtree(dst)
         dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(src, dst)
-        # KSvg solo descarta la caché de imágenes del tema si metadata.json es
-        # más nuevo, comparando segundos: dos niveles aplicados en el mismo
-        # segundo reutilizarían las imágenes del anterior. Se borra la caché
-        # para que la próxima carga renderice los SVG nuevos.
-        (dst / "metadata.json").touch()
-        (cache_home() / f"plasma_theme_{TUNED_ID}.kcache").unlink(missing_ok=True)
+        # oculto (con punto) y en el mismo directorio: el renombrado es atómico
+        stage = Path(tempfile.mkdtemp(prefix=f".{TUNED_ID}.", dir=dst.parent))
+        try:
+            new = stage / "new"
+            shutil.copytree(src, new)
+            # KSvg solo descarta la caché de imágenes del tema si metadata.json
+            # es más nuevo, comparando segundos: dos niveles aplicados en el
+            # mismo segundo reutilizarían las imágenes del anterior. Se borra la
+            # caché para que la próxima carga renderice los SVG nuevos.
+            (new / "metadata.json").touch()
+            _swap_dir(new, dst, stage)
+            (cache_home() / f"plasma_theme_{TUNED_ID}.kcache").unlink(missing_ok=True)
+        finally:
+            shutil.rmtree(stage, ignore_errors=True)
 
 
 def set_level(level: float, reload_plasma: bool = True) -> None:
@@ -284,18 +364,22 @@ def main(argv: list[str] | None = None) -> int:
         print(get_refraction())
         return 0
     if args.refraction:
-        set_refraction(args.refraction == "on")
+        with session_lock():
+            set_refraction(args.refraction == "on")
         return 0
     if args.get_menubar_background:
         print("on" if get_menubar_background() else "off")
         return 0
     if args.menubar_background:
-        set_menubar_background(args.menubar_background == "on")
+        with session_lock():
+            set_menubar_background(args.menubar_background == "on")
         return 0
     if args.check:
-        check()
+        with session_lock():
+            check()
         return 0
-    set_level(args.level, reload_plasma=not args.no_plasma_reload)
+    with session_lock():
+        set_level(args.level, reload_plasma=not args.no_plasma_reload)
     return 0
 
 
