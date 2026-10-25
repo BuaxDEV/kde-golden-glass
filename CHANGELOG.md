@@ -13,8 +13,18 @@
   marcado y el símbolo blanco. Solo llevan las apps y heredan lo demás del
   tema de fábrica; no salen en Ajustes del sistema › Iconos, porque los
   elegirá el módulo «Estilo de iconos». Valores en `[icon_style.tinted]` y
-  `[icon_style.clear]`, por calibrar. Los temas `GoldenGlass` y
-  `GoldenGlass-Dark` no cambian.
+  `[icon_style.clear]`; el relleno del Transparente está calibrado para que
+  el símbolo tenga contraste 3:1 sobre fondos claros y oscuros (gris
+  translúcido en claro). Los temas `GoldenGlass` y `GoldenGlass-Dark` no
+  cambian.
+- **Apps de terceros en Tintado y Transparente:** `goldenglass-wrap-icons`
+  saca el símbolo del icono de cada app (lo que destaca de su fondo) y lo
+  pone en el tile del estilo; si no se lee, usa su silueta o la inicial de su
+  nombre, y si no tiene, deja el icono encerrado de siempre. Se ajusta con
+  `[icon_style.extract]`, con excepciones por app en
+  `[icon_style.overrides]` (Chrome y JetBrains Toolbox van con la inicial), y
+  se revisa con `goldenglass-wrap-icons --sheet hoja.png`. Volver a ejecutarlo
+  al instalar apps actualiza los seis temas.
 - **Semáforos grises en ventanas inactivas**, como macOS: sin color ni glifo
   hasta que el ratón pasa por el grupo, que los colorea y muestra los glifos
   aunque la ventana siga sin foco (`traffic_lights.inactive_colored = false`).
