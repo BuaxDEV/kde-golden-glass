@@ -121,24 +121,43 @@ void GlassRegion::setWindow(QQuickWindow *window)
     connect(window, &QWindow::heightChanged, this, &GlassRegion::requestUpdate);
 }
 
-void GlassRegion::collect(QQuickItem *item, QRegion &region) const
+QRegion GlassRegion::collectRegion() const
+{
+    QRegion region;
+    if (QQuickItem *root = source()) {
+        collect(root, QRect(), region);
+    }
+    return region;
+}
+
+// clip: the scene rect left by the ancestors with clip: true (null = none)
+void GlassRegion::collect(QQuickItem *item, const QRect &clip, QRegion &region) const
 {
     if (!item->isVisible() || qFuzzyIsNull(item->opacity())) {
         return;
     }
     if (item->property("goldenGlassTile").toBool()) {
         const QRect rect = item->mapRectToScene(item->boundingRect()).toAlignedRect();
-        // el radio escala con el elemento (tarjetas que ceden al pulsarlas, el
-        // resorte al abrir, que escala distinto a lo ancho y a lo alto)
+        // the radius scales with the item (tiles that give when pressed, the
+        // opening spring, which scales width and height differently)
         const qreal radius = item->property("radius").toReal();
         const qreal scaleX = item->width() > 0 ? rect.width() / item->width() : 1;
         const qreal scaleY = item->height() > 0 ? rect.height() / item->height() : 1;
-        region += roundedRegion(rect, int(std::round(radius * scaleX)), int(std::round(radius * scaleY)));
+        const QRegion tile = roundedRegion(rect, int(std::round(radius * scaleX)), int(std::round(radius * scaleY)));
+        region += clip.isNull() ? tile : tile.intersected(clip);
         return;
+    }
+    QRect childClip = clip;
+    if (item->clip()) {
+        const QRect own = item->mapRectToScene(item->clipRect()).toAlignedRect();
+        childClip = clip.isNull() ? own : clip.intersected(own);
+        if (childClip.isEmpty()) {
+            return;
+        }
     }
     const auto children = item->childItems();
     for (QQuickItem *child : children) {
-        collect(child, region);
+        collect(child, childClip, region);
     }
 }
 
@@ -148,10 +167,7 @@ void GlassRegion::sync()
     if (!m_window || !m_window->isVisible() || !root) {
         return;
     }
-    QRegion region;
-    if (m_active) {
-        collect(root, region);
-    }
+    const QRegion region = m_active ? collectRegion() : QRegion();
     if (!m_force && region == m_applied) {
         return;
     }
