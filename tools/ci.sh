@@ -96,14 +96,15 @@ step "QML (qmllint)"
 # Sobre lo generado (build/plasma, build/login: plasmoids con tokens.js y
 # plantillas ya rellenas), el shell y los módulos de Ajustes. Solo categorías
 # que son errores de verdad, como error. Quedan fuera por ruido: unqualified,
-# missing-property, unresolved-type e import (tipos dinámicos de Plasma:
-# plasmoid, Loader.item, modelos) y, por las copias de upstream (views/,
+# missing-property, unresolved-type, unresolved-alias e import (tipos dinámicos
+# de Plasma: plasmoid, Loader.item, modelos; y el módulo QML propio, que aún no
+# está instalado al pasar el lint) y, por las copias de upstream (views/,
 # lockscreen/), comma, read-only-property e id-shadows-member. Para exigir
 # otra categoría basta con añadirla a la lista.
 qmlcats=(
   syntax syntax.duplicate-ids syntax.id-quotation
   duplicate-property-binding duplicated-name duplicate-enum-entries duplicate-inline-component
-  alias-cycle inheritance-cycle unresolved-alias missing-enum-entry invalid-lint-directive
+  alias-cycle inheritance-cycle missing-enum-entry invalid-lint-directive
   assignment-in-condition unreachable-code var-used-before-declaration function-used-before-declaration
   eval with
   Quick.anchor-combinations Quick.color Quick.layout-positioning Quick.property-changes-parsed
