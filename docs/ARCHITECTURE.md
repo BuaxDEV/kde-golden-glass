@@ -1108,7 +1108,7 @@ Refracción en las ventanas de las apps.
 | Roturas por actualizaciones de Qt/KDE (rolling) | PKGBUILD con rebuild; CI contra la versión actual de Arch y, cada semana, contra `[kde-unstable]` (betas de Plasma) |
 | Alias de fuente no resuelto por Qt | Plan B descrito en 4.6 |
 | libadwaita ignora temas | Solo colores; documentado |
-| Los plasmoids usan módulos QML privados de Plasma (sin API estable) | Mínimo Plasma 6.8; probar en el sandbox tras cada actualización de Plasma |
+| Los plasmoids usan módulos QML privados de Plasma (sin API estable) | Mínimo Plasma 6.8; `tools/plasma_api.toml` lista los tipos, propiedades, métodos, señales, enums y roles privados que usa el QML y `tools/check_plasma_compat.py` los comprueba contra los `.qmltypes` instalados (los roles, contra las cadenas del plugin) en la CI y en la semanal con `[kde-unstable]`, indicando el archivo QML afectado; un módulo privado sin listar falla; probar en el sandbox tras cada actualización de Plasma |
 | Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` (barra y dock comparten SVG) | `radius.dock ≤ menubar_height / 2` (14 px); el generador lo valida |
 | Plasma Login Manager no admite temas: el diseño propio solo se ve con SDDM | En PLM se aplica fondo y sincronización (el módulo lo explica); si KDE añade temas, se porta el QML de SDDM |
 | Copiar ajustes de un usuario al home de `plasmalogin` como root | Lectura como el usuario y escritura como `plasmalogin` en procesos hijo sin privilegios; probado con un enlace a `/etc/shadow` |
