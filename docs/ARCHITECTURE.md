@@ -611,6 +611,13 @@ plugin de plataforma que plasmashell):
   del rebote del dock. Con 1 ms la animación termina en el fotograma
   siguiente. No hizo falta el plan B (leer el factor en C++ ni forzar
   `visible = false`).
+- **plasmashell resuelve el singleton por el `qmldir` de `contents/ui`:** en
+  una sesión aislada (KWin virtual, plasmashell 6.8.1, bus D-Bus y HOME
+  propios, el layout de `org.goldenglass.light.desktop`, factor 0,5) el dock y
+  el Centro de control cargan y se ven, cada uno crea su `Motion`
+  (`factor=0.5`, `longDuration=100`, `ms(100)=50`) y, al cambiar el factor a 2
+  con aviso, los dos pasan en vivo a `ms(100)=200`. El registro no tiene
+  errores de QML de los plasmoids GoldenGlass, igual que sin `Motion`.
 
 ### 4.6 Tipografía — `fontconfig/`
 - SF Pro **no se redistribuye** (licencia de Apple).
