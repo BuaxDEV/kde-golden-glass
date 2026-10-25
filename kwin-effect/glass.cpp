@@ -312,9 +312,8 @@ void GlassEffect::reconfigure(ReconfigureFlags flags)
     m_noiseStrength = GlassConfig::noiseStrength();
     m_colorMatrix = colorTransformMatrix(GlassConfig::saturation() / 100.0, 1.0);
 
-    // GoldenGlass: la refracción sigue al nivel de vidrio (0 = más claro: entera;
-    // 1 = más opaco: por RefractionOpaqueFactor). goldenglass-glass llama a
-    // KWin.reconfigure al cambiar el nivel. The edge keeps more of itself on
+    // Refraction follows the glass level (0 = clearest: full; 1 = most opaque:
+    // scaled by RefractionOpaqueFactor). The edge keeps more of itself on
     // opaque glass (RefractionRimOpaqueFactor): its contrast matters more there.
     const KSharedConfig::Ptr goldenglassrc = KSharedConfig::openConfig(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig);
     // the decoration keeps this shared config open in KWin: without a reparse
@@ -1068,7 +1067,7 @@ RegionF GlassEffect::paintedBlurShape(EffectWindow *w, const WindowPaintData &da
 
 float GlassEffect::lensEdge(const RectF &deviceBox, qreal scale) const
 {
-    // en superficies bajas (el dock) la banda curvada no ocupa toda la placa
+    // on short surfaces (the dock) the curved band must not fill the whole plate
     return std::min(float(m_refractionEdge * scale),
                     float(std::min(deviceBox.width(), deviceBox.height()) * GoldenGlass::Tokens::RefractionEdgeMaxFraction));
 }
