@@ -916,6 +916,141 @@ tras reiniciar) y desactivado (ídem).
 - Sin probar: un `tools/install.sh` sobre una instalación previa (no migra,
   ver arriba) ni pantallas físicas.
 
+#### Apps en segundo plano en el Dock (F14)
+
+Segunda parte de F14 (plan de macOS 27 §4.9). Como en macOS 27, una app sin
+ventanas que sigue en marcha (en la bandeja, sincronizando…) se ve en el dock
+con un punto gris claro, el tooltip «Ejecutándose en segundo plano» y, en su
+menú, «Detener ejecución en segundo plano» en lugar de «Salir».
+
+**`AppUnits`** (`qmlplugin/appunits*.{h,cpp}`, módulo `org.goldenglass.glass`).
+libtaskmanager solo conoce ventanas, y el módulo QML de D-Bus no puede
+suscribirse a señales: el dock sabe qué apps corren por las units de
+`systemd --user` en las que Plasma lanza cada app.
+
+- **Conexión:** una conexión D-Bus privada, `goldenglass-units`, compartida por
+  todos los docks del proceso (`AppUnitsBackend`). Es privada porque
+  `Subscribe()` hace que systemd mande todas sus señales de units y trabajos a
+  quien se suscribe: en la conexión de plasmashell las pagarían sus demás
+  clientes. Ninguna llamada arranca systemd por activación D-Bus
+  (`setAutoStartService(false)`).
+- **Listado:** `ListUnitsByPatterns` de `app-*.service`, `app-*.scope` y
+  `dbus-*.service`, 250 ms después de la última `UnitNew`, `UnitRemoved` o
+  `JobRemoved`, o de un `PropertiesChanged` de la interfaz `Unit` de una unit
+  ya listada. Sin polling. Cuenta como viva una unit `active`, `activating` o
+  `reloading`.
+- **Nombres:** `parseUnitName()` (`unitname.{h,cpp}`) es una función pura que
+  sigue systemd.io/DESKTOP_ENVIRONMENTS: `app[-<lanzador>]-<id>[@<instancia>].service`
+  y `app[-<lanzador>]-<id>-<instancia>.scope`, deshace los escapes `\xNN` y
+  reconoce las units `dbus-<broker>-<nombre de bus>@<n>.service` de
+  dbus-broker (el nombre de bus de una app `DBusActivatable` es su id de
+  escritorio). Si el id no tiene `.desktop` en `applications/`, se usa el de
+  `SourcePath`; y un scope de Chromium (`app-org.chromium.Chromium-<pid>.scope`)
+  se une al servicio cuyo `MainPID` es ese pid: el navegador saca su proceso
+  principal de la unit en que lo lanzó Plasma.
+- **Filtro:** solo apps con un `.desktop` `Type=Application`, sin `NoDisplay`
+  (ni `OnlyShowIn`/`NotShowIn` que lo oculten), sin `Hidden`, que no sean
+  `TerminalEmulator` (la unit de una terminal contiene lo que se lanzó desde
+  ella) y fuera de `ignored`.
+- **API:** `available` (hay systemd y el listado funciona), `apps`
+  (`{key, name, icon, agent}`; `key` es el id de escritorio sin `.desktop`,
+  como el `AppId` de `TasksModel`), `units(key)`, `stop(key)` (`StopUnit` de
+  cada unit, en modo `replace`: systemd manda SIGTERM a todo el cgroup) e
+  `isAgent(key)` (todas sus units son `@autostart`).
+
+**Regla en `DockView.qml`.**
+
+- `AppUnits` llega por un `Loader` de `AppUnitsSource.qml`, activo solo con
+  `showBackground`. Sin el módulo C++ falla solo ese archivo; sin systemd en el
+  bus, `available` es falso. En los dos casos el dock queda como antes.
+- Un segundo `TasksModel` sin filtros (todos los escritorios, actividades y
+  pantallas, sin agrupar) dice si una app tiene alguna ventana o está
+  arrancando (`IsStartup`).
+- Una app está en segundo plano si su unit sigue viva, no tiene ventanas en
+  ningún sitio y no está arrancando, y todo eso se mantiene
+  `dock.background_delay_ms`.
+- **Fijadas:** el lanzador de siempre lleva el punto tenue. **No fijadas**
+  (decisión del usuario): un `Repeater` tras las tareas, solo para apps que en
+  esta sesión tuvieron ventana o que lanzó el usuario (alguna unit que no es
+  `@autostart`). Su icono aparece en cuanto se cierra la última ventana, para
+  que no desaparezca y vuelva durante la espera; solo el punto espera. «La
+  sesión» es la vida del dock: si plasmashell se reinicia, las apps de
+  inicio automático vuelven a ocultarse hasta que se vea una ventana suya.
+- **Aspecto y menú:** punto con `dock.background_dot_alpha` (en vez de
+  `dot_alpha`); el tooltip añade «Ejecutándose en segundo plano». Un clic
+  relanza la app (`requestNewInstance` si está fijada, o
+  `SimpleFavoritesModel.trigger`): una app de instancia única muestra su
+  ventana. El menú cambia «Salir» por «Detener ejecución en segundo plano»
+  (`AppUnits.stop`) y conserva «Abrir» y «Mantener en el Dock».
+- **Tokens y ajustes:** `[dock] show_background = true`,
+  `background_dot_alpha = 0.35` (por calibrar) y `background_delay_ms = 1500`,
+  validados en `gen_tokens.py`. El plasmoide tiene `showBackground` (de los
+  tokens) y `backgroundIgnore` (ids que no se muestran nunca);
+  `goldenglass-dock --background on|off` escribe el primero. El módulo «Dock»
+  todavía no tiene el interruptor.
+
+**Pruebas.**
+
+- `unitname_test`: `parseUnitName()` con los nombres reales de esta máquina y
+  del sandbox, y los que no siguen la especificación.
+- `appunits_test` (bajo `dbus-run-session`): `AppUnits` contra un systemd1
+  falso (`QDBusVirtualObject`) con `.desktop` de prueba. Cubre el filtro, la
+  lista de ignorados, los agentes, que varias señales seguidas den un solo
+  listado, el cambio de estado sin trabajo, `StopUnit`, `SourcePath`, el scope
+  de Chromium y que systemd se vaya y vuelva del bus.
+- **Sandbox** con `GG_SANDBOX_SYSTEMD=1`: `tools/sandbox.sh` arranca un
+  `systemd --user` propio en el bus privado. No carga los servicios del
+  usuario y corre en un scope delegado del gestor real,
+  `gg-sandbox-<id>.scope`, que se para al salir. Así KIO lanza las apps en
+  units como en una sesión real.
+  - Una app de bandeja de prueba (PyQt6, `quitOnLastWindowClosed` a falso)
+    lanzada como desde el dock, con su ventana cerrada por un script de KWin,
+    queda en el dock sin punto durante la espera y luego con el punto tenue,
+    sin fijar y fijada.
+  - `AppUnits.stop()`, lo que llama el menú, la detiene: SIGTERM, cierre
+    limpio y el icono desaparece (o el lanzador fijado se queda sin punto).
+  - Sin `GG_SANDBOX_SYSTEMD`, el dock no da errores QML y no intenta activar
+    systemd.
+  - El KWin virtual no tiene entrada: el clic, el menú y el tooltip se prueban
+    en una sesión real.
+
+**Spike SP-08 — go.** Las units se leyeron de la sesión real solo con
+`systemctl --user` y `busctl --user` (sin lanzar ni parar nada). En el sandbox
+se lanzó cada caso por el mismo código que usa cada lanzador, con un harness
+QML, y se paró con `systemctl --user stop` sobre el gestor del sandbox.
+
+| Lanzador | Unit | `parseUnitName` → app |
+|---|---|---|
+| Dock (`TasksModel.requestNewInstance`) | `app-<id>@<uuid>.service` | ✓ |
+| Apps y Kickoff (`SimpleFavoritesModel.trigger`) | `app-<id>@<uuid>.service` | ✓ |
+| KRunner y búsqueda de Apps (runner `krunner_services`) | `app-<id>@<uuid>.service` | ✓ |
+| Dolphin (`OpenUrlJob`, con `kioclient exec`) | `app-<id>@<uuid>.service` | ✓ |
+| Inicio automático (`systemd-xdg-autostart-generator`) | `app-<id>@autostart.service` | ✓ (agente) |
+| `DBusActivatable` con dbus-broker (sesión real) | `dbus-:1.2-<id>@0.service` | ✓ |
+| `DBusActivatable` con `SystemdService=` (Ghostty) | `app-com.mitchellh.ghostty.service` | ✓ (terminal: filtrada) |
+| Flatpak lanzado desde Plasma (PCSX2) | `app-net.pcsx2.PCSX2@<uuid>.service` | ✓ |
+| `flatpak run` fuera de una unit (cadena de flatpak) | `app-flatpak-<id>-<pid>.scope` | ✓ |
+| Chromium/Brave (sesión real) | `app-brave\x2dbrowser@<uuid>.service` y `app-org.chromium.Chromium-<pid>.scope` | ✓ (por `MainPID`) |
+| Terminal | la unit de la terminal (`app-ghostty-surface-transient-<n>.scope`) | ✗, límite aceptado |
+
+- **Mapeo:** 10 de 11 lanzadores (91 %). En la sesión real, de las 17 units
+  que casan con los patrones, `AppUnits` (en un proceso aparte, solo leyendo)
+  listó una app, `brave-browser`, con su servicio y el scope de Chromium; las
+  demás se descartaron con razón: inicio automático con `NoDisplay` o
+  inactivo, la terminal, `dbus-broker.service` y servicios sin `.desktop`
+  (`kwalletd6`, `kmtpd5`, KDE Connect, el registro de AT-SPI).
+- **Apps de bandeja:** conservan su unit al cerrar la última ventana (el
+  proceso sigue en `app-<id>@<uuid>.service`). Una app normal (KWrite) pierde
+  la suya al cerrar su ventana.
+- **`StopUnit`:** cierre limpio en todos los casos: SIGTERM, la app sale por
+  su camino normal (`aboutToQuit`) en 0,03–0,11 s y la unit acaba `inactive`
+  con resultado `success`.
+- No se probó en el sandbox la activación D-Bus de dbus-broker (el bus del
+  sandbox es `dbus-daemon`, que lanza los servicios él mismo): su formato sale
+  de las units de la sesión real y del registro de AT-SPI del sandbox, que sí
+  usa dbus-broker. No hizo falta el plan B (solo fijadas o
+  StatusNotifierItem).
+
 ### 4.6 Tipografía — `fontconfig/`
 - SF Pro **no se redistribuye** (licencia de Apple).
 - Alias de fontconfig `GoldenGlass Sans` → SF Pro → SF Pro Text → Inter, y
@@ -1273,7 +1408,8 @@ tras reiniciar) y desactivado (ídem).
   (`TaskMenu.qml`): acciones de la app (las del `.desktop`, de Kicker
   `SimpleFavoritesModel`, leídas al abrir el menú; solo
   `_kicker_jumpListAction`, sin recientes ni Editar/Desinstalar), Nueva ventana / Abrir,
-  Mantener en el Dock, Salir. Arrastrar una app fijada la reordena; soltar
+  Mantener en el Dock, Salir (o «Detener ejecución en segundo plano», ver
+  «Apps en segundo plano en el Dock»). Arrastrar una app fijada la reordena; soltar
   archivos sobre una app los abre con ella. Publica la geometría de cada icono
   para la animación de minimizar de KWin.
 - **Añadir apps:** arrastrar una app desde Apps (o un `.desktop` desde Dolphin)
@@ -1295,7 +1431,7 @@ tras reiniciar) y desactivado (ídem).
   recientes que no están ya en el dock, tras un separador (como macOS).
 - **Ajustes:** `goldenglass-dock` (`tools/dock.py`) escribe la configuración
   del plasmoid con el script de plasmashell (`iconSize`, `magnification`,
-  `magnificationSize`, `showRecent`); el dock la aplica al momento y ajusta el
+  `magnificationSize`, `showRecent`, `showBackground`); el dock la aplica al momento y ajusta el
   grosor. Valores de fábrica en `[dock]` y `[plasma]` de los tokens (el
   `main.xml` del plasmoid es una plantilla). El módulo «Dock» lo llama. Un solo
   rango de tamaños (`[dock] icon_size_min/max`, `magnification_size_max`; la
@@ -1525,6 +1661,7 @@ Refracción en las ventanas de las apps.
 | La fuente del tema entra en cada initramfs | Inter Variable (0,9 MB) en vez de `Inter.ttc` (13 MB) |
 | El dock depende de `views/Panel.qml` copiado de Plasma; si no carga, plasmashell se cae (pasó con Plasma 6.8) | Cambio mínimo y documentado en `UPSTREAM.md` (merge a tres vías por versión); `X-GoldenGlass-PlasmaVersion` + hook de pacman que quita `views/` y `lockscreen/` con otro Plasma; la CI comprueba módulos QML y versión (`tools/check_plasma_compat.py`) |
 | PanelView fija la región de entrada desde el borde superior de la placa | Aceptado: la ampliación se recoge al salir de la placa (4.13) |
+| Las apps en segundo plano dependen de cómo nombran sus units KIO, dbus-broker, Chromium y Flatpak | `parseUnitName()` sigue la especificación de systemd y tiene una prueba con los nombres reales; si el nombre no basta, `SourcePath` y `MainPID`; lo que no se reconoce no se muestra (`backgroundIgnore` para lo que sobre). Las apps lanzadas desde una terminal no se detectan (SP-08) |
 | El dock unificado pierde funciones de `icontasks` | Mismo `TasksModel`; menú, vistas previas, arrastre y soltar archivos reimplementados (4.13) |
 | La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle` (un hook de pacman lo avisa al actualizar KWin); `goldenglass-glass --check` al iniciar sesión reactiva Blur si el efecto no carga; fork documentado en `UPSTREAM.md` |
 | Valores de fábrica de KWin que pisan los del usuario | `goldenglass-windows` solo escribe claves vacías, una vez por `DefaultsVersion` y solo con un Global Theme GoldenGlass; «Reducir movimiento» guarda y devuelve lo anterior sin pisar lo que el usuario cambió; pruebas de actualización con un `kwinrc` previo |

@@ -90,6 +90,16 @@
   altura, se respeta. Con «Mostrar fondo de la barra de menús» la franja de
   vidrio es recta, sin esquinas redondeadas, y la barra ya no queda atada al
   radio del dock.
+- **Apps en segundo plano en el Dock**, como macOS 27: una app sin ventanas
+  que sigue en marcha (en la bandeja, sincronizando…) lleva un punto gris
+  claro bajo su icono, y el tooltip dice «Ejecutándose en segundo plano». Un
+  clic la vuelve a abrir y su menú ofrece «Detener ejecución en segundo plano»
+  en lugar de «Salir». Las apps fijadas lo muestran siempre; las demás
+  aparecen tras las abiertas solo si en la sesión tuvieron ventana o las
+  abriste tú (no las de inicio automático). El dock lo sabe por las units de
+  systemd en las que Plasma lanza cada app, así que no ve las apps lanzadas
+  desde una terminal. Se desactiva con `goldenglass-dock --background off`, y
+  `backgroundIgnore` en la configuración del dock oculta apps concretas.
 - **El Centro de control se abre justo debajo de la barra de menús real**, no
   de la altura de fábrica: sigue bien colocado si cambias la altura de la
   barra, y el resaltado de su icono se ajusta a ella.
@@ -120,6 +130,11 @@
   tokens `radius.menubar` y `plasma.menubar_padding_v`); desaparece el token
   sin uso `plasma.menubar_padding`. `tools/sandbox.sh` admite
   `GG_SANDBOX_OUTPUTS` para probar con varias pantallas.
+- El módulo QML `org.goldenglass.glass` gana `AppUnits`, que lista las apps
+  con una unit viva en `systemd --user` con su propia conexión D-Bus y sin
+  polling, y enlaza Qt DBus. `tools/sandbox.sh` admite `GG_SANDBOX_SYSTEMD=1`:
+  un `systemd --user` propio en el bus privado, para que las apps se lancen
+  en units como en una sesión real.
 - Los plasmoids leen la accesibilidad con un único singleton,
   `Accessibility.qml` (`MotionReduce.qml` pasa a ser
   `AccessibilityReader.qml`); `goldenglass-glass` aplica todo con `apply()`,
