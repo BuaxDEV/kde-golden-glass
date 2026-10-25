@@ -39,6 +39,14 @@
   Spectacle; cada uno se puede reasignar en Preferencias › Atajos. Las
   instalaciones existentes reciben los atajos nuevos al recargar KWin o iniciar
   sesión, sin cambiar los que ya hubieras reasignado.
+- **Atajos de ventana** (script `org.goldenglass.shortcuts`), como Fn+Ctrl+F/C
+  de macOS Sequoia con Meta en lugar de Fn: `Meta+Ctrl+F` llena la pantalla y
+  `Meta+Ctrl+C` centra la ventana. Para volver al tamaño anterior (maximizada,
+  en mosaico o a pantalla completa) sirve el atajo nativo de KWin
+  `Meta+Retroceso`. Las mitades siguen siendo las nativas `Meta+flechas`, y los
+  cuartos se alcanzan encadenándolas. Las instalaciones existentes reciben los
+  atajos nuevos al recargar KWin o iniciar sesión, sin cambiar los que ya
+  hubieras reasignado.
 
 ## 0.2.1 — 2026-10-15
 

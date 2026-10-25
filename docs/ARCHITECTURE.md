@@ -365,19 +365,19 @@ dentro de «Vidrio».
     se pueden cambiar en Preferencias › Atajos. Cambiar de escritorio sigue en
     Meta+Ctrl+←/→: Ctrl+←/→ es saltar palabra en Linux. KWin carga el script
     al reconfigurarse o en el siguiente inicio de sesión.
-  - Organizar ventanas, como Fn+Ctrl+F/C/R de macOS Sequoia (mismo script):
+  - Organizar ventanas, como Fn+Ctrl+F/C de macOS Sequoia (mismo script):
     Meta+Ctrl+F llena la pantalla (`setMaximize(true, true)`: no alterna y deja
-    la ventana si no es maximizable), Meta+Ctrl+C la centra (acción nativa
-    `Window Move Center`) y Meta+Ctrl+R la devuelve a su tamaño anterior (acción
-    nativa `Window Restore`, que en KWin 6.8.1 deshace maximizada, mosaico —
-    mitades y cuartos— y pantalla completa). Las mitades son las nativas
-    Meta+←/→/↑/↓ y los cuartos se alcanzan encadenándolas (Meta+← y luego
-    Meta+↑). Meta+Ctrl+F y Meta+Ctrl+C no tienen otro dueño por defecto;
-    Meta+Ctrl+R sí: es el de «Grabar ventana» de Spectacle, y mientras ambos lo
-    tengan, solo uno recibe la pulsación y no se puede elegir cuál (reasignar
-    uno de los dos en Preferencias › Atajos). Un atajo que el usuario ya reasignó no se pisa:
-    kglobalaccel conserva lo guardado en `kglobalshortcutsrc` y usa la tecla del
-    script solo si el atajo no existe todavía.
+    la ventana si no es maximizable) y Meta+Ctrl+C la centra (acción nativa
+    `Window Move Center`). Volver al tamaño anterior es el nativo
+    `Window Restore` en Meta+Retroceso, sin atajo propio: en KWin 6.8.1
+    deshace maximizada, mosaico (mitades y cuartos) y pantalla completa. No se
+    usa Meta+Ctrl+R (el equivalente de macOS) porque Spectacle 6.8.1 la trae
+    por defecto para `RecordWindow`. Las mitades son las nativas Meta+←/→/↑/↓ y
+    los cuartos se alcanzan encadenándolas (Meta+← y luego Meta+↑).
+    Meta+Ctrl+F y Meta+Ctrl+C no tienen otro dueño por defecto. Un atajo que el
+    usuario ya reasignó no se pisa: kglobalaccel conserva lo guardado en
+    `kglobalshortcutsrc` y usa la tecla del script solo si el atajo no existe
+    todavía.
   - Escritorios independientes por pantalla, como «Las pantallas tienen
     espacios independientes» de macOS (`plasma.per_screen_desktops`): el layout
     activa `[Windows] PerOutputVirtualDesktops` de KWin (Plasma ≥ 6.7) y
