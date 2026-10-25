@@ -1,0 +1,319 @@
+# Traducción al español del módulo de configuración del estilo de GoldenGlass
+# (con las etiquetas de sus opciones, de kstyle/goldenglass.kcfg).
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: goldenglass_style_config\n"
+"Language: es\n"
+"PO-Revision-Date: 2026-10-24 18:00+0000\n"
+"Last-Translator: GoldenGlass contributors\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgid "GoldenGlass Settings"
+msgstr "Ajustes de GoldenGlass"
+
+msgctxt "@item:inlistbox shadow size"
+msgid "None"
+msgstr "Ninguno"
+
+msgctxt "@item:inlistbox shadow size"
+msgid "Small"
+msgstr "Pequeño"
+
+msgctxt "@item:inlistbox shadow size"
+msgid "Medium"
+msgstr "Mediano"
+
+msgctxt "@item:inlistbox shadow size"
+msgid "Large"
+msgstr "Grande"
+
+msgctxt "@item:inlistbox shadow size"
+msgid "Very Large"
+msgstr "Muy grande"
+
+msgid "General"
+msgstr "General"
+
+msgid "Draw toolbar item separators"
+msgstr "Dibujar separadores entre los elementos de la barra de herramientas"
+
+msgid "Float and sunken effect on checkboxes and radio buttons"
+msgstr "Efecto de relieve y hundido en las casillas y los botones de opción"
+
+msgid "Increase button size"
+msgstr "Aumentar el tamaño de los botones"
+
+msgid "Height:"
+msgstr "Alto:"
+
+msgid " px"
+msgstr " px"
+
+msgid "Width:"
+msgstr "Ancho:"
+
+msgid "Scrollable popup menu"
+msgstr "Menús emergentes desplazables"
+
+msgid "Windows' &drag mode:"
+msgstr "Modo de &arrastre de las ventanas:"
+
+msgid "Titlebar only"
+msgstr "Solo la barra de título"
+
+msgid "Titlebar, menubar and toolbars"
+msgstr "Barra de título, barra de menús y barras de herramientas"
+
+msgid "All empty areas"
+msgstr "Todas las zonas vacías"
+
+msgid "Corner Radius:"
+msgstr "Radio de las esquinas:"
+
+msgid "VERSION"
+msgstr "VERSION"
+
+msgid "Keyboard accelerators visibility:"
+msgstr "Visibilidad de los aceleradores de teclado:"
+
+msgid "Always Hide"
+msgstr "Ocultar siempre"
+
+msgid "When Needed"
+msgstr "Cuando haga falta"
+
+msgid "Always Show"
+msgstr "Mostrar siempre"
+
+msgid "Menu item height"
+msgstr "Alto de los elementos de los menús"
+
+msgid "Draw focus indicator in lists"
+msgstr "Dibujar el indicador de foco en las listas"
+
+msgid "Use the new checkbox style"
+msgstr "Usar el nuevo estilo de casillas"
+
+msgid "Tabs"
+msgstr "Pestañas"
+
+msgid "GoldenGlass"
+msgstr "GoldenGlass"
+
+msgid "Lightly Default"
+msgstr "Lightly predeterminado"
+
+msgid "Lightly Alternative"
+msgstr "Lightly alternativo"
+
+msgid "Tabs sometimes inside frame"
+msgstr "Pestañas a veces dentro del marco"
+
+msgid "Center tabbar tabs"
+msgstr "Centrar las pestañas en la barra de pestañas"
+
+msgid "Draw highlight on active tab"
+msgstr "Resaltar la pestaña activa"
+
+msgid "Unify konsole tab bar with header area"
+msgstr "Unir la barra de pestañas de Konsole con la cabecera"
+
+msgid "Use highlight color as selected tab background"
+msgstr "Usar el color de resaltado como fondo de la pestaña seleccionada"
+
+msgid "Increases the brightness of tab close icons"
+msgstr "Aumenta el brillo de los iconos de cerrar de las pestañas"
+
+msgid "Use brighter close icon"
+msgstr "Usar un icono de cerrar más brillante"
+
+msgid "Smaller"
+msgstr "Más pequeño"
+
+msgid "Bigger"
+msgstr "Más grande"
+
+msgid "Tab size:"
+msgstr "Tamaño de las pestañas:"
+
+msgid "Custom tabbar background"
+msgstr "Fondo personalizado de la barra de pestañas"
+
+msgid "Tabbar background"
+msgstr "Fondo de la barra de pestañas"
+
+msgid "Animations"
+msgstr "Animaciones"
+
+msgid "Transient scrollbar"
+msgstr "Barras de desplazamiento que se ocultan"
+
+msgid "Enable animations"
+msgstr "Activar las animaciones"
+
+msgid "A&nimations duration:"
+msgstr "Duración de las a&nimaciones:"
+
+msgid " ms"
+msgstr " ms"
+
+msgid "Always show slim"
+msgstr "Mostrarlas siempre finas"
+
+msgid "Frames"
+msgstr "Marcos"
+
+msgid "When enabled, disables Dolphin sidebar transparency"
+msgstr "Si se activa, desactiva la transparencia de la barra lateral de Dolphin"
+
+msgid "Draw frame around dockable panels"
+msgstr "Dibujar un marco alrededor de los paneles acoplables"
+
+msgid "Draw frame around page titles"
+msgstr "Dibujar un marco alrededor de los títulos de página"
+
+msgid "Draw frame around KTextEdit"
+msgstr "Dibujar un marco alrededor de KTextEdit"
+
+msgid "This makes the selection rectangle frame rounded"
+msgstr "Redondea el marco del rectángulo de selección"
+
+msgid "Draw rounded frame on rubber band control"
+msgstr "Dibujar un marco redondeado en el rectángulo de selección"
+
+msgid "Draw a thin line to indicate focus in menus and menubars"
+msgstr "Dibujar una línea fina para indicar el foco en los menús y las barras de menús"
+
+msgid "Draw frame around side panels"
+msgstr "Dibujar un marco alrededor de los paneles laterales"
+
+msgid "Disable Dolphin UrlNavigator Background"
+msgstr "Quitar el fondo de la barra de direcciones de Dolphin"
+
+msgid "Fancy margins"
+msgstr "Márgenes decorativos"
+
+msgid "Full outline"
+msgstr "Contorno completo"
+
+msgid "No outline"
+msgstr "Sin contorno"
+
+msgid "Scrollbars"
+msgstr "Barras de desplazamiento"
+
+msgid "Render a thin separator between the scrollbar"
+msgstr "Dibujar un separador fino junto a la barra de desplazamiento"
+
+msgid "Bottom arrow button t&ype:"
+msgstr "&Tipo de botones de flecha inferiores:"
+
+msgid "No Buttons"
+msgstr "Sin botones"
+
+msgid "One Button"
+msgstr "Un botón"
+
+msgid "Two Buttons"
+msgstr "Dos botones"
+
+msgid "&Top arrow button type:       "
+msgstr "Tipo de botones de flecha &superiores:       "
+
+msgid "Transparency"
+msgstr "Transparencia"
+
+msgid "Transparent"
+msgstr "Transparente"
+
+msgid "Opaque"
+msgstr "Opaco"
+
+msgid "This changes the transparency of context menus and popup menus"
+msgstr "Cambia la transparencia de los menús contextuales y emergentes"
+
+msgid "Context Menu:"
+msgstr "Menú contextual:"
+
+msgid "%"
+msgstr "%"
+
+msgid "Dolphin sidebar transparency. Requires \"Draw frame around dockable panels\" to be disabled."
+msgstr "Transparencia de la barra lateral de Dolphin. Requiere desactivar «Dibujar un marco alrededor de los paneles acoplables»."
+
+msgid "Si&debar:"
+msgstr "Barra &lateral:"
+
+msgid "This changes the transparency of the Dolphin main file view area"
+msgstr "Cambia la transparencia de la vista principal de archivos de Dolphin"
+
+msgid "&View:"
+msgstr "&Vista:"
+
+msgid "Menubar:"
+msgstr "Barra de menús:"
+
+msgid "This changes the menubar opacity"
+msgstr "Cambia la opacidad de la barra de menús"
+
+msgid "Toolbar:"
+msgstr "Barra de herramientas:"
+
+msgid "This changes the toolbar opacity"
+msgstr "Cambia la opacidad de la barra de herramientas"
+
+msgid "This changes the tabbar opacity inside Dolphin & Konsole"
+msgstr "Cambia la opacidad de la barra de pestañas en Dolphin y Konsole"
+
+msgid "Tabbar:"
+msgstr "Barra de pestañas:"
+
+msgid "Shadow"
+msgstr "Sombra"
+
+msgid "Draw widget shadow"
+msgstr "Dibujar la sombra de los controles"
+
+msgid "Draw shadow under toolbar"
+msgstr "Dibujar una sombra bajo la barra de herramientas"
+
+msgid "These settings change how menu shadow outlines are displayed"
+msgstr "Estos ajustes cambian cómo se muestra el contorno de la sombra de los menús"
+
+msgid "Size:"
+msgstr "Tamaño:"
+
+msgid "Intensity:"
+msgstr "Intensidad:"
+
+msgid "Low"
+msgstr "Baja"
+
+msgid "Medium"
+msgstr "Media"
+
+msgid "High"
+msgstr "Alta"
+
+msgid "Maximum"
+msgstr "Máxima"
+
+msgid "Strength:"
+msgstr "Fuerza:"
+
+msgid "Color:"
+msgstr "Color:"
+
+msgid "Applications whose main windows draw the window buttons in their toolbar"
+msgstr "Aplicaciones cuyas ventanas principales dibujan los botones de la ventana en su barra de herramientas"
+
+msgid "Corner radius of windows, in pixels"
+msgstr "Radio de las esquinas de las ventanas, en píxeles"
+
+msgid "Corner radius of menus and popups, in pixels"
+msgstr "Radio de las esquinas de los menús y las ventanas emergentes, en píxeles"
