@@ -206,8 +206,10 @@ def _update() -> None:
 
     hashes = digest(render(icons_apps.TileTokens.from_tokens(ggcommon.load_tokens())))
     lines = [
+        # REUSE-IgnoreStart
         "# SPDX-FileCopyrightText: 2026 GoldenGlass contributors",
         "# SPDX-License-Identifier: GPL-3.0-or-later",
+        # REUSE-IgnoreEnd
         '"""SHA-256 del SVG de cada icono de app (generado: python3 tools/tests/test_icon_tile.py --update)."""',
         "",
         "GOLDEN = {",
