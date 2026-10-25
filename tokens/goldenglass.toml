@@ -170,6 +170,11 @@ highlight_alpha = 0.118        # opacidad de ese filo blanco (30/255)
 animation_ms = 250       # animaciones de los controles (la decoración usa decoration.animation_ms)
 progress_busy_step_ms = 800  # barra de progreso indeterminada: duración de cada paso
 dolphin_view_alpha = 1.0     # opacidad de la vista de archivos de Dolphin
+# Listas de las apps: resaltado bajo el cursor (opacidad del color de
+# selección; Plasma usa plasma.item_hover_alpha sobre el color de texto) y
+# selección bajo el cursor (QColor::lighter, %)
+list_hover_alpha = 0.2
+list_selected_hover_lighter = 110
 
 # ---------------------------------------------------------------------------
 # Menús
@@ -225,6 +230,36 @@ list_icon_size = 16      # iconos (y miniaturas) de la lista, como en Finder
 # Búsqueda: la lupa se convierte en un campo en cápsula dentro de la toolbar,
 # con el anillo de foco de [focus_ring]
 search_width = 230
+
+# Glifos que dibuja el estilo, como los de Finder (px lógicos)
+[finder.glyphs]
+search_stroke = 1.7          # lupa de la toolbar: trazo
+search_radius = 5.6
+search_offset = -1.5         # del círculo respecto al centro del botón
+search_handle_start = 0.8    # mango: desde el borde del círculo…
+search_handle_end = 5.0      # …hasta aquí
+field_search_stroke = 1.6    # lupa del campo de búsqueda (otro tamaño)
+field_search_radius = 5.0
+field_search_offset = 1.0    # a la derecha de medio alto del campo y hacia arriba
+field_search_handle_start = 0.7
+field_search_handle_end = 4.2
+field_search_alpha = 0.6     # opacidad (color de texto, como el texto de ayuda)
+group_stroke = 1.3           # «Agrupar»: dos filas de tres cuadrados
+group_cell = 4.2
+group_gap = 1.8
+group_radius = 1.2
+more_dot = 3.4               # «⋯»: diámetro de cada punto
+more_step = 6.5              # y distancia entre puntos
+menu_chevron_stroke = 1.5    # ⌄ de los botones con menú
+menu_chevron_width = 3.2     # semiancho
+menu_chevron_height = 1.9    # semialto
+header_chevron_stroke = 1.4  # flecha de la columna ordenada
+header_chevron_width = 3.5
+header_chevron_height = 1.8
+header_chevron_inset = 4.0   # del margen derecho de la cabecera
+header_unsorted_alpha = 0.6  # texto de las columnas sin ordenar
+light_hit_margin = 2         # px alrededor de los semáforos que repintan al pasar
+light_hit_slop = 1           # px de más en el radio de cada semáforo al pulsar
 
 # ---------------------------------------------------------------------------
 # Tipografía — familias son alias de fontconfig (ver fontconfig/)

@@ -36,6 +36,11 @@ def _shadow_strength(alpha: float) -> int:
     return max(25, min(255, round(alpha * 255)))
 
 
+def _camel(key: str) -> str:
+    """search_handle_end → SearchHandleEnd."""
+    return "".join(word.title() for word in key.split("_"))
+
+
 def _alpha8(alpha: float) -> int:
     """Opacidad 0..1 → 0..255 (canal alfa de QColor)."""
     return round(alpha * 255)
@@ -90,6 +95,8 @@ def header(tokens: dict) -> str:
         ("StyleAnimationsDuration", int(tokens["style"]["animation_ms"]), "animaciones de los controles (ms)"),
         ("StyleProgressBarBusyStepDuration", int(tokens["style"]["progress_busy_step_ms"]), "progreso indeterminado (ms)"),
         ("DolphinViewOpacity", round(tokens["style"]["dolphin_view_alpha"] * 100), "% de opacidad de la vista de Dolphin"),
+        ("ListHoverAlpha", float(tokens["style"]["list_hover_alpha"]), "resaltado de listas (color de selección)"),
+        ("ListSelectedHoverLighter", int(tokens["style"]["list_selected_hover_lighter"]), "selección bajo el cursor (QColor::lighter)"),
         ("Refracción (efecto de KWin goldenglass_glass, px lógicos)", None, None),
         ("RefractionEdge", float(tokens["glass"]["refraction"]["edge"]), "ancho de la zona curvada"),
         ("RefractionStrength", float(tokens["glass"]["refraction"]["strength"]), "desplazamiento en el borde"),
@@ -144,6 +151,8 @@ def header(tokens: dict) -> str:
         ("FinderRowRadius", int(finder["row_radius"]), "esquinas de franjas y selección"),
         ("FinderListIconSize", int(finder["list_icon_size"]), "iconos de la lista"),
         ("FinderSearchWidth", int(finder["search_width"]), "campo de búsqueda en la toolbar"),
+        *((f"FinderGlyph{_camel(key)}", value, f"finder.glyphs.{key}")
+          for key, value in finder["glyphs"].items()),
         ("Semáforos y colores fijos (px, 0xAARRGGBB)", None, None),
         ("TrafficLightDiameter", tl["diameter"], "diámetro"),
         ("TrafficLightGap", tl["gap"], "separación entre bordes"),

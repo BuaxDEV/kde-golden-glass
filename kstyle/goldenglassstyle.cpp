@@ -4885,9 +4885,9 @@ bool Style::drawPanelItemViewItemPrimitive(const QStyleOption *option, QPainter 
     // change color to implement mouse over
     if (mouseOver && !hasCustomBackground) {
         if (!selected)
-            color.setAlphaF(0.2);
+            color.setAlphaF(Tokens::ListHoverAlpha);
         else
-            color = color.lighter(110);
+            color = color.lighter(Tokens::ListSelectedHoverLighter);
     }
 
     if (widget) {
