@@ -9,6 +9,8 @@
 #include "glass.h"
 // KConfigSkeleton
 #include "glassconfig.h"
+// piezas y esquinas del vidrio (con pruebas en tests/)
+#include "glassgeometry.h"
 // valores de fábrica de GoldenGlass (generado desde los tokens)
 #include "goldenglass_tokens.h"
 
@@ -971,65 +973,6 @@ bool GlassEffect::isGlassSurface(const EffectWindow *w) const
     return windowClass.contains(QLatin1String("plasmashell")) || windowClass.contains(QLatin1String("krunner"));
 }
 
-// Radio de cada esquina medido en la región de blur: Plasma la manda con la
-// forma redondeada de su SVG, en franjas; una esquina mide lo que tardan las
-// franjas en tocar el lateral. (arriba-izq., arriba-der., abajo-izq., abajo-der.)
-static QVector4D cornerRadii(const QList<RectF> &rects, const RectF &box)
-{
-    const float maxRadius = std::min(box.width(), box.height()) / 2;
-    float topLeft = maxRadius, topRight = maxRadius, bottomLeft = maxRadius, bottomRight = maxRadius;
-    constexpr float epsilon = 0.5;
-    for (const RectF &rect : rects) {
-        if (std::abs(rect.left() - box.left()) < epsilon) {
-            topLeft = std::min(topLeft, float(rect.top() - box.top()));
-            bottomLeft = std::min(bottomLeft, float(box.bottom() - rect.bottom()));
-        }
-        if (std::abs(rect.right() - box.right()) < epsilon) {
-            topRight = std::min(topRight, float(rect.top() - box.top()));
-            bottomRight = std::min(bottomRight, float(box.bottom() - rect.bottom()));
-        }
-    }
-    return QVector4D(topLeft, topRight, bottomLeft, bottomRight);
-}
-
-// Piezas separadas de la región (rectángulos que se tocan o se solapan): una
-// ventana puede llevar varias piezas de vidrio sueltas (las tarjetas del Centro
-// de control) y cada una tiene su propio borde, sus esquinas y su refracción.
-struct GlassPiece {
-    QList<RectF> rects;
-    RectF bounds;
-};
-
-static QList<GlassPiece> glassPieces(const RegionF &region)
-{
-    // los rectángulos de una región van ordenados por su borde superior
-    const QSpan<const RectF> rects = region.rects();
-    std::vector<qsizetype> parent(rects.size());
-    std::iota(parent.begin(), parent.end(), 0);
-    const auto find = [&parent](qsizetype i) {
-        while (parent[i] != i) {
-            i = parent[i] = parent[parent[i]];
-        }
-        return i;
-    };
-    constexpr float touch = 0.5;
-    for (qsizetype i = 0; i < rects.size(); ++i) {
-        const RectF grown = rects[i].adjusted(-touch, -touch, touch, touch);
-        for (qsizetype j = i + 1; j < rects.size() && rects[j].top() <= grown.bottom(); ++j) {
-            if (grown.intersects(rects[j])) {
-                parent[find(i)] = find(j);
-            }
-        }
-    }
-    QHash<qsizetype, GlassPiece> pieces;
-    for (qsizetype i = 0; i < rects.size(); ++i) {
-        GlassPiece &piece = pieces[find(i)];
-        piece.bounds = piece.rects.isEmpty() ? rects[i] : piece.bounds.united(rects[i]);
-        piece.rects.append(rects[i]);
-    }
-    return pieces.values();
-}
-
 void GlassEffect::drawGlass(const RenderViewport &viewport, const RegionF &blurShape, const Rect &backgroundRect,
                             const Rect &scaledBackgroundRect, GLFramebuffer *read, GLTexture *sharp, int vertexCount, float modulation)
 {
@@ -1071,7 +1014,7 @@ void GlassEffect::drawGlass(const RenderViewport &viewport, const RegionF &blurS
 
     // Una pasada por pieza con toda la geometría: fuera de su forma el shader
     // deja los píxeles transparentes, así que solo pinta la suya.
-    for (const GlassPiece &piece : glassPieces(blurShape)) {
+    for (const GlassPiece<RectF> &piece : glassPieces<RectF>(blurShape.rects())) {
         const QVector4D radii = cornerRadii(piece.rects, piece.bounds) * scale;
         const RectF box = piece.bounds.translated(-backgroundRect.topLeft()).scaled(scale);
         shader->setUniform(m_glassPass.boxLocation, QVector4D(box.center().x(), box.center().y(), box.width() * 0.5, box.height() * 0.5));
