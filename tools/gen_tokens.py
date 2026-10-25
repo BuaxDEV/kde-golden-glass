@@ -13,7 +13,7 @@ Salidas (en build/, no versionado):
   build/plasma/shells/org.goldenglass.desktop/  (shell: pantalla de bloqueo y panel)
   build/wallpapers/GoldenGlass/           (fondo día/noche; se cachea)
   build/cursors/GoldenGlass-cursors/      (tema de cursores; se cachea)
-  build/icons/GoldenGlass{,-Dark}/        (tema de iconos)
+  build/icons/GoldenGlass{,-Dark,-Clear,-Clear-Dark,-Tinted,-Tinted-Dark}/  (temas de iconos)
   build/gtk/GoldenGlass/ y libadwaita.css (GTK3/GTK4 sobre adw-gtk3)
   build/sounds/GoldenGlass/               (tema de sonidos; se cachea)
   build/plymouth/goldenglass{,-light}/    (temas de Plymouth; se cachea)
@@ -32,6 +32,7 @@ import json
 import math
 import sys
 import traceback
+from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -162,7 +163,7 @@ def build_colors(tokens: dict, variant: str) -> str:
 REQUIRED_SECTIONS = (
     "meta", "radius", "focus_ring", "glass", "plasma", "shadow", "decoration", "menu", "finder",
     "font", "apps", "icon_tile", "scroll", "traffic_lights", "dock", "control_center", "motion", "boot", "login",
-    "sounds", "accessibility", "kwin", "light", "dark", "osd",
+    "sounds", "accessibility", "kwin", "light", "dark", "osd", "icon_style",
 )
 
 # [accessibility]: valores de fábrica de goldenglassrc [Accessibility] y la
@@ -275,42 +276,78 @@ ICON_TILE_ALPHAS = ("shadow_alpha", "glyph_shadow_alpha", "sheen_light", "sheen_
 ICON_TILE_LENGTHS = ("shadow_blur", "shadow_dy", "glyph_shadow_blur", "glyph_shadow_dy", "rim_width", "edge_width")
 
 
-def validate_icon_tile(tile: dict) -> None:
-    """[icon_tile]: colores válidos, opacidades en 0..1 y medidas del lienzo de 64 en 0..8."""
-    expected = {*ICON_TILE_PAIRS, *ICON_TILE_COLORS, *ICON_TILE_ALPHAS, *ICON_TILE_LENGTHS}
-    if set(tile) != expected:
-        raise SystemExit(f"[icon_tile]: faltan {sorted(expected - set(tile))} o sobran {sorted(set(tile) - expected)}")
+@dataclass(frozen=True)
+class TileSection:
+    """Keys of a section that draws on the 64 px icon canvas, by kind."""
+
+    pairs: tuple[str, ...] = ()     # [top, bottom] gradients of #RRGGBB
+    colors: tuple[str, ...] = ()    # #RRGGBB, the opacity goes in its own key
+    alphas: tuple[str, ...] = ()    # 0..1
+    lengths: tuple[str, ...] = ()   # 0..8 on the 64 canvas
+
+
+ICON_TILE = TileSection(ICON_TILE_PAIRS, ICON_TILE_COLORS, ICON_TILE_ALPHAS, ICON_TILE_LENGTHS)
+# [icon_style.*]: the Tinted and Clear icon styles (docs/MACOS27-PLAN.md §4.11)
+ICON_STYLES = {
+    "tinted": TileSection(pairs=("dark_background", "light_background"),
+                          alphas=("dark_wash_alpha", "light_wash_alpha", "light_glyph_shade", "glyph_floor")),
+    "clear": TileSection(colors=("light_fill", "dark_fill", "glyph"),
+                         alphas=("light_fill_alpha", "dark_fill_alpha", "glyph_alpha", "glyph_floor",
+                                 "glyph_shadow_alpha", "specular_alpha", "rim_top", "rim_mid", "rim_bottom"),
+                         lengths=("glyph_shadow_blur", "rim_width")),
+}
+
+
+def validate_tile_section(name: str, section: dict, keys: TileSection) -> None:
+    """Exactly the keys of `keys`: valid colours, opacities in 0..1 and lengths of the 64 canvas in 0..8."""
+    expected = {*keys.pairs, *keys.colors, *keys.alphas, *keys.lengths}
+    if set(section) != expected:
+        raise SystemExit(f"[{name}]: missing {sorted(expected - set(section))} or unknown "
+                         f"{sorted(set(section) - expected)}")
 
     def number(key: str) -> float:
-        value = tile[key]
+        value = section[key]
         if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise SystemExit(f"[icon_tile].{key}: debe ser un número")
+            raise SystemExit(f"[{name}].{key}: must be a number")
         return float(value)
 
     def color(key: str, value: object) -> None:
         if not isinstance(value, str):
-            raise SystemExit(f"[icon_tile].{key}: debe ser un color #RRGGBB")
+            raise SystemExit(f"[{name}].{key}: must be a #RRGGBB colour")
         try:
             parsed = Color.parse(value)
         except ValueError as e:
-            raise SystemExit(f"[icon_tile].{key}: {e}") from None
+            raise SystemExit(f"[{name}].{key}: {e}") from None
         if parsed.a != 1.0 or len(value.lstrip("#")) != 6:
-            raise SystemExit(f"[icon_tile].{key}: debe ser #RRGGBB, sin alfa (la opacidad va en su propia clave)")
+            raise SystemExit(f"[{name}].{key}: must be #RRGGBB, with no alpha (the opacity has its own key)")
 
-    for key in ICON_TILE_PAIRS:
-        pair = tile[key]
+    for key in keys.pairs:
+        pair = section[key]
         if not isinstance(pair, list) or len(pair) != 2:
-            raise SystemExit(f"[icon_tile].{key}: debe ser [arriba, abajo]")
+            raise SystemExit(f"[{name}].{key}: must be [top, bottom]")
         for value in pair:
             color(key, value)
-    for key in ICON_TILE_COLORS:
-        color(key, tile[key])
-    for key in ICON_TILE_ALPHAS:
+    for key in keys.colors:
+        color(key, section[key])
+    for key in keys.alphas:
         if not 0 <= number(key) <= 1:
-            raise SystemExit(f"[icon_tile].{key}: la opacidad debe estar entre 0 y 1")
-    for key in ICON_TILE_LENGTHS:
+            raise SystemExit(f"[{name}].{key}: the opacity must be between 0 and 1")
+    for key in keys.lengths:
         if not 0 <= number(key) <= 8:
-            raise SystemExit(f"[icon_tile].{key}: la medida debe estar entre 0 y 8 (lienzo de 64)")
+            raise SystemExit(f"[{name}].{key}: the length must be between 0 and 8 (64 px canvas)")
+
+
+def validate_icon_tile(tile: dict) -> None:
+    validate_tile_section("icon_tile", tile, ICON_TILE)
+
+
+def validate_icon_style(style: dict) -> None:
+    """[icon_style]: one table per style; later parts of the plan add their own tables."""
+    for name, keys in ICON_STYLES.items():
+        section = style.get(name)
+        if not isinstance(section, dict):
+            raise SystemExit(f"[icon_style.{name}] is missing or is not a table")
+        validate_tile_section(f"icon_style.{name}", section, keys)
 
 
 def validate(tokens: dict) -> None:
@@ -327,6 +364,7 @@ def validate(tokens: dict) -> None:
     validate_osd(tokens["osd"])
 
     validate_icon_tile(tokens["icon_tile"])
+    validate_icon_style(tokens["icon_style"])
 
     light, dark = set(tokens["light"]), set(tokens["dark"])
     if light != dark:

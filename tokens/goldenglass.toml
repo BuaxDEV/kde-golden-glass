@@ -1002,3 +1002,41 @@ open_ms = 260            # resorte breve al aparecer
 close_ms = 220           # fundido al irse
 open_scale = 0.9         # aparece desde esta escala
 open_overshoot = 1.2     # «overshoot» de Easing.OutBack al asentarse
+
+# ---------------------------------------------------------------------------
+# Estilos de icono Tintado y Transparente (macOS 27, Apariencia › «Icon &
+# widget style»): temas GoldenGlass-Tinted{,-Dark} y GoldenGlass-Clear{,-Dark}.
+# El símbolo de cada app es una máscara de luminancia: su color propio pasa a
+# blanco, los detalles del fondo lo recortan y cada color fijo conserva su
+# luminosidad, nunca por debajo de glyph_floor. Ver «Estilos de icono» en
+# docs/ARCHITECTURE.md. Valores de macOS sin cifra pública: calibrar.
+# ---------------------------------------------------------------------------
+[icon_style.tinted]
+# Oscuro: fondo grafito con un velo del acento y el símbolo en el acento
+dark_background = ["#2C2C2E", "#141416"]
+dark_wash_alpha = 0.10
+# Claro: acento aclarado (velo del acento sobre un fondo blanco) y símbolo en
+# el acento oscurecido (shadow_color de [icon_tile] encima, con esta opacidad)
+light_background = ["#FFFFFF", "#F2F2F7"]
+light_wash_alpha = 0.28
+light_glyph_shade = 0.30
+glyph_floor = 0.40           # opacidad mínima de los colores fijos más oscuros del símbolo
+
+[icon_style.clear]
+# Relleno translúcido: blanco en claro, negro en oscuro
+light_fill = "#FFFFFF"
+light_fill_alpha = 0.30
+dark_fill = "#000000"
+dark_fill_alpha = 0.30
+glyph = "#FFFFFF"            # símbolo blanco al 92 %
+glyph_alpha = 0.92
+glyph_floor = 0.40
+# Sombra del símbolo, más marcada que la de [icon_tile]: separa el símbolo blanco del vidrio claro
+glyph_shadow_blur = 1.2
+glyph_shadow_alpha = 0.50
+specular_alpha = 0.50        # brillo de arriba
+# Filo marcado, en diagonal desde la esquina de arriba a la izquierda
+rim_width = 1.4
+rim_top = 0.90
+rim_mid = 0.15
+rim_bottom = 0.35
