@@ -1,0 +1,95 @@
+# Traducción al español del módulo de Ajustes «Estilo de iconos» de GoldenGlass.
+# SPDX-License-Identifier: GPL-3.0-or-later
+msgid ""
+msgstr ""
+"Project-Id-Version: kcm_goldenglass_iconstyle\n"
+"Language: es\n"
+"PO-Revision-Date: 2026-10-25 18:00+0000\n"
+"Last-Translator: GoldenGlass contributors\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+msgctxt "@info:status"
+msgid "The icon style could not be applied: %1"
+msgstr "No se pudo aplicar el estilo de iconos: %1"
+
+msgctxt "@info:status"
+msgid "goldenglass-icon-style could not be started: %1"
+msgstr "No se pudo iniciar goldenglass-icon-style: %1"
+
+msgctxt "@info:status"
+msgid ""
+"goldenglass-icon-style was not found. Is the goldenglass-icons package "
+"installed?"
+msgstr ""
+"No se encontró goldenglass-icon-style. ¿Está instalado el paquete "
+"goldenglass-icons?"
+
+msgctxt "@info:status"
+msgid "The icon style could not be read: %1"
+msgstr "No se pudo leer el estilo de iconos: %1"
+
+msgctxt "@info"
+msgid ""
+"The icon theme in use is not a GoldenGlass one. Choosing a style here "
+"switches to the GoldenGlass icons."
+msgstr ""
+"El tema de iconos en uso no es de GoldenGlass. Al elegir un estilo aquí se "
+"cambia a los iconos de GoldenGlass."
+
+msgctxt "@label"
+msgid "Style:"
+msgstr "Estilo:"
+
+msgctxt "@option:radio icon style"
+msgid "Default"
+msgstr "Por defecto"
+
+msgctxt "@option:radio icon style"
+msgid "Clear"
+msgstr "Transparente"
+
+msgctxt "@option:radio icon style"
+msgid "Tinted"
+msgstr "Tintado"
+
+msgctxt "@info"
+msgid ""
+"Clear icons are glass with a white symbol. Tinted icons take the accent "
+"color of the system (Colors). Apps installed later get their style the next "
+"time you log in."
+msgstr ""
+"Los iconos transparentes son de vidrio con el símbolo blanco. Los tintados "
+"toman el color de acento del sistema (Colores). Las apps que instales después "
+"reciben su estilo la próxima vez que inicies sesión."
+
+msgctxt "@label"
+msgid "Appearance:"
+msgstr "Apariencia:"
+
+msgctxt "@option:radio icon appearance"
+msgid "Light"
+msgstr "Claro"
+
+msgctxt "@option:radio icon appearance"
+msgid "Dark"
+msgstr "Oscuro"
+
+msgctxt "@option:radio icon appearance"
+msgid "Auto"
+msgstr "Auto"
+
+msgctxt "@info"
+msgid ""
+"Auto follows the color scheme: light icons with a light scheme, dark icons "
+"with a dark one."
+msgstr ""
+"Auto sigue el esquema de colores: iconos claros con un esquema claro y "
+"oscuros con uno oscuro."
+
+msgctxt "@info:status"
+msgid "Applying…"
+msgstr "Aplicando…"

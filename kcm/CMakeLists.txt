@@ -12,6 +12,7 @@ target_link_libraries(kcm_goldenglass PRIVATE
 add_subdirectory(sounds)
 add_subdirectory(boot)
 add_subdirectory(dock)
+add_subdirectory(iconstyle)
 
 # Prueba del módulo «Vidrio»: tres niveles seguidos, se aplica el último. No se
 # instala. En ctest usa un goldenglass-glass de prueba (tests/bin) y una
@@ -36,6 +37,22 @@ if(BUILD_TESTING)
         FIXTURES_REQUIRED kcm_apply_config
         ENVIRONMENT_MODIFICATION
             "PATH=path_list_prepend:${CMAKE_CURRENT_SOURCE_DIR}/tests/bin;XDG_CONFIG_HOME=set:${KCM_APPLY_TEST_CONFIG};QT_QPA_PLATFORM=set:offscreen"
+        TIMEOUT 60)
+
+    # «Icon style» module: three styles and three appearances in a row, the
+    # last of each is stored. Uses the goldenglass-icon-style stand-in of tests/bin.
+    add_executable(kcm_iconstyle_test tests/kcm_iconstyle_test.cpp)
+    target_link_libraries(kcm_iconstyle_test Qt6::Gui KF6::KCMUtilsQuick KF6::ConfigCore KF6::CoreAddons)
+    set(KCM_ICONSTYLE_TEST_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/kcm_iconstyle_test-config")
+    file(MAKE_DIRECTORY "${KCM_ICONSTYLE_TEST_CONFIG}")
+    add_test(NAME kcm_iconstyle_test_clean
+             COMMAND ${CMAKE_COMMAND} -E rm -f "${KCM_ICONSTYLE_TEST_CONFIG}/goldenglassrc")
+    set_tests_properties(kcm_iconstyle_test_clean PROPERTIES FIXTURES_SETUP kcm_iconstyle_config)
+    add_test(NAME kcm_iconstyle_test COMMAND kcm_iconstyle_test $<TARGET_FILE:kcm_goldenglass_iconstyle>)
+    set_tests_properties(kcm_iconstyle_test PROPERTIES
+        FIXTURES_REQUIRED kcm_iconstyle_config
+        ENVIRONMENT_MODIFICATION
+            "PATH=path_list_prepend:${CMAKE_CURRENT_SOURCE_DIR}/tests/bin;XDG_CONFIG_HOME=set:${KCM_ICONSTYLE_TEST_CONFIG};QT_QPA_PLATFORM=set:offscreen"
         TIMEOUT 60)
 
     # Ese goldenglass-glass de prueba solo cambia su clave: no borra
