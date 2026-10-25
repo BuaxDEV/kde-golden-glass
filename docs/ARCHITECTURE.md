@@ -530,10 +530,11 @@ dentro de «Vidrio».
     - **Tarjetas sueltas de vidrio, como macOS 26** (único modo): el popup
       de Plasma (`AppletPopup`) no deja quitar su fondo, así que el icono de la
       barra es la representación «completa» (como Apps: Plasma no abre popup)
-      y abre su propia ventana (`FloatingPanel.qml`): un `PlasmaCore.Dialog`
+      y abre su propia ventana (`GlassOverlay.qml`, compartido; ver «Barra de
+      menús a 24 px y vidrio compartido»): un `PlasmaCore.Dialog`
       sin fondo que cubre la pantalla, transparente, con las tarjetas pegadas
-      al borde derecho bajo la barra y el icono resaltado mientras está
-      abierta. Un clic fuera de las tarjetas la cierra, también en la barra de
+      al borde derecho bajo la barra real (no la del token) y el icono
+      resaltado mientras está abierta. Un clic fuera de las tarjetas la cierra, también en la barra de
       menús (que no toma el foco: perderlo no bastaría); y también Esc, el
       atajo del plasmoide o el foco en otra pantalla. Sin fondo, Dialog no pide
       blur: lo pide `GlassRegion`, del módulo QML `org.goldenglass.glass`
@@ -824,6 +825,96 @@ para capturar fotogramas a mitad de animación; minimizado con
   cambios en el vidrio del dock en los fotogramas capturados (unos 3 por
   segundo a velocidad ×10); un parpadeo de un solo fotograma a velocidad
   normal no se puede descartar con este método.
+
+#### Barra de menús a 24 px y vidrio compartido (F14)
+
+Primera parte de F14 (plan de macOS 27 §3.5 y §4.8).
+
+**Vidrio compartido.**
+
+- `GlassOverlay.qml` (en `org.goldenglass.launchpad/contents/ui/`, copiado
+  por `SHARED` al Centro de control con `GlassBlur.qml` y `Motion.qml`) es la
+  antigua ventana del Centro de control, generalizada sin cambiar su
+  comportamiento: `PlasmaCore.Dialog` sin fondo a pantalla completa, piezas
+  pegadas al borde derecho bajo la barra, resorte al abrir y cierre animado.
+  - `tokens` (obligatorio) es la sección de tokens con sus tiempos, escalas y
+    márgenes: el Centro de control pasa `[control_center]`.
+  - `origin: "icon"` (el resorte nace del icono, `anchorItem`) o `"edge"`
+    (del borde derecho, para el Centro de notificaciones).
+  - El contenido puede definir `resetContent()` (vuelve a su primera vista;
+    se llama en cada apertura) y `goBack()` (Esc retrocede dentro del
+    contenido y devuelve `true`; si no, Esc cierra).
+  - `menuBarHeight` es la altura real de la barra de menús en esa pantalla:
+    `Plasmoid.containment.availableScreenRect.y`, lo que ocupan los paneles
+    del borde superior. Con una barra que se oculta sola vale 0 y las piezas
+    quedan a `floating_margin` del borde. El HUD de volumen y brillo debe
+    tomar de aquí el borde de la barra.
+- El resaltado del icono del Centro de control se mide contra la ventana de
+  su panel (`Window.height`), no contra `plasma.menubar_height`.
+- `DoNotDisturb.qml` (en el Centro de control) reúne la lógica de No
+  molestar (`notificationmanager`): `active`, `setActive()` y
+  `setActiveUntil()`. El plasmoide de notificaciones lo tomará por `SHARED`.
+- `GlassRegion` recorta cada pieza de vidrio por los ancestros con
+  `clip: true`, como Qt Quick recorta sus píxeles: una lista desplazada no
+  pide blur fuera de su vista (prueba `qmlplugin/tests/glassregion_test.cpp`).
+
+**Barra de 24 px.**
+
+- **Marco propio.** `Panel.qml` pide el marco del borde del panel (`north-`,
+  `south-`…) y, si no existe, el que no tiene prefijo. El Plasma Style trae
+  `north-` y `mask-north-` en las cuatro variantes de `panel-background.svg`,
+  con `radius.menubar` (0: franja recta) y `plasma.menubar_padding_v` (2); el
+  dock sigue con el marco sin prefijo y `radius.dock`. La validación es
+  `2 × radius.menubar ≤ plasma.menubar_height`, así que `radius.dock` ya no
+  limita la barra. Las teselas de un marco recto tienen al menos el ancho de
+  las dos líneas del filo.
+- **Guarda en `Panel.qml`:** `minPanelHeight` vale 0 hasta que llega la
+  contención (ver `UPSTREAM.md`). Antes, el marco aún no tiene prefijo y
+  todos los bordes están activos, así que Plasma recortaba la barra a las
+  esquinas del dock y guardaba esa altura.
+- **Tokens:** `plasma.menubar_height = 24`, `menubar_padding_v = 2`,
+  `menubar_item_inset = 3` (margen de los menús de la app, antes 4 px fijos),
+  `control_center.icon_highlight_inset = 2`; desaparece
+  `plasma.menubar_padding`, que no se usaba. Los applets de la barra siguen
+  midiendo 22 px de alto (24 − 2 del margen inferior; antes 28 − 6), así que
+  texto e iconos no cambian de tamaño; solo suben 2 px.
+- **Actualización:** `contents/updates/goldenglass_menubar_height.js` del
+  shell (plantilla `.js.in`) pasa a la altura del token los paneles
+  superiores con `org.goldenglass.systemmenu` y exactamente 28 px; cualquier
+  otra altura se respeta. plasmashell lo ejecuta una vez por usuario y lo
+  anota en `plasmashellrc [Updates] performed`. **No se ejecuta si el shell
+  está en `XDG_DATA_HOME`** (plasmashell salta los scripts locales del
+  usuario): llega con el paquete, no con `tools/install.sh`.
+  `tools/tests/test_shell_updates.py` lo ejecuta en un `QJSEngine` con un
+  `panels()` falso.
+
+**Spike SP-07 — go.** Sandbox (`tools/sandbox.sh`, KWin 6.8.1 virtual de
+1600×1000, plasmashell 6.8.1, layout de `org.goldenglass.light.desktop`),
+alturas leídas con `panels()` y de `plasmashellrc` tras cada paso: primer
+arranque, dos reinicios de plasmashell, fondo de la barra activado (en vivo y
+tras reiniciar) y desactivado (ídem).
+
+| Matriz | Barra en vivo y guardada | Applets | `menuBarHeight` |
+|---|---|---|---|
+| 1 salida, escala 1 | 24 en todos los pasos | 22 px | 24 |
+| 2 salidas, escala 1 | 24 en las dos barras, todos los pasos | 22 px | 24 |
+| 1 salida, escala 1,5 | 24 en todos los pasos | 22 px | 24 |
+| 1 salida, escala 2 | 24 en todos los pasos | 22 px | 24 |
+| Sin la guarda de `Panel.qml` (escala 1) | 28 desde el primer arranque | — | — |
+
+- **`updates/` se ejecuta en un shell con `X-Plasma-FallbackPackage`:** con
+  el shell en un directorio del sistema (`XDG_DATA_DIRS`) y las barras
+  guardadas a 28, el primer arranque las dejó a 24 (también las dos barras
+  con dos salidas), el script quedó en `[Updates] performed` y un reinicio
+  más no cambió nada. Con la altura de fábrica (28) el mismo script no hace
+  nada.
+- **Iconos de la bandeja:** caben y conservan el tamaño que tenían con 28 px
+  (en las capturas ocupan las mismas filas de píxeles, 2 px más arriba),
+  también a escala 1,5 y 2; el Centro de control se abre a 24 + 6 px y su
+  resaltado mide 20 px.
+- No hizo falta el plan B (barra de 26 o 28 px conservando el desacople).
+- Sin probar: un `tools/install.sh` sobre una instalación previa (no migra,
+  ver arriba) ni pantallas físicas.
 
 ### 4.6 Tipografía — `fontconfig/`
 - SF Pro **no se redistribuye** (licencia de Apple).
@@ -1400,7 +1491,7 @@ para capturar fotogramas a mitad de animación; minimizado con
 | F11 | Efecto de KWin `goldenglass_glass` (fork de Blur) con refracción; interruptor en Vidrio | ✅ |
 | F12 | Material y accesibilidad: filo del vidrio, sombra inactiva, semáforos grises, Reducir transparencia, Mostrar bordes | 🚧 |
 | F13 | Ventanas y movimiento: efectos de KWin, atajos de tiling, velocidad de animación global, Reducir movimiento | 🚧 |
-| F14 | Barra de menús y Dock: barra a 24 px, HUD de volumen y brillo, apps en segundo plano | 📋 |
+| F14 | Barra de menús y Dock: barra a 24 px, HUD de volumen y brillo, apps en segundo plano | 🚧 |
 | F15 | Estilos de icono Tintado y Transparente; módulo Estilo de iconos | 📋 |
 | F16 | Spotlight propio (sustituye a KRunner) con vistas, portapapeles y teclas rápidas | 📋 |
 | F17 | Centro de notificaciones y avisos de vidrio | 📋 |
@@ -1426,7 +1517,7 @@ Refracción en las ventanas de las apps.
 | Alias de fuente no resuelto por Qt | Plan B descrito en 4.6 |
 | libadwaita ignora temas | Solo colores; documentado |
 | Los plasmoids usan módulos QML privados de Plasma (sin API estable) | Mínimo Plasma 6.8; `tools/plasma_api.toml` lista los tipos, propiedades, métodos, señales, enums y roles privados que usa el QML y `tools/check_plasma_compat.py` los comprueba contra los `.qmltypes` instalados (los roles, contra las cadenas del plugin) en la CI y en la semanal con `[kde-unstable]`, indicando el archivo QML afectado; un módulo privado sin listar falla; probar en el sandbox tras cada actualización de Plasma |
-| Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` (barra y dock comparten SVG) | `radius.dock ≤ menubar_height / 2` (14 px); el generador lo valida |
+| Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` | La barra tiene su propio marco (`north-`, `radius.menubar`) y el generador valida `2 × radius.menubar ≤ menubar_height`; `Panel.qml` no pone mínimo hasta que llega la contención (sin eso se recortaba a las esquinas del dock y se guardaba); SP-07 en F14 |
 | Plasma Login Manager no admite temas: el diseño propio solo se ve con SDDM | En PLM se aplica fondo y sincronización (el módulo lo explica); si KDE añade temas, se porta el QML de SDDM |
 | Copiar ajustes de un usuario al home de `plasmalogin` como root | Lectura como el usuario y escritura como `plasmalogin` en procesos hijo sin privilegios; probado con un enlace a `/etc/shadow` |
 | La especificación de sonidos recurre a `freedesktop` para lo que falta | Los nombres no cubiertos llevan un `<nombre>.disabled` |

@@ -83,6 +83,16 @@
 - **El vidrio de Plasma ya no se vuelve opaco al activar la refracción:**
   activarla en vivo (también el primer inicio de sesión tras instalar)
   dejaba a Plasma sin blur hasta reiniciar KWin.
+- **Barra de menús de 24 px**, como macOS (antes 28). El texto y los iconos
+  de la bandeja conservan su tamaño. Las barras
+  de 28 px de una instalación anterior pasan a 24 la primera vez que se
+  inicia Plasma tras actualizar el paquete, una sola vez; si elegiste otra
+  altura, se respeta. Con «Mostrar fondo de la barra de menús» la franja de
+  vidrio es recta, sin esquinas redondeadas, y la barra ya no queda atada al
+  radio del dock.
+- **El Centro de control se abre justo debajo de la barra de menús real**, no
+  de la altura de fábrica: sigue bien colocado si cambias la altura de la
+  barra, y el resaltado de su icono se ajusta a ella.
 
 ### Proyecto
 
@@ -101,6 +111,15 @@
   4K y con escalas fraccionarias.
 - `tools/preview_style.py --show-borders` muestra el estilo de apps con
   «Mostrar bordes», y la vista previa incluye una toolbar.
+- El Centro de control usa `GlassOverlay.qml`, una ventana de vidrio
+  compartida por `SHARED` (lista para el Centro de notificaciones), y No
+  molestar pasa a `DoNotDisturb.qml`; sin cambio visible. `GlassRegion`
+  recorta cada pieza de vidrio por los elementos con `clip: true` que la
+  contienen, así que una lista desplazada no pide blur fuera de su vista.
+- El Plasma Style tiene un marco propio para la barra de menús (`north-`,
+  tokens `radius.menubar` y `plasma.menubar_padding_v`); desaparece el token
+  sin uso `plasma.menubar_padding`. `tools/sandbox.sh` admite
+  `GG_SANDBOX_OUTPUTS` para probar con varias pantallas.
 - Los plasmoids leen la accesibilidad con un único singleton,
   `Accessibility.qml` (`MotionReduce.qml` pasa a ser
   `AccessibilityReader.qml`); `goldenglass-glass` aplica todo con `apply()`,
