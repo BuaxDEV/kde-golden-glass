@@ -4,7 +4,8 @@
 # QML module org.goldenglass.glass: hands KWin the blur region of the glass
 # pieces of a window (e.g. the Control Center's loose cards), which Plasma does
 # not allow from QML; gives the shell the menu bar settings (MenuBarSettings),
-# and Plasma the accessibility ones (AccessibilitySettings).
+# Plasma the accessibility ones (AccessibilitySettings) and the Dock the apps
+# that systemd runs (AppUnits).
 include(ECMQmlModule)
 
 # Sources and libraries of the module, one per line (each PR appends its own):
@@ -18,11 +19,16 @@ set(GOLDENGLASS_QMLPLUGIN_SOURCES
     accessibilitysettings.h
     unitname.cpp
     unitname.h
+    appunitsbackend.cpp
+    appunitsbackend.h
+    appunits.cpp
+    appunits.h
 )
 set(GOLDENGLASS_QMLPLUGIN_LIBS
     Qt6::Quick
     KF6::WindowSystem
     KF6::ConfigCore
+    Qt6::DBus
 )
 
 ecm_add_qml_module(goldenglassglassplugin
