@@ -73,7 +73,7 @@ goldenglass/
 ├── tools/               # gen_tokens.py (+ plasma_theme.py, lookandfeel.py, wallpaper.py,
 │                        # cursors.py, sounds.py, plymouth.py…; utilidades comunes
 │                        # en ggcommon.py), install.sh,
-│                        # system.py (goldenglass-system),
+│                        # system.py (goldenglass-system), windows.py (goldenglass-windows),
 │                        # preview_plasma.py (vista previa), sandbox.sh (sesión aislada)
 ├── assets/logo/         # logo GoldenGlass (símbolo monocromo y versión a color)
 ├── kstyle/              # QStyle C++ (fork de Darkly) → goldenglass6.so
@@ -289,18 +289,19 @@ Ese `goldenglass-glass` de prueba solo cambia `[Glass] Level`, como
 `kwriteconfig6`, sin borrar otros grupos de `goldenglassrc`
 (`goldenglass_glass_stub_test`).
 
-#### Accesibilidad (contrato; F12/F13, pendiente)
+#### Accesibilidad (F12/F13)
 
 Contrato común de «Mostrar bordes», «Reducir transparencia» y «Reducir
 movimiento» (detalle en [MACOS27-PLAN.md](MACOS27-PLAN.md) §3.1, §4.4, §4.5 y
-§4.7). **Hoy solo existe el contrato:** las claves se leen, pero nada las
-escribe ni las aplica todavía, y ningún módulo de Ajustes las muestra.
+§4.7). **«Reducir movimiento» ya funciona** (interruptor en el módulo
+«Vidrio», `goldenglass-windows` y `Motion.qml`); de las otras dos solo existe
+el contrato: se leen, pero nada las escribe ni las aplica todavía.
 
-| Clave en `goldenglassrc [Accessibility]` (bool) | Token de fábrica | La escribirá (pendiente) |
+| Clave en `goldenglassrc [Accessibility]` (bool) | Token de fábrica | La escribe |
 |---|---|---|
-| `ShowBorders` | `accessibility.show_borders = false` | `goldenglass-glass --borders on\|off` (F12) |
-| `ReduceTransparency` | `accessibility.reduce_transparency = false` | `goldenglass-glass --reduce-transparency on\|off` (F12) |
-| `ReduceMotion` | `accessibility.reduce_motion = false` | `goldenglass-windows --reduce-motion on\|off` (F13) |
+| `ShowBorders` | `accessibility.show_borders = false` | `goldenglass-glass --borders on\|off` (F12, pendiente) |
+| `ReduceTransparency` | `accessibility.reduce_transparency = false` | `goldenglass-glass --reduce-transparency on\|off` (F12, pendiente) |
+| `ReduceMotion` | `accessibility.reduce_motion = false` | `goldenglass-windows --reduce-motion on\|off` ✅ (efectos de KWin: «Efectos de ventana» en 4.5; plasmoids: «Movimiento») |
 
 - **Escritura:** siempre con aviso de cambio (`KConfig::Notify`, `kwriteconfig6
   --notify`) y solo la clave propia, sin reescribir el archivo. El módulo
@@ -321,6 +322,15 @@ escribe ni las aplica todavía, y ningún módulo de Ajustes las muestra.
   `MenuBarSettings`, sigue el archivo con `KConfigWatcher` filtrado por el
   grupo `Accessibility`. Pruebas: `accessibilitysettings_test` y
   `accessibilitysettings_watch_test` (D-Bus).
+- **Módulo «Vidrio»:** bloque «Accesibilidad» bajo «Barra de menús», hoy con
+  el interruptor «Reducir movimiento» (propiedad `reduceMotion` de `GlassKcm`).
+  Lee la clave y la cambia con `goldenglass-windows --reduce-motion` por
+  `QProcess`: un proceso a la vez y, si se pulsa mientras tanto, el último
+  valor después; si falla, el interruptor vuelve a lo que diga el archivo.
+  Cuenta para «Predeterminados». `kcm_apply_test` lo pulsa tres veces (sí,
+  no, sí) con un `goldenglass-windows` de prueba (`kcm/tests/bin`, que como el
+  de `goldenglass-glass` solo cambia su clave: `kcm/tests/set_entry.sh`) y
+  comprueba que acaba activado sin perder el nivel de vidrio.
 
 #### Otros módulos de Ajustes
 
@@ -330,7 +340,7 @@ dentro de «Vidrio».
 
 | Módulo | Dónde | Contenido | Fase |
 |---|---|---|---|
-| Vidrio (`kcm_goldenglass`) | Colores y temas | slider + interruptor **Refracción** (`goldenglass-glass --refraction`; apagado y explicado si KWin no cargó el efecto) + interruptor **Mostrar fondo de la barra de menús** | ✅ |
+| Vidrio (`kcm_goldenglass`) | Colores y temas | slider + interruptor **Refracción** (`goldenglass-glass --refraction`; apagado y explicado si KWin no cargó el efecto) + interruptor **Mostrar fondo de la barra de menús** + bloque **Accesibilidad** con «Reducir movimiento» (`goldenglass-windows --reduce-motion`) | ✅ |
 | Efectos de sonido (`kcm_goldenglass_sounds`) | Multimedia | sonidos de GoldenGlass y sonido al iniciar sesión, con botón para escucharlos (`pw-play`); llama a `goldenglass-system` (4.9) | ✅ F7 |
 | Arranque e inicio de sesión (`kcm_goldenglass_boot`) | Colores y temas, junto a «Pantalla de bienvenida» | Pantalla de arranque: del sistema, GoldenGlass o GoldenGlass gris, con miniaturas dibujadas con las piezas del tema y los avisos de `goldenglass-system`. Pantalla de inicio de sesión: interruptor según el gestor activo (con SDDM, el tema; con Plasma Login Manager, fondo y ajustes, con la explicación). Se aplica con «Aplicar»: pide la contraseña (una vez para los dos cambios) y, si cambia Plymouth, regenera el initramfs | ✅ F8 / F9 |
 | Dock (`kcm_goldenglass_dock`) | Espacio de trabajo (como «Escritorio y Dock») | Tamaño, **ampliación** (activada de fábrica) y su tamaño, apps recientes. En vivo con `goldenglass-dock` | ✅ F10 |
@@ -599,9 +609,16 @@ contents/ui/Motion.qml` y su `qmldir`, que `tools/plasmoids.py` copia por
 - `fadeMs(base)`: el fundido de una transición que también se mueve (abrir y
   cerrar paneles).
 - `overshoot(v)`: el rebote de `Easing.OutBack`.
-- `reduced` («Reducir movimiento») vale `false`: es el punto de enganche de la
-  clave `ReduceMotion` (`AccessibilitySettings`, plan de macOS 27 §4.7). Con
-  ella, `moveMs` y `overshoot` darán 0 y `fadeMs`, `motion.reduced_fade_ms`.
+- `reduced` («Reducir movimiento»): la clave `ReduceMotion`, en vivo. La lee
+  `MotionReduce.qml` (un `AccessibilitySettings` del módulo
+  `org.goldenglass.glass`), que `Motion` carga con un `Loader`: sin
+  `goldenglass-kstyle` falla solo ese archivo y `reduced` vale `false`.
+  `SHARED` lo copia junto a `Motion.qml`. Con `reduced`, `moveMs` y
+  `overshoot` dan 0 y `fadeMs` da `ms(motion.reduced_fade_ms)`: los paneles
+  solo se funden, los iconos del dock no rebotan (el rebote no arranca con
+  tramos de menos de 1 ms) y `GlassScrollView` se detiene en los extremos
+  (`StopAtBounds`, y la rueda del touchpad no estira) en vez del rebote
+  elástico.
 
 No se escalan las esperas que no son animaciones (`label_delay_ms`,
 `preview_hide_ms`, `bar_hide_ms`, `glass_update_ms`, `interval:` de los
@@ -610,7 +627,10 @@ rebote del dock no arranca si un tramo dura menos de 1 ms. `tools/tests/
 test_motion.py` falla si un `duration:` o un `easing.overshoot` de los
 plasmoids usa un token sin pasar por `Motion`, y comprueba en ejecución
 (offscreen, `kdeglobals` temporal; se salta sin `qml6` o sin el plugin de
-plataforma de Kirigami) `Motion.ms(100)` con factor 0, 0,25, 1 y 2.
+plataforma de Kirigami) `Motion.ms(100)` con factor 0, 0,25, 1 y 2; con un
+`MotionReduce.qml` que da `reduceMotion: true`, `moveMs` 0, `fadeMs` 150 y
+sin rebote; sin el módulo, `reduced` false; y, si `build/cmake` tiene el
+módulo compilado, que `reduced` sigue a un `goldenglassrc` temporal.
 
 **Spike SP-04** (Plasma 6.8.1, Qt 6.12, Kirigami 6.31; `qml6` offscreen con
 `QT_QUICK_CONTROLS_STYLE=Plasma`, que carga `KirigamiPlasmaStyle`, el mismo
@@ -649,6 +669,87 @@ plugin de plataforma que plasmashell):
   (`factor=0.5`, `longDuration=100`, `ms(100)=50`) y, al cambiar el factor a 2
   con aviso, los dos pasan en vivo a `ms(100)=200`. El registro no tiene
   errores de QML de los plasmoids GoldenGlass, igual que sin `Motion`.
+
+#### Efectos de ventana — `goldenglass-windows`
+
+`tools/windows.py` (`goldenglass-windows`, en `goldenglass-plasma`, con
+autostart de fase 1) da a KWin los efectos de ventana de macOS y aplica
+«Reducir movimiento» (plan de macOS 27 §4.6 y §4.7).
+
+**`--check`** (al iniciar sesión): solo con un Global Theme
+`org.goldenglass.*` y una vez por versión de la tabla (`goldenglassrc
+[Windows] DefaultsVersion=1`). Escribe en `kwinrc` solo lo que el usuario dejó
+vacío:
+
+| Grupo | Clave | Valor | Condición |
+|---|---|---|---|
+| `Plugins` | `magiclampEnabled` / `squashEnabled` | `true` / `false` (genio al minimizar) | Las dos vacías |
+| `Plugins` | `scaleEnabled` / `fadeEnabled` | `true` / `false` | Las dos vacías |
+| `Effect-scale` | `InScale` / `OutScale` / `Duration` | `kwin.open_scale` 0,92 / `kwin.close_scale` 0,95 / `kwin.window_anim_ms` 220 (calibrar; KWin trae 0,8 y 200) | Cada una, si está vacía |
+| `Effect-overview` | `BorderActivate` | `9` (sin esquina activa) | Vacía o `7` (arriba a la izquierda) |
+| `Effect-windowview` | `BorderActivate`, `BorderActivateAll`, `BorderActivateClass` | `9` | Vacías o `7` |
+| `ElectricBorders` | `TopLeft` | `None` | Vacía |
+| `Plugins` | `org.goldenglass.shortcutsEnabled` | `true` | Vacía |
+
+Lo escrito se aplica en vivo: `unloadEffect` de los efectos apagados y luego
+`loadEffect` de los encendidos (dos efectos de una categoría exclusiva nunca a
+la vez), `reconfigureEffect` de los grupos `Effect-*` y `/KWin reconfigure`
+(que carga el script de atajos). El script de layout no cambia: sigue
+aplicándose solo con `--resetLayout`.
+
+**`--reduce-motion on|off`** escribe `goldenglassrc [Accessibility]
+ReduceMotion` con aviso (los plasmoids lo siguen por `Motion`) y cambia los
+efectos: `scale` → `fade`, `slide` → `fadedesktop` y, al minimizar, ninguno
+(token `kwin.reduce_motion_minimize`: `none`, `squash` o `magiclamp`; se
+apagan los demás efectos de minimizar). Lo que había antes (o que la clave no
+existía) queda en `goldenglassrc [Windows] ReduceMotionSaved` (JSON, con lo
+que se escribió); `off` lo devuelve salvo en las claves que el usuario cambió
+mientras tanto, y un segundo `on` conserva el estado del primero. Para cargar
+o descargar en vivo una clave borrada usa el `EnabledByDefault` de KWin 6.8.1
+(`scale`, `slide` y `squash` sí; `fade`, `fadedesktop` y `magiclamp` no).
+`--get-reduce-motion` imprime `on` u `off`.
+
+- **Autónoma:** solo biblioteca estándar y sin `ggcommon` (que va en
+  `goldenglass-kstyle`: compartirlo crearía un conflicto de archivos o una
+  dependencia nueva entre paquetes), así que tiene su propio `kread`,
+  `kwrite` y `effects_call`, como las herramientas de iconos. Los tokens salen
+  del TOML del repositorio o, instalada, de `/usr/share/goldenglass/windows.json`
+  (`[kwin]` y `accessibility.reduce_motion`), que escribe `gen_tokens.py` en
+  `build/kwin/`. `gen_tokens.py` valida `[kwin]`.
+- **Pruebas** (`tools/tests/test_windows.py`, configuración en memoria y
+  llamadas de D-Bus solo registradas): instalación limpia, claves tocadas que
+  no se pisan, 7 → 9, segunda ejecución sin cambios, otro Global Theme sin
+  cambios, Reducir movimiento (activar, restaurar, cambios del usuario
+  mientras tanto, dos `on`) y una actualización sobre un `kwinrc` previo con
+  `kreadconfig6`/`kwriteconfig6` reales en un `XDG_CONFIG_HOME` temporal y
+  D-Bus desactivado.
+
+**Spikes SP-05 y SP-06** (sandbox: KWin 6.8.1 virtual 1600×1000, plasmashell
+6.8.1, layout de `org.goldenglass.light.desktop`, `AnimationDurationFactor=10`
+para capturar fotogramas a mitad de animación; minimizado con
+`invokeShortcut "Window Minimize"` y geometrías leídas con un script de KWin):
+
+- **El autostart llega a tiempo — go.** Tras arrancar KWin, `--check` cargó
+  `magiclamp` y descargó `squash` en vivo (`isEffectLoaded`), escribió la
+  tabla y cargó el script `org.goldenglass.shortcuts` (antes, no cargado); una
+  segunda ejecución no cambió `kwinrc`. `--reduce-motion on` dejó cargados
+  `fade` y `fadedesktop` y descargó `scale`, `slide` y `magiclamp`; `off`
+  devolvió `kwinrc` byte a byte y los mismos efectos cargados. Sin reiniciar
+  sesión.
+- **El genio acaba en el icono — go, con un arreglo en el dock.** KWin apunta
+  a la geometría que publica el dock (`iconGeometry` 875,938 48×48, el icono
+  de la app). Con el dock visible, el `TasksModel` del dock tenía
+  `filterHidden: true` y quitaba la app al minimizarse su única ventana: el
+  dock se encogía y el genio acababa en un hueco. Ahora `filterHidden: false`
+  (como el Dock, la app minimizada conserva su icono) y el genio termina sobre
+  él. Con el dock autoocultado el genio baja al borde inferior, a la x del
+  icono, como en macOS; no hizo falta republicar la geometría al mostrarse
+  (plan B). Con el dock ampliado no se probó (el sandbox no mueve el cursor).
+- **`scale` con `goldenglass_glass` — go.** Con la refracción cargada (y el
+  Blur no), abrir y cerrar con `scale` (0,92/0,95) no deja artefactos ni
+  cambios en el vidrio del dock en los fotogramas capturados (unos 3 por
+  segundo a velocidad ×10); un parpadeo de un solo fotograma a velocidad
+  normal no se puede descartar con este método.
 
 ### 4.6 Tipografía — `fontconfig/`
 - SF Pro **no se redistribuye** (licencia de Apple).
@@ -1109,7 +1210,7 @@ plugin de plataforma que plasmashell):
   | Paquete | Contenido |
   |---|---|
   | `goldenglass-kstyle` (x86_64) | estilo, decoración, KCM, `goldenglass-glass` (C++: recompilar tras actualizar Qt/KDE) |
-  | `goldenglass-plasma` | Plasma Style, Global Themes, shell (pantalla de bloqueo y `Panel.qml` del dock), plasmoids (dock incluido), esquemas de color, fontconfig (activado en `/etc/fonts/conf.d`), `goldenglass-system` y `goldenglass-dock` |
+  | `goldenglass-plasma` | Plasma Style, Global Themes, shell (pantalla de bloqueo y `Panel.qml` del dock), plasmoids (dock incluido), esquemas de color, fontconfig (activado en `/etc/fonts/conf.d`), `goldenglass-system`, `goldenglass-dock` y `goldenglass-windows` (autostart con `--check`; lee `/usr/share/goldenglass/windows.json`) |
   | `goldenglass-icons` | temas de iconos claro/oscuro y `goldenglass-wrap-icons` (autostart con `--if-changed`: cada usuario encierra sus apps de terceros al iniciar sesión si cambiaron) |
   | `goldenglass-cursors` | tema de cursores |
   | `goldenglass-wallpapers` | fondo día/noche |
@@ -1194,7 +1295,7 @@ plugin de plataforma que plasmashell):
 | F10 | Dock unificado: ampliación, rebote, vistas previas, recientes; módulo Dock | ✅ |
 | F11 | Efecto de KWin `goldenglass_glass` (fork de Blur) con refracción; interruptor en Vidrio | ✅ |
 | F12 | Material y accesibilidad: filo del vidrio, sombra inactiva, semáforos grises, Reducir transparencia, Mostrar bordes | 📋 |
-| F13 | Ventanas y movimiento: efectos de KWin, atajos de tiling, velocidad de animación global, Reducir movimiento | 📋 |
+| F13 | Ventanas y movimiento: efectos de KWin, atajos de tiling, velocidad de animación global, Reducir movimiento | 🚧 |
 | F14 | Barra de menús y Dock: barra a 24 px, HUD de volumen y brillo, apps en segundo plano | 📋 |
 | F15 | Estilos de icono Tintado y Transparente; módulo Estilo de iconos | 📋 |
 | F16 | Spotlight propio (sustituye a KRunner) con vistas, portapapeles y teclas rápidas | 📋 |
@@ -1231,4 +1332,5 @@ Refracción en las ventanas de las apps.
 | PanelView fija la región de entrada desde el borde superior de la placa | Aceptado: la ampliación se recoge al salir de la placa (4.13) |
 | El dock unificado pierde funciones de `icontasks` | Mismo `TasksModel`; menú, vistas previas, arrastre y soltar archivos reimplementados (4.13) |
 | La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle` (un hook de pacman lo avisa al actualizar KWin); `goldenglass-glass --check` al iniciar sesión reactiva Blur si el efecto no carga; fork documentado en `UPSTREAM.md` |
+| Valores de fábrica de KWin que pisan los del usuario | `goldenglass-windows` solo escribe claves vacías, una vez por `DefaultsVersion` y solo con un Global Theme GoldenGlass; «Reducir movimiento» guarda y devuelve lo anterior sin pisar lo que el usuario cambió; pruebas de actualización con un `kwinrc` previo |
 | Coste de GPU de la refracción | Solo superficies de Plasma; dos muestras más por píxel solo en la banda del borde; interruptor en el módulo Vidrio |

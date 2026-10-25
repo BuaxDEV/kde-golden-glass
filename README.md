@@ -77,6 +77,14 @@ goldenglass-dock --magnification on --magnification-size 96 --icon-size 48
 goldenglass-dock --get
 ```
 
+Reducir movimiento (fundidos en lugar de escalas, deslizamientos, genio y rebotes):
+Preferencias del Sistema › Colores y temas › Vidrio › Accesibilidad, o desde la terminal:
+
+```sh
+goldenglass-windows --reduce-motion on   # off lo devuelve como estaba
+goldenglass-windows --get-reduce-motion
+```
+
 Sonidos de cristal y sonido al iniciar sesión (requieren `goldenglass-sounds`; no
 se activan al instalar): Preferencias del Sistema › Multimedia › Efectos de
 sonido, o desde la terminal:

@@ -30,6 +30,23 @@
   abren y cierran al momento. Con la velocidad normal todo dura lo mismo que
   antes. Las esperas (antes de mostrar el nombre de la app o de ocultar las
   miniaturas y la barra de desplazamiento) no cambian.
+- **Efectos de ventana como en macOS** (`goldenglass-windows`, al iniciar
+  sesión con un Global Theme GoldenGlass): las ventanas se minimizan con el
+  genio hasta su icono del dock, se abren creciendo desde el 92 % y se cierran
+  hacia el 95 % (tokens `[kwin]`, por calibrar), y la esquina superior
+  izquierda ya no abre la vista general. Solo se escribe lo que no hubieras
+  cambiado, una sola vez, y se aplica sin reiniciar la sesión; las
+  instalaciones existentes lo reciben al iniciar sesión.
+- **Reducir movimiento** en Ajustes del sistema › Vidrio › Accesibilidad: las
+  ventanas aparecen y desaparecen con un fundido en vez de escalar, el cambio
+  de escritorio se funde en vez de deslizarse y minimizar no anima; en el
+  Centro de control, Apps y el dock los paneles solo se funden, los iconos no
+  rebotan y las listas se detienen en los extremos sin estirarse. Al
+  desactivarlo vuelven tus efectos anteriores, salvo los que hayas cambiado
+  mientras tanto. También desde la terminal: `goldenglass-windows
+  --reduce-motion on|off`.
+- **Dock:** una app con todas sus ventanas minimizadas conserva su icono, como
+  en macOS (antes desaparecía y el genio acababa en un hueco).
 - **`goldenglass-glass`:** el módulo de Ajustes y el slider del Centro de
   control ya no se pisan si lanzan la herramienta a la vez: toda operación que
   escribe (`--level`, `--refraction`, `--menubar-background`, `--check`) toma
@@ -45,6 +62,10 @@
   son idénticos byte a byte). `goldenglass-icons` instala
   `/usr/share/goldenglass/icon-tile.json` con esos valores para que
   `goldenglass-wrap-icons` siga sin depender de los tokens ni de otros paquetes.
+- `goldenglass-plasma` instala `goldenglass-windows`, su autostart y
+  `/usr/share/goldenglass/windows.json` (tokens `[kwin]`); `tools/install.sh`
+  añade el lanzador y el autostart. `tools/sandbox.sh` usa el módulo QML
+  `org.goldenglass.glass` del árbol compilado en vez del instalado.
 
 ## 0.2.1 — 2026-10-15
 
