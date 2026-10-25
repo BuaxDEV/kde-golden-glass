@@ -106,10 +106,28 @@ def _shape(tokens: dict, gtk4: bool, inactive: str = "@traffic_light_inactive") 
     backdrop = ", ".join(f"{s.strip()}:backdrop" for s in controls.split(","))
     hover_img = ", ".join(f"{s.strip()}:hover image" for s in controls.split(","))
     all_img = ", ".join(f"{s.strip()} image" for s in controls.split(","))
-    # Ventanas sin foco: en color (token inactive_colored) o en gris como macOS
-    backdrop_rule = "" if tl["inactive_colored"] else (
-        f"{backdrop} {{ background-color: {inactive}; background-image: none; "
-        f"box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, {tl['gtk_inactive_border_alpha']}); }}\n")
+    # Ventanas sin foco: en color (token inactive_colored) o en gris como macOS,
+    # con el color y los glifos de vuelta al pasar el ratón.
+    backdrop_rule = ""
+    hover_rule = ""
+    if not tl["inactive_colored"]:
+        backdrop_rule = (
+            f"{backdrop} {{ background-color: {inactive}; background-image: none; "
+            f"box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, {tl['gtk_inactive_border_alpha']}); }}\n")
+        shine = (f"linear-gradient(to bottom, rgba(255, 255, 255, {tl['gtk_highlight_top']}), rgba(255, 255, 255, 0) 48%), "
+                 f"radial-gradient(ellipse at 50% 100%, rgba(255, 255, 255, {tl['gtk_highlight_bottom']}), rgba(255, 255, 255, 0) 60%)")
+        for cls, key in (("close", "close"), ("minimize", "minimize"), ("maximize", "zoom")):
+            if gtk4:
+                # hover del GRUPO: windowcontrols:hover cubre los tres botones
+                sel = f"windowcontrols:backdrop:hover > button.{cls}"
+            else:
+                # GTK3 no tiene nodo de grupo con hover propio: solo por botón
+                sel = ", ".join(f"{s.strip()}.{cls}:backdrop:hover" for s in controls.split(","))
+            hover_rule += (
+                f"{sel} {{ background-color: {tl[key]}; background-image: {shine}; "
+                f"box-shadow: inset 0 0 0 0.5px {tl[key + '_border']}, 0 0.5px 1px rgba(0, 0, 0, {tl['gtk_shadow_alpha']}); }}\n")
+        if gtk4:
+            hover_rule += "windowcontrols:hover > button image { opacity: 1; }\n"
     return f"""
 /* Forma de macOS */
 button, combobox button, dropdown > button, spinbutton {{ border-radius: {r['control']}px; }}
@@ -130,7 +148,7 @@ window.maximized .titlebar, window.maximized headerbar, window.tiled headerbar {
   background-image: linear-gradient(to bottom, rgba(255, 255, 255, {tl['gtk_highlight_top']}), rgba(255, 255, 255, 0) 48%),
                     radial-gradient(ellipse at 50% 100%, rgba(255, 255, 255, {tl['gtk_highlight_bottom']}), rgba(255, 255, 255, 0) 60%);
 }}
-{"".join(lights)}{backdrop_rule}
+{"".join(lights)}{backdrop_rule}{hover_rule}
 {all_img} {{ opacity: 0; -gtk-icon-transform: scale({tl['gtk_glyph_scale']}); }}
 {hover_img} {{ opacity: 1; }}
 """
