@@ -647,6 +647,10 @@ visited = "#AF52DE"
 positive = "#34C759"
 neutral = "#FF9500"
 negative = "#FF3B30"
+# texto sobre un fondo de color semántico (botones de GTK/libadwaita)
+positive_fg = "#FFFFFF"
+neutral_fg = "#000000CC"       # 80 %
+negative_fg = "#FFFFFF"
 
 # Texto (macOS usa negro con alfa; se aplana sobre cada fondo)
 label = "#000000D9"            # 85 %
@@ -690,6 +694,9 @@ visited = "#BF5AF2"
 positive = "#30D158"
 neutral = "#FF9F0A"
 negative = "#FF453A"
+positive_fg = "#FFFFFF"
+neutral_fg = "#000000CC"
+negative_fg = "#FFFFFF"
 
 label = "#FFFFFFD9"
 label_secondary = "#FFFFFF8C"  # 55 %

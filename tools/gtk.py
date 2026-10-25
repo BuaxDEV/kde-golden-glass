@@ -56,10 +56,10 @@ def _palette(pal: dict) -> dict[str, str]:
     c = {k: _css_color(v) for k, v in pal.items() if isinstance(v, str)}
     return {
         "accent_color": c["accent"], "accent_bg_color": c["accent"], "accent_fg_color": c["accent_fg"],
-        "destructive_color": c["negative"], "destructive_bg_color": c["negative"], "destructive_fg_color": "#FFFFFF",
-        "success_color": c["positive"], "success_bg_color": c["positive"], "success_fg_color": "#FFFFFF",
-        "warning_color": c["neutral"], "warning_bg_color": c["neutral"], "warning_fg_color": "rgba(0, 0, 0, 0.8)",
-        "error_color": c["negative"], "error_bg_color": c["negative"], "error_fg_color": "#FFFFFF",
+        "destructive_color": c["negative"], "destructive_bg_color": c["negative"], "destructive_fg_color": c["negative_fg"],
+        "success_color": c["positive"], "success_bg_color": c["positive"], "success_fg_color": c["positive_fg"],
+        "warning_color": c["neutral"], "warning_bg_color": c["neutral"], "warning_fg_color": c["neutral_fg"],
+        "error_color": c["negative"], "error_bg_color": c["negative"], "error_fg_color": c["negative_fg"],
         "window_bg_color": c["window"], "window_fg_color": c["label"],
         "view_bg_color": c["view"], "view_fg_color": c["label"],
         "headerbar_bg_color": c["header"], "headerbar_fg_color": c["label"],
