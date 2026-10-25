@@ -49,4 +49,10 @@ if(BUILD_TESTING)
     set_tests_properties(internalsettings_test PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;DBUS_SESSION_BUS_ADDRESS=disabled:"
         TIMEOUT 60)
+    # Sombra activa e inactiva (goldenglassshadowparams.h), sin KWin
+    include(ECMAddTests)
+    ecm_add_test(tests/shadowparams_test.cpp
+        LINK_LIBRARIES Qt6::Test Qt6::Gui
+        TEST_NAME shadowparams_test)
+    target_include_directories(shadowparams_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
