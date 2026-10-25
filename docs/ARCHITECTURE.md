@@ -587,6 +587,16 @@ ejecuta bajo `dbus-run-session` (un bus de sesión propio y descartable, con
     vidrio. Claro: fondo del color de la app y símbolo blanco; oscuro (tema
     `GoldenGlass-Dark`, carpeta `apps` propia): fondo grafito y símbolo en el
     color. No se dibujan marcas de terceros.
+    Los colores, opacidades y sombras del squircle (fondos grafito y papel,
+    brillo, filo, sombras del tile y del símbolo) están en `[icon_tile]` de los
+    tokens, validada por `gen_tokens.py`; `icons_apps.py` y `wrap_icons.py` los
+    leen con `ggcommon.load_tokens()` (`TileTokens`), así que el paquete
+    `goldenglass-icons` depende de `goldenglass-kstyle` (que instala `ggcommon.py`,
+    los tokens y `VERSION`). `tile()` y `App.svg()` reciben un `Style`
+    (`tools/icons_style.py`, hoy solo `DEFAULT`) para los estilos Tintado y
+    Transparente. `tools/tests/test_icon_tile.py` guarda el SHA-256 de cada SVG
+    (`icon_tile_golden.py`, se regenera con `--update` cuando el cambio visual es
+    a propósito) y comprueba que cada token cambia el dibujo.
   - **Protección de nombres:** al generar se crean en `<tema>/inherited/`
     enlaces al icono real (en WhiteSur, Breeze o hicolor) de cada nombre que
     el recorte llevaría a una de nuestras apps (`preferences-system-bluetooth`

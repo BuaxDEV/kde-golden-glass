@@ -182,14 +182,16 @@ package_goldenglass-icons() {
   pkgdesc="GoldenGlass icon themes (light and dark) with app icons and third-party icon wrapping"
   arch=(any)
   license=(CC-BY-SA-4.0 GPL-3.0-or-later)
-  depends=(breeze-icons hicolor-icon-theme python python-pyqt6 qt6-svg)
+  # goldenglass-kstyle instala tools/ggcommon.py, los tokens y VERSION que lee
+  # goldenglass-wrap-icons ([icon_tile]) en la misma disposición que el repositorio
+  depends=(breeze-icons hicolor-icon-theme python python-pyqt6 qt6-svg goldenglass-kstyle)
   optdepends=('whitesur-icon-theme: macOS-like icons for everything GoldenGlass does not draw')
 
   install -dm755 "$pkgdir/usr/share/icons"
   cp -a gen/icons/GoldenGlass gen/icons/GoldenGlass-Dark "$pkgdir/usr/share/icons/"
   # goldenglass-wrap-icons: encierra en squircle las apps de terceros, por
   # usuario (~/.local); al iniciar sesión, solo si cambiaron las apps.
-  install -Dm644 goldenglass/tools/{icons,icons_apps,icons_mime,wrap_icons}.py -t "$pkgdir$_share/tools/"
+  install -Dm644 goldenglass/tools/{icons,icons_apps,icons_mime,icons_style,wrap_icons}.py -t "$pkgdir$_share/tools/"
   _launcher goldenglass-wrap-icons wrap_icons.py
   _autostart goldenglass-wrap-icons "GoldenGlass icon wrapping" --if-changed
   _docs

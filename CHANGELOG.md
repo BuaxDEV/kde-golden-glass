@@ -10,6 +10,13 @@
   En las ventanas CSD de GTK4/libadwaita el grupo entero reacciona; en GTK3
   solo el botón bajo el ratón.
 
+### Proyecto
+
+- Los colores, opacidades y sombras del squircle de los iconos de apps pasan a
+  la sección `[icon_tile]` de los tokens, sin cambio visual (los SVG generados
+  son idénticos byte a byte). `goldenglass-icons` ahora depende de
+  `goldenglass-kstyle` para leer los tokens al encerrar iconos de terceros.
+
 ## 0.2.1 — 2026-10-15
 
 Correcciones de seguridad, compatibilidad con KWin 6.8 y publicación como
