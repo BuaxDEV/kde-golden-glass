@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Solo los singletons: el resto de archivos del directorio se resuelve por su
+# nombre, como sin qmldir. tools/plasmoids.py (SHARED) lo copia a los
+# plasmoids que usan Motion y lo une al qmldir que ya tengan.
+singleton Motion 1.0 Motion.qml

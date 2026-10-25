@@ -11,7 +11,9 @@ contents/ui/tokens.js con los tokens (en QML: import "tokens.js" as T).
 Además:
   - SHARED: archivos de un plasmoid que otro usa tal cual (el dock lleva el
     panel de Apps y la Papelera); se copian y sus traducciones se unen a las
-    del que los usa.
+    del que los usa. Motion.qml (duraciones que siguen la velocidad de
+    animación global) va con su qmldir, que lo declara singleton; si el
+    plasmoid ya tiene un qmldir, se le añaden las líneas que le falten.
   - Plantillas *.in: @sección.clave@ se sustituye por el token y se quita .in
     (p. ej. los valores de fábrica de contents/config/main.xml).
 """
@@ -29,14 +31,31 @@ from ggcommon import fill_template
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "plasma" / "plasmoids"
 
+# singleton de movimiento: lo necesita todo plasmoid con duraciones de los tokens
+MOTION = ["Motion.qml", "qmldir"]
+
 # plasmoid que usa → {plasmoid de origen: [archivos de contents/ui/]}
 SHARED = {
-    "org.goldenglass.controlcenter": {"org.goldenglass.launchpad": ["GlassBlur.qml"]},
+    "org.goldenglass.controlcenter": {"org.goldenglass.launchpad": ["GlassBlur.qml", *MOTION]},
     "org.goldenglass.dock": {
-        "org.goldenglass.launchpad": ["AppsLauncher.qml", "AppsPanel.qml", "GlassBlur.qml", "GlassScrollView.qml", "categories.js"],
+        "org.goldenglass.launchpad": ["AppsLauncher.qml", "AppsPanel.qml", "GlassBlur.qml", "GlassScrollView.qml",
+                                      "categories.js", *MOTION],
         "org.goldenglass.trash": ["TrashButton.qml"],
     },
 }
+
+
+def copy_shared(source: Path, target: Path) -> None:
+    """Copia un archivo de SHARED; un qmldir se une al que ya haya en el destino."""
+    if source.name != "qmldir" or not target.exists():
+        shutil.copy2(source, target)
+        return
+    lines = target.read_text(encoding="utf-8").splitlines()
+    seen = {line.strip() for line in lines}
+    added = [line for line in source.read_text(encoding="utf-8").splitlines()
+             if line.strip() and not line.lstrip().startswith("#") and line.strip() not in seen]
+    if added:
+        target.write_text("\n".join([*lines, *added]) + "\n", encoding="utf-8")
 
 
 def fill_templates(src: Path, dst: Path, tokens: dict) -> list[Path]:
@@ -82,7 +101,7 @@ def build(out: Path, tokens: dict | None = None) -> list[Path]:
         written.append(dst)
         for origin, files in SHARED.get(plugin_id, {}).items():
             for name in files:
-                shutil.copy2(SOURCES / origin / "contents" / "ui" / name, dst / "contents" / "ui" / name)
+                copy_shared(SOURCES / origin / "contents" / "ui" / name, dst / "contents" / "ui" / name)
         if tokens is not None:
             written += fill_templates(src, dst, tokens)
             write_tokens_js(dst / "contents" / "ui" / "tokens.js", tokens)
