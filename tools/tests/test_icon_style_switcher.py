@@ -148,6 +148,12 @@ def test_factory_choice_is_default_and_auto(session):
     assert (state["style"], state["appearance"], state["explicit"]) == ("default", "auto", False)
     assert (state["defaultStyle"], state["defaultAppearance"]) == ("default", "auto")
     assert (state["theme"], state["resolved"], state["darkScheme"]) == ("GoldenGlass", "GoldenGlass", False)
+    assert state["inFamily"] is True
+
+
+def test_get_tells_another_theme_apart(session):
+    session.set("kdeglobals", "Icons", "Theme", "breeze")
+    assert switcher.state()["inFamily"] is False
 
 
 def test_get_previews_each_style_in_the_effective_appearance(session):

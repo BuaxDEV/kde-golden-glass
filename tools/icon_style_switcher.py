@@ -230,6 +230,7 @@ def state() -> dict:
     for style in Style:
         theme = resolve(style, Appearance.DARK if effective_dark else Appearance.LIGHT, dark)
         previews[style.value] = [str(path) for name in PREVIEW_APPS if (path := app_icon(theme, name))]
+    theme = current_theme()
     return {
         "style": choice.style.value,
         "appearance": choice.appearance.value,
@@ -237,7 +238,8 @@ def state() -> dict:
         "defaultStyle": DEFAULT_STYLE.value,
         "defaultAppearance": DEFAULT_APPEARANCE.value,
         "darkScheme": dark,
-        "theme": current_theme(),
+        "theme": theme,
+        "inFamily": theme in family(),
         "resolved": resolve(choice.style, choice.appearance, dark),
         "previews": previews,
     }
