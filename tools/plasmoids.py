@@ -31,8 +31,9 @@ from ggcommon import fill_template
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "plasma" / "plasmoids"
 
-# singleton de movimiento: lo necesita todo plasmoid con duraciones de los tokens
-MOTION = ["Motion.qml", "qmldir"]
+# motion singleton, with the file it loads «Reduce motion» from: every plasmoid
+# with token durations needs them
+MOTION = ["Motion.qml", "MotionReduce.qml", "qmldir"]
 
 # plasmoid que usa → {plasmoid de origen: [archivos de contents/ui/]}
 SHARED = {

@@ -171,7 +171,8 @@ Item {
         if (!gesture || event.phase === Qt.ScrollBegin) {
             beginGesture();
         }
-        virtualY -= dy;
+        // «Reduce motion»: stop at the ends instead of stretching past them
+        virtualY = Motion.reduced ? clampY(virtualY - dy) : virtualY - dy;
         flick.contentY = band(virtualY);
         const now = Date.now();
         samples = samples.filter(s => now - s.t <= 150).concat([{ t: now, dy: dy }]);
@@ -216,7 +217,7 @@ Item {
             contentHeight: root.topInset + holder.childrenRect.height + root.bottomInset
             // el ratón no arrastra (sí el dedo): los hijos se pueden arrastrar
             interactive: Kirigami.Settings.hasTransientTouchInput
-            boundsBehavior: Flickable.DragAndOvershootBounds
+            boundsBehavior: Motion.reduced ? Flickable.StopAtBounds : Flickable.DragAndOvershootBounds
             flickDeceleration: root.tok.deceleration
             maximumFlickVelocity: root.tok.max_velocity
             rebound: Transition {

@@ -39,11 +39,13 @@ QtObject {
     readonly property real factor: Kirigami.Units.longDuration / T.tokens.motion.kirigami_long_ms
     // false con «Velocidad de animación» al mínimo (sin animaciones)
     readonly property bool animated: Kirigami.Units.longDuration > 1
-    // «Reducir movimiento»: sin escalas, desplazamientos ni rebotes; los
-    // paneles solo se funden. Punto de enganche de la clave ReduceMotion (la
-    // leerá AccessibilitySettings del módulo org.goldenglass.glass, en un
-    // Loader para que sin el módulo C++ siga en false); hasta entonces, false.
-    readonly property bool reduced: false
+    // «Reduce motion»: no zooms, slides or bounces; panels only fade. Read
+    // live from AccessibilitySettings, behind a Loader so that it stays false
+    // without the org.goldenglass.glass module.
+    readonly property Loader reduceLoader: Loader {
+        source: "MotionReduce.qml"
+    }
+    readonly property bool reduced: reduceLoader.item ? reduceLoader.item.reduceMotion : false
 
     // fundidos y colores: duración × factor (0 sin animaciones)
     function ms(base) {

@@ -6,10 +6,14 @@
   plasma/plasmoids/**/*.qml que sale de los tokens pasa por Motion, para seguir
   la velocidad de animación global de Plasma; las esperas que no son
   animaciones (WAITS, Timer.interval) no se escalan.
-- Los plasmoids que usan Motion reciben Motion.qml y su qmldir (SHARED).
+- Los plasmoids que usan Motion reciben Motion.qml, MotionReduce.qml y su
+  qmldir (SHARED).
 - Prueba en ejecución (opcional: se salta sin qml6, sin Kirigami o sin un
   plugin de plataforma de Kirigami que lea kdeglobals): Motion.ms(100) con
   AnimationDurationFactor 0, 0.25, 1 y 2 en un kdeglobals temporal.
+- «Reduce motion» at run time: with a MotionReduce.qml that reports it on,
+  moves take 0 ms, fades motion.reduced_fade_ms and there is no overshoot;
+  without the org.goldenglass.glass module it stays off.
 """
 
 from __future__ import annotations
@@ -147,13 +151,16 @@ def test_plasmoids_using_motion_get_it() -> None:
         uses = any("Motion." in f.read_text(encoding="utf-8") for f in files if f.name != "Motion.qml")
         if not uses or plugin_id == origin:
             continue
-        assert {"Motion.qml", "qmldir"} <= set(shared.get(origin, [])), plugin_id
+        assert {"Motion.qml", "MotionReduce.qml", "qmldir"} <= set(shared.get(origin, [])), plugin_id
 
 
 def test_motion_source_files() -> None:
     qmldir = (MOTION_SOURCE / "qmldir").read_text(encoding="utf-8")
     assert "singleton Motion 1.0 Motion.qml" in qmldir.splitlines()
     assert (MOTION_SOURCE / "Motion.qml").read_text(encoding="utf-8").count("pragma Singleton") == 1
+    reduce = (MOTION_SOURCE / "MotionReduce.qml").read_text(encoding="utf-8")
+    assert "import org.goldenglass.glass" in reduce and "AccessibilitySettings {" in reduce
+    assert '"MotionReduce.qml"' in (MOTION_SOURCE / "Motion.qml").read_text(encoding="utf-8")
 
 
 def test_shared_qmldir_is_merged(tmp_path: Path) -> None:
@@ -195,6 +202,7 @@ Item {
             long: Kirigami.Units.longDuration,
             factor: Motion.factor,
             animated: Motion.animated,
+            reduced: Motion.reduced,
             ms: Motion.ms(100),
             moveMs: Motion.moveMs(100),
             fadeMs: Motion.fadeMs(100),
@@ -235,7 +243,7 @@ def _qml_binary() -> str | None:
     return str(fallback) if fallback.exists() else None
 
 
-def _run_probe(qml: str, folder: Path, home: Path, factor: float) -> dict:
+def _run_probe(qml: str, folder: Path, home: Path, factor: float, extra_env: dict | None = None) -> dict:
     (home / ".config").mkdir(parents=True, exist_ok=True)
     (home / ".config" / "kdeglobals").write_text(f"[KDE]\nAnimationDurationFactor={factor}\n", encoding="utf-8")
     runtime = home / "runtime"
@@ -252,6 +260,7 @@ def _run_probe(qml: str, folder: Path, home: Path, factor: float) -> dict:
         "QT_FORCE_STDERR_LOGGING": "1",
         # el plugin de plataforma de Kirigami que usa plasmashell (KirigamiPlasmaStyle)
         "QT_QUICK_CONTROLS_STYLE": "Plasma",
+        **(extra_env or {}),
     }
     result = subprocess.run([qml, str(folder / "main.qml")], env=env, capture_output=True, text=True,
                             timeout=60, check=False)
@@ -263,15 +272,39 @@ def _run_probe(qml: str, folder: Path, home: Path, factor: float) -> dict:
     return json.loads(match[1])
 
 
-@pytest.mark.skipif(_qml_binary() is None, reason="sin qml6")
-def test_motion_follows_global_animation_speed(tmp_path: Path, tokens: dict) -> None:
+# stands in for AccessibilitySettings with «Reduce motion» on
+REDUCE_ON = """\
+import QtQuick
+
+QtObject {
+    readonly property bool reduceMotion: true
+}
+"""
+
+# what MotionReduce.qml does without goldenglass-kstyle
+MODULE_MISSING = """\
+import org.goldenglass.missing
+
+AccessibilitySettings {}
+"""
+
+
+def _probe_folder(tmp_path: Path, tokens: dict, motion_reduce: str | None = None) -> Path:
     folder = tmp_path / "ui"
     folder.mkdir()
-    for name in ("Motion.qml", "qmldir"):
+    for name in plasmoids.MOTION:
         shutil.copy2(MOTION_SOURCE / name, folder / name)
+    if motion_reduce is not None:
+        (folder / "MotionReduce.qml").write_text(motion_reduce, encoding="utf-8")
     plasmoids.write_tokens_js(folder / "tokens.js", tokens)
     (folder / "main.qml").write_text(PROBE, encoding="utf-8")
     (folder / "Probe.qml").write_text(PROBE_ITEM, encoding="utf-8")
+    return folder
+
+
+@pytest.mark.skipif(_qml_binary() is None, reason="sin qml6")
+def test_motion_follows_global_animation_speed(tmp_path: Path, tokens: dict) -> None:
+    folder = _probe_folder(tmp_path, tokens)
     qml = _qml_binary()
     assert qml
 
@@ -289,6 +322,54 @@ def test_motion_follows_global_animation_speed(tmp_path: Path, tokens: dict) -> 
         assert values["moveMs"] == values["ms"] and values["fadeMs"] == values["ms"], factor
         assert values["overshoot"] == 1.5, factor
         assert values["animated"] is (factor > 0), factor
+        assert values["reduced"] is False, factor
     # con factor 0 la animación de cierre termina dentro de restart()
     assert results[0]["closedSync"] is True
     assert results[1]["closedSync"] is False
+
+
+@pytest.mark.skipif(_qml_binary() is None, reason="sin qml6")
+def test_reduce_motion_turns_moves_into_fades(tmp_path: Path, tokens: dict) -> None:
+    qml = _qml_binary()
+    assert qml
+    folder = _probe_folder(tmp_path, tokens, REDUCE_ON)
+    results = {f: _run_probe(qml, folder, tmp_path / f"home-{f}", f) for f in (0, 1)}
+    fade = tokens["motion"]["reduced_fade_ms"]
+    reduced = results[1]
+    assert reduced["reduced"] is True
+    assert reduced["moveMs"] == 0
+    assert reduced["overshoot"] == 0
+    if reduced["long"] != tokens["motion"]["kirigami_long_ms"]:
+        pytest.skip("el plugin de plataforma de Kirigami no lee AnimationDurationFactor")
+    assert reduced["ms"] == pytest.approx(100)
+    assert reduced["fadeMs"] == pytest.approx(fade)
+    # without animations nothing moves or fades, and closing still ends at once
+    assert results[0]["fadeMs"] == 0 and results[0]["closedSync"] is True
+
+
+@pytest.mark.skipif(_qml_binary() is None, reason="sin qml6")
+def test_reduce_motion_is_off_without_the_glass_module(tmp_path: Path, tokens: dict) -> None:
+    qml = _qml_binary()
+    assert qml
+    folder = _probe_folder(tmp_path, tokens, MODULE_MISSING)
+    values = _run_probe(qml, folder, tmp_path / "home", 1)
+    assert values["reduced"] is False
+    assert values["overshoot"] == 1.5
+
+
+BUILT_GLASS_MODULE = ROOT / "build" / "cmake" / "bin"
+
+
+@pytest.mark.skipif(_qml_binary() is None, reason="sin qml6")
+@pytest.mark.skipif(not (BUILT_GLASS_MODULE / "org" / "goldenglass" / "glass" / "qmldir").is_file(),
+                    reason="org.goldenglass.glass not built in build/cmake")
+def test_reduce_motion_follows_goldenglassrc(tmp_path: Path, tokens: dict) -> None:
+    qml = _qml_binary()
+    assert qml
+    folder = _probe_folder(tmp_path, tokens)
+    home = tmp_path / "home"
+    (home / ".config").mkdir(parents=True)
+    (home / ".config" / "goldenglassrc").write_text("[Accessibility]\nReduceMotion=true\n", encoding="utf-8")
+    values = _run_probe(qml, folder, home, 1, {"QML_IMPORT_PATH": str(BUILT_GLASS_MODULE)})
+    assert values["reduced"] is True
+    assert values["moveMs"] == 0
