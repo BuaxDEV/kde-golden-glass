@@ -115,7 +115,7 @@ properties = ["nodeId", "uuid"]
 # --- org.kde.notificationmanager --------------------------------------------------------
 
 [modules."org.kde.notificationmanager"]
-files = ["plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/main.qml"]
+files = ["plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/DoNotDisturb.qml"]
 
 [modules."org.kde.notificationmanager".types.Settings]
 properties = ["notificationsInhibitedByApplication", "notificationsInhibitedUntil"]

@@ -18,7 +18,6 @@ import QtQuick.Layouts
 import org.kde.bluezqt as BluezQt
 import org.kde.kcmutils as KCMUtils
 import org.kde.kirigami as Kirigami
-import org.kde.notificationmanager as NotificationManager
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.networkmanagement as PlasmaNM
 import org.kde.plasma.plasma5support as P5Support
@@ -143,33 +142,9 @@ PlasmoidItem {
         });
     }
 
-    // --- No molestar ----------------------------------------------------------
-    NotificationManager.Settings {
-        id: notificationSettings
-    }
-    readonly property bool doNotDisturb: {
-        const until = notificationSettings.notificationsInhibitedUntil;
-        return (until !== undefined && !isNaN(until.getTime()) && until.getTime() > Date.now())
-            || notificationSettings.notificationsInhibitedByApplication;
-    }
-    function setDoNotDisturb(enable) {
-        if (enable) {
-            const until = new Date();
-            until.setFullYear(until.getFullYear() + 1);
-            setDoNotDisturbUntil(until);
-        } else {
-            setDoNotDisturbUntil(null);
-        }
-    }
-    // hasta una fecha (Date) o, con null, desactivado
-    function setDoNotDisturbUntil(until) {
-        if (until) {
-            notificationSettings.notificationsInhibitedUntil = until;
-        } else {
-            notificationSettings.notificationsInhibitedUntil = undefined;
-            notificationSettings.revokeApplicationInhibitions();
-        }
-        notificationSettings.save();
+    // --- Do Not Disturb -------------------------------------------------------
+    DoNotDisturb {
+        id: doNotDisturbState
     }
 
     // --- Luz nocturna (KWin) --------------------------------------------------
@@ -463,9 +438,9 @@ PlasmoidItem {
                         iconName: "weather-clear-night-symbolic"
                         title: i18n("Focus")
                         subtitle: checked ? i18n("Do Not Disturb") : ""
-                        checked: root.doNotDisturb
+                        checked: doNotDisturbState.active
                         hasDetail: true
-                        onToggled: root.setDoNotDisturb(!root.doNotDisturb)
+                        onToggled: doNotDisturbState.setActive(!doNotDisturbState.active)
                         onDetailRequested: contentRoot.detail = "focus"
                     }
                 }
@@ -603,8 +578,8 @@ PlasmoidItem {
     Component {
         id: focusDetail
         FocusDetail {
-            doNotDisturb: root.doNotDisturb
-            onUntilRequested: until => root.setDoNotDisturbUntil(until)
+            doNotDisturb: doNotDisturbState.active
+            onUntilRequested: until => doNotDisturbState.setActiveUntil(until)
             onSettingsRequested: root.openSettings("kcm_notifications")
         }
     }
