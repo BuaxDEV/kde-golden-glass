@@ -341,6 +341,13 @@ show_recent = true       # apps recientes no fijadas, tras un separador
 recent_count = 3
 preview_width = 220      # px de las miniaturas de ventanas en el tooltip
 label_delay_ms = 400     # espera antes del nombre de la app al pasar el ratón
+# Rangos de los deslizadores del módulo «Dock» (px). goldenglass-dock acepta
+# otros más amplios (24–128 y 24–256) y el main.xml del plasmoid no pone
+# límites: decisión pendiente unificarlos.
+settings_icon_size_min = 32
+settings_icon_size_max = 80
+settings_magnification_size_min = 48   # y nunca menos que el tamaño del icono
+settings_magnification_size_max = 128
 
 # ---------------------------------------------------------------------------
 # Centro de control (plasmoid org.goldenglass.controlcenter): cuadrícula de 4

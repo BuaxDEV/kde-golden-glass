@@ -76,8 +76,8 @@ KCM.SimpleKCM {
             LabeledSlider {
                 Kirigami.FormData.label: i18nc("@label:slider", "Size:")
                 accessibleName: i18nc("@label:slider", "Size")
-                from: 32
-                to: 80
+                from: kcm.iconSizeMin
+                to: kcm.iconSizeMax
                 value: kcm.iconSize
                 minLabel: i18nc("@item:inrange dock size", "Small")
                 maxLabel: i18nc("@item:inrange dock size", "Large")
@@ -98,8 +98,8 @@ KCM.SimpleKCM {
 
             LabeledSlider {
                 accessibleName: i18nc("@label:slider", "Magnification size")
-                from: Math.max(kcm.iconSize, 48)
-                to: 128
+                from: Math.max(kcm.iconSize, kcm.magnificationSizeMin)
+                to: kcm.magnificationSizeMax
                 value: kcm.magnificationSize
                 enabledSlider: kcm.magnification
                 minLabel: i18nc("@item:inrange magnification", "Small")
