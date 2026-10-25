@@ -262,8 +262,9 @@ cerca) y valores intermedios; se aplica en vivo al soltar ejecutando
 El interruptor «Mostrar fondo de la barra de menús» escribe `goldenglassrc`
 directamente (con aviso de cambio, sin procesos). "Predeterminados" vuelve al
 nivel y al fondo de fábrica; no hay "Aplicar". Traducción al
-español en `po/es`. `kcm_apply_test` (prueba de integración, dentro de una
-sesión Plasma) pide 1,0 → 0,0 → 0,25 seguidos y comprueba que queda 0,25.
+español en `po/es`. `kcm_apply_test` pide 1,0 → 0,0 → 0,25 seguidos y
+comprueba que queda 0,25: en ctest con un `goldenglass-glass` de prueba
+(`kcm/tests/bin`) y configuración temporal; a mano, dentro de una sesión Plasma.
 
 #### Otros módulos de Ajustes
 
