@@ -111,6 +111,7 @@ menubar_background = false
 # ventana activa (macOS la atenúa)
 menubar_inactive_opacity = 0.5
 menubar_item_padding = 11   # margen a cada lado del nombre de la app y de cada menú
+menubar_item_inset = 3      # margen arriba y abajo del resaltado de cada menú (> 0)
 menubar_tray_spacing = 16   # separación entre iconos de estado (múltiplo de 4)
 dock_icon_size = 48
 dock_padding = 6         # margen entre el borde del dock y los iconos

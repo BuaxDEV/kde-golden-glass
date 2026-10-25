@@ -177,3 +177,11 @@ def test_square_menubar_tiles_hold_both_edge_lines(tokens: dict) -> None:
             y = float(line.get("y"))
             assert top <= y and y + float(line.get("height")) <= bottom, name
 
+
+def test_menubar_item_margins_follow_the_tokens(tokens: dict) -> None:
+    svg = plasma_theme.menubaritem_svg(tokens)
+    inset, padding = tokens["plasma"]["menubar_item_inset"], tokens["plasma"]["menubar_item_padding"]
+    for state in ("normal-", "hover-", "pressed-"):
+        assert _hint_size(svg, f"{state}hint-top-margin")[1] == inset
+        assert _hint_size(svg, f"{state}hint-bottom-margin")[1] == inset
+        assert _hint_size(svg, f"{state}hint-left-margin")[0] == padding

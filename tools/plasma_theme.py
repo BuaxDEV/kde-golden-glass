@@ -423,8 +423,9 @@ def menubaritem_svg(tokens: dict) -> str:
     """
     r = tokens["radius"]["control"]
     pad = tokens["plasma"]["menubar_item_padding"]
-    # arriba y abajo, un margen real: KSvg no lee una marca de 0 px y usaría la esquina
-    margins = (4, pad, 4, pad)
+    # a real top and bottom margin: KSvg ignores a 0 px hint and uses the corner
+    inset = tokens["plasma"]["menubar_item_inset"]
+    margins = (inset, pad, inset, pad)
     svg = Svg()
     frame(svg, "normal-", r, Paint(None, 0.0, "#000000"), margins=margins)
     frame(svg, "hover-", r, Paint(HIGHLIGHT, 1.0), margins=margins)
