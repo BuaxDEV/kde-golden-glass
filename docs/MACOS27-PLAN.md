@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # GoldenGlass — Plan de arquitectura e implementación: paridad con macOS 27
 
 Plan de las fases F12–F17. Parte del análisis de brechas frente a macOS 27
