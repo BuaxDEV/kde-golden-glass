@@ -15,6 +15,7 @@ import math
 import shutil
 from pathlib import Path
 
+import plasmoids
 from ggcommon import fill_template, flatten
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -64,7 +65,7 @@ def values(tokens: dict, variant: str) -> dict:
         splash_bg, splash_fg = pal["window"], label
     else:
         splash_bg, splash_fg = pal["complementary"], flatten(pal["label"], pal["complementary"])
-    track_alpha = "26" if variant == "light" else "40"
+    track_alpha = f"{round(tokens['boot'][variant]['splash_track_alpha'] * 255):02X}"
     return {**tokens, "lookandfeel": {
         "dock_height": _dock_height(tokens),
         # el applet de bandeja separa los iconos en múltiplos de smallSpacing (4 px)
@@ -194,6 +195,9 @@ def build(tokens: dict, out: Path) -> list[Path]:
         shell_layout = layouts / f"{SHELL_PACKAGE}-layout.js"
         shutil.copy2(layouts / "org.kde.plasma.desktop-layout.js", shell_layout)
         written.append(shell_layout)
+
+        # el splash toma sus medidas de [boot] (en QML: import "tokens.js" as T)
+        written.append(plasmoids.write_tokens_js(root / "contents" / "splash" / "tokens.js", tokens))
 
         logo = root / "contents" / "splash" / "images" / "goldenglass.svg"
         logo.parent.mkdir(parents=True, exist_ok=True)
