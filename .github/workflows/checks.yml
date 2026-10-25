@@ -27,6 +27,23 @@ jobs:
           persist-credentials: false
       - uses: fsfe/reuse-action@676e2d560c9a403aa252096d99fcab3e1132b0f5 # v6.0.0
 
+  spdx:
+    name: SPDX (archivos nuevos)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # REUSE.toml da licencia a todo lo que no la declara: reuse lint no ve un
+      # archivo nuevo sin cabecera. Ver tools/check_spdx.sh.
+      - name: Check SPDX headers of added files
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: tools/check_spdx.sh "$BASE" "$HEAD"
+
   gitleaks:
     name: Gitleaks (secretos)
     runs-on: ubuntu-latest

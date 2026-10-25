@@ -36,7 +36,10 @@ proyecto. Para corregir commits sin firmar: `git rebase --signoff main`.
       # SPDX-FileCopyrightText: 2026 GoldenGlass contributors
       # SPDX-License-Identifier: GPL-3.0-or-later
 
-  Comprobar con `reuse lint` ([reuse](https://reuse.software)).
+  Comprobar con `reuse lint` ([reuse](https://reuse.software)) y
+  `tools/check_spdx.sh main`: `REUSE.toml` da una licencia por defecto a todo,
+  así que `reuse lint` no avisa de un archivo nuevo sin cabecera; la CI lo
+  comprueba en cada PR.
 - No se aceptan assets, fuentes, iconos ni sonidos de Apple u otros productos
   propietarios, ni material copiado sin una licencia compatible.
 
