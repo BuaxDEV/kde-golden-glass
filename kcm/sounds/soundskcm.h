@@ -49,7 +49,8 @@ private:
     void setErrorText(const QString &text);
 
     QProcess *m_process = nullptr;
-    QStringList m_queue; // «enable sounds», «disable chime»…
+    QList<QStringList> m_queue; // {"enable", "sounds"}, {"disable", "chime"}…
+    int m_statusQuery = 0;
     bool m_sounds = false;
     bool m_chime = false;
     QString m_errorText;

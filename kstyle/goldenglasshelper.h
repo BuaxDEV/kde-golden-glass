@@ -455,6 +455,9 @@ private:
     //* configuration
     KSharedConfig::Ptr _config;
 
+    //* KWin configuration (decoration border size)
+    KSharedConfig::Ptr _kwinConfig;
+
     //*@name brushes
     //@{
     KStatefulBrush _viewFocusBrush;
@@ -475,6 +478,8 @@ private:
     //@}
 
     mutable bool _cachedAutoValid = false;
+    mutable bool _borderSizeAuto = true;
+    mutable QString _borderSize;
     friend class ToolsAreaManager;
     friend class PaletteChangedEventFilter;
 };

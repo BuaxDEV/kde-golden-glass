@@ -166,10 +166,6 @@ bool isProgressBarHorizontal(const QStyleOptionProgressBar *option)
     return option && (option->state & QStyle::State_Horizontal);
 }
 
-//* list of possible valid toolbars to be translucent
-//* only one can be at time
-static QSet<const QWidget *> possibleTranslucentToolBars;
-
 }
 
 namespace GoldenGlass
@@ -210,12 +206,15 @@ Style::Style()
                  QStringLiteral("reparseConfiguration"),
                  this,
                  SLOT(configurationChanged()));
+
+    // el tamaño del borde de la decoración (kwinrc) cambia al reconfigurar KWin
+    dbus.connect(QString(), QStringLiteral("/KWin"), QStringLiteral("org.kde.KWin"), QStringLiteral("reloadConfig"), this, SLOT(configurationChanged()));
     this->addEventFilter(qApp);
 
     _finder = new Finder(
         *_helper,
         [this](const QWidget *window) {
-            return _translucentWidgets.contains(const_cast<QWidget *>(window));
+            return _translucentWidgets.contains(window);
         },
         [this](QWidget *window) {
             if (_translucentWidgets.contains(window)) {
@@ -260,6 +259,9 @@ void Style::polish(QApplication *app)
 
     if (_translucentWidgets.size() > 0)
         _translucentWidgets.clear();
+
+    // ya se sabe si es Konsole
+    updateBarsOpaque();
 
     _toolsAreaManager->registerApplication(app);
     _finder->polishApplication(app);
@@ -354,6 +356,9 @@ void Style::polish(QWidget *widget)
     if (!widget)
         return;
 
+    // antes de que se cree la ventana nativa (antes se hacía en cada styleHint())
+    setSurfaceFormat(widget);
+
     // register widget to animations
     _animations->registerWidget(widget);
     _windowManager->registerWidget(widget);
@@ -430,12 +435,6 @@ void Style::polish(QWidget *widget)
         }
     }
 
-    if (!_isKonsole){
-    if (StyleConfigData::toolBarOpacity() < 100 || StyleConfigData::menuBarOpacity() < 100 || StyleConfigData::tabBarOpacity() < 100
-        || StyleConfigData::dolphinSidebarOpacity() < 100) {
-        _isBarsOpaque = true;
-    }}
-
     // translucent (window) color scheme support
     switch (widget->windowFlags() & Qt::WindowType_Mask) {
     case Qt::Window:
@@ -478,6 +477,7 @@ void Style::polish(QWidget *widget)
             // konsole handle blur and translucency for menubar/toolbar/tabbar
             if (_isKonsole) {
                 _translucentWidgets.insert(widget);
+                trackWidget(widget);
                 if (widget->palette().color(widget->backgroundRole()).alpha() < 255 || _helper->titleBarColor(true).alphaF() * 100.0 < 100 || _isBarsOpaque) {
                     // stop flickering on translucent background
                     widget->setAttribute(Qt::WA_NoSystemBackground, false);
@@ -500,6 +500,7 @@ void Style::polish(QWidget *widget)
                 widget->setAttribute(Qt::WA_NoSystemBackground, false);
 
             _translucentWidgets.insert(widget);
+            trackWidget(widget);
 
             // paint the background in event filter
             addEventFilter(widget);
@@ -781,8 +782,8 @@ void Style::unpolish(QWidget *widget)
         widget->removeEventFilter(this);
     }
 
-    if (GoldenGlassPrivate::possibleTranslucentToolBars.contains(widget))
-        GoldenGlassPrivate::possibleTranslucentToolBars.remove(widget);
+    if (_possibleTranslucentToolBars.contains(widget))
+        _possibleTranslucentToolBars.remove(widget);
 
     ParentStyleClass::unpolish(widget);
 }
@@ -1019,8 +1020,10 @@ int Style::pixelMetric(PixelMetric metric, const QStyleOption *option, const QWi
 //______________________________________________________________
 int Style::styleHint(StyleHint hint, const QStyleOption *option, const QWidget *widget, QStyleHintReturn *returnData) const
 {
-    setSurfaceFormat(widget); /* FIXME Why here and nowhere else?
-                                 Perhaps because of its use in qapplication.cpp. */
+    // el formato de superficie se fija en polish(); aquí solo para los widgets
+    // consultados antes de pulirse (y de crear su ventana nativa)
+    if (widget && !widget->testAttribute(Qt::WA_WState_Polished))
+        setSurfaceFormat(widget);
     switch (hint) {
     case SH_RubberBand_Mask: {
         if (auto mask = qstyleoption_cast<QStyleHintReturnMask *>(returnData)) {
@@ -2377,6 +2380,30 @@ QIcon Style::standardIconImplementation(StandardPixmap standardPixmap, const QSt
 }
 
 //_____________________________________________________________________
+void Style::updateBarsOpaque()
+{
+    // Konsole gestiona por su cuenta la translucidez de sus barras
+    _isBarsOpaque = !_isKonsole
+        && (StyleConfigData::toolBarOpacity() < 100 || StyleConfigData::menuBarOpacity() < 100 || StyleConfigData::tabBarOpacity() < 100
+            || StyleConfigData::dolphinSidebarOpacity() < 100);
+}
+
+//_____________________________________________________________________
+void Style::trackWidget(const QWidget *widget) const
+{
+    connect(widget, &QObject::destroyed, this, &Style::widgetDestroyed, Qt::UniqueConnection);
+}
+
+//_____________________________________________________________________
+void Style::widgetDestroyed(QObject *object)
+{
+    // solo se compara la dirección: el objeto ya está a medio destruir
+    _translucentWidgets.remove(object);
+    _possibleTranslucentToolBars.remove(object);
+    _quickContentItems.remove(object);
+}
+
+//_____________________________________________________________________
 void Style::loadConfiguration()
 {
     StyleConfigData::self()->load();
@@ -2392,6 +2419,9 @@ void Style::loadConfiguration()
 
     // Dolphin as Finder
     _finder->loadConfiguration();
+
+    // barras translúcidas: se recalcula en cada cambio de configuración
+    updateBarsOpaque();
 
     // update blurhelper
     _blurHelper->setTranslucentTitlebar(_helper->titleBarColor(true).alphaF() < 1.0 ? true : false);
@@ -4829,7 +4859,7 @@ bool Style::drawPanelItemViewItemPrimitive(const QStyleOption *option, QPainter 
         if (abstractItemView->horizontalScrollBarPolicy() != Qt::ScrollBarAlwaysOff) {
             auto scrollBar = abstractItemView->horizontalScrollBar();
             if (scrollBar && proxy()->styleHint(SH_ScrollBar_Transient, nullptr, scrollBar)) {
-                if (scrollBar->geometry().contains(scrollBar->mapFromGlobal(mousePos))) {
+                if (scrollBar->rect().contains(scrollBar->mapFromGlobal(mousePos))) {
                     return true;
                 }
             }
@@ -4837,7 +4867,7 @@ bool Style::drawPanelItemViewItemPrimitive(const QStyleOption *option, QPainter 
         if (abstractItemView->verticalScrollBarPolicy() != Qt::ScrollBarAlwaysOff) {
             auto scrollBar = abstractItemView->verticalScrollBar();
             if (scrollBar && proxy()->styleHint(SH_ScrollBar_Transient, nullptr, scrollBar)) {
-                if (scrollBar->geometry().contains(scrollBar->mapFromGlobal(mousePos))) {
+                if (scrollBar->rect().contains(scrollBar->mapFromGlobal(mousePos))) {
                     return true;
                 }
             }
@@ -5690,11 +5720,11 @@ bool Style::drawMenuBarEmptyAreaControl(const QStyleOption *option, QPainter *pa
 
     if (widget && _helper->titleBarColor(windowActive).alphaF() * 100.0 < 100 && _translucentWidgets.contains(widget->window())) {
         bool shouldDrawShadow = false;
-        if (GoldenGlassPrivate::possibleTranslucentToolBars.isEmpty())
+        if (_possibleTranslucentToolBars.isEmpty())
             shouldDrawShadow = true;
 
-        if (GoldenGlassPrivate::possibleTranslucentToolBars.size() == 1) {
-            QSet<const QWidget *>::const_iterator i = GoldenGlassPrivate::possibleTranslucentToolBars.constBegin();
+        if (_possibleTranslucentToolBars.size() == 1) {
+            QSet<const QObject *>::const_iterator i = _possibleTranslucentToolBars.constBegin();
             const QToolBar *tb = qobject_cast<const QToolBar *>(*i);
 
             if (tb) {
@@ -5764,11 +5794,11 @@ bool Style::drawMenuBarItemControl(const QStyleOption *option, QPainter *painter
     if (widget && _helper->titleBarColor(windowActive).alphaF() * 100.0 < 100 && _translucentWidgets.contains(widget->window())) {
         bool shouldDrawShadow = false;
         int shadow_xoffset = 0;
-        if (GoldenGlassPrivate::possibleTranslucentToolBars.isEmpty())
+        if (_possibleTranslucentToolBars.isEmpty())
             shouldDrawShadow = true;
 
-        if (GoldenGlassPrivate::possibleTranslucentToolBars.size() == 1) {
-            QSet<const QWidget *>::const_iterator i = GoldenGlassPrivate::possibleTranslucentToolBars.constBegin();
+        if (_possibleTranslucentToolBars.size() == 1) {
+            QSet<const QObject *>::const_iterator i = _possibleTranslucentToolBars.constBegin();
             const QToolBar *tb = qobject_cast<const QToolBar *>(*i);
 
             if (tb) {
@@ -8795,8 +8825,19 @@ bool Style::isQtQuickControl(const QStyleOption *option, const QWidget *widget) 
 {
 #if GOLDENGLASS_HAVE_QTQUICK
     const bool is = (widget == nullptr) && option && option->styleObject && option->styleObject->inherits("QQuickItem");
-    if (is)
-        _windowManager->registerQuickItem(static_cast<QQuickItem *>(option->styleObject));
+    if (is) {
+        // una vez por ventana, no en cada consulta: registerQuickItem
+        // reinstala el filtro de eventos de su contentItem
+        auto item = static_cast<QQuickItem *>(option->styleObject);
+        if (QQuickWindow *window = item->window()) {
+            QQuickItem *contentItem = window->contentItem();
+            if (contentItem && !_quickContentItems.contains(contentItem)) {
+                _windowManager->registerQuickItem(item);
+                _quickContentItems.insert(contentItem);
+                connect(contentItem, &QObject::destroyed, this, &Style::widgetDestroyed, Qt::UniqueConnection);
+            }
+        }
+    }
     return is;
 #else
     Q_UNUSED(widget);
@@ -8999,14 +9040,16 @@ bool Style::isStylableToolbar(const QWidget *w, bool allowInvisible) const // sh
     if (QMainWindow *mw = qobject_cast<QMainWindow *>(p)) {
         if (tb->orientation() == Qt::Vertical) {
             if (tb->y() == 0) {
-                if (GoldenGlassPrivate::possibleTranslucentToolBars.size() == 0) {
-                    GoldenGlassPrivate::possibleTranslucentToolBars.insert(w);
+                if (_possibleTranslucentToolBars.size() == 0) {
+                    _possibleTranslucentToolBars.insert(w);
+                    trackWidget(w);
                     return true;
-                } else if (GoldenGlassPrivate::possibleTranslucentToolBars.contains(w) && GoldenGlassPrivate::possibleTranslucentToolBars.size() == 1)
+                } else if (_possibleTranslucentToolBars.contains(w) && _possibleTranslucentToolBars.size() == 1)
                     return true;
 
                 else {
-                    GoldenGlassPrivate::possibleTranslucentToolBars.insert(w);
+                    _possibleTranslucentToolBars.insert(w);
+                    trackWidget(w);
                     return false;
                 }
             }
@@ -9016,12 +9059,14 @@ bool Style::isStylableToolbar(const QWidget *w, bool allowInvisible) const // sh
         {
             if (mb->isVisible()) {
                 if (mb->y() + mb->height() == tb->y()) {
-                    GoldenGlassPrivate::possibleTranslucentToolBars.insert(w);
+                    _possibleTranslucentToolBars.insert(w);
+                    trackWidget(w);
                     return true;
                 }
             } else if (tb->y() == 0 && (allowInvisible || tb->isVisible())) // FIXME: Why can KtoolBar be invisible here?
             {
-                GoldenGlassPrivate::possibleTranslucentToolBars.insert(w);
+                _possibleTranslucentToolBars.insert(w);
+                trackWidget(w);
                 return true;
             } else
                 return false;
@@ -9030,14 +9075,16 @@ bool Style::isStylableToolbar(const QWidget *w, bool allowInvisible) const // sh
 
         // possible lone toolbar at the bottom
         else {
-            if (GoldenGlassPrivate::possibleTranslucentToolBars.size() == 0) {
-                GoldenGlassPrivate::possibleTranslucentToolBars.insert(w);
+            if (_possibleTranslucentToolBars.size() == 0) {
+                _possibleTranslucentToolBars.insert(w);
+                trackWidget(w);
                 return true;
-            } else if (GoldenGlassPrivate::possibleTranslucentToolBars.contains(w) && GoldenGlassPrivate::possibleTranslucentToolBars.size() == 1)
+            } else if (_possibleTranslucentToolBars.contains(w) && _possibleTranslucentToolBars.size() == 1)
                 return true;
 
             else {
-                GoldenGlassPrivate::possibleTranslucentToolBars.insert(w);
+                _possibleTranslucentToolBars.insert(w);
+                trackWidget(w);
                 return false;
             }
         }

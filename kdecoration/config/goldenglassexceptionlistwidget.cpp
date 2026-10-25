@@ -151,14 +151,16 @@ void ExceptionListWidget::edit()
     dialog->setException(exception);
 
     // map dialog
-    if (!dialog->exec()) {
+    if (!dialog->exec() || !dialog) {
         delete dialog;
         return;
     }
 
-    // check modifications
-    if (!dialog->isChanged())
+    // check modifications (el diálogo también se borra si no hubo cambios)
+    if (!dialog->isChanged()) {
+        delete dialog;
         return;
+    }
 
     // retrieve exception
     dialog->save();

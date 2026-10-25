@@ -44,6 +44,7 @@
 #include <QRegularExpression>
 #include <QToolBar>
 #include <QVector>
+#include <QWindow>
 // #include <QDebug>
 
 namespace
@@ -58,6 +59,9 @@ QRegion roundedRegion(const QRect &rect, int radius, bool topLeft, bool topRight
 
 namespace GoldenGlass
 {
+//* marca las ventanas con región de desenfoque activa en KWin
+const char BlurHelper::blurEnabledProperty[] = "_goldenglass_blurEnabled";
+
 //___________________________________________________________
 BlurHelper::BlurHelper(QObject *parent)
     : QObject(parent)
@@ -81,6 +85,20 @@ void BlurHelper::unregisterWidget(QWidget *widget)
 {
     // remove event filter
     widget->removeEventFilter(this);
+
+    // sin esto KWin conserva la última región de desenfoque de la ventana
+    disableBlur(widget);
+}
+
+//___________________________________________________________
+void BlurHelper::disableBlur(QWidget *widget) const
+{
+    if (!widget->property(blurEnabledProperty).toBool())
+        return;
+
+    widget->setProperty(blurEnabledProperty, QVariant());
+    if (QWindow *window = widget->windowHandle())
+        KWindowEffects::enableBlurBehind(window, false);
 }
 
 //___________________________________________________________
@@ -351,7 +369,8 @@ QRegion BlurHelper::blurSettingsDialogRegion(QWidget *widget) const
                     region += roundedRegion(QRect(tw->pos(), tbSize), StyleConfigData::windowCornerRadius(), false, false, true, false);
                 } else {
                     // settings main dialog
-                    region += roundedRegion(QRect(w->mapToGlobal(w->pos()), w->rect().size()), StyleConfigData::windowCornerRadius(), false, false, true, false);
+                    // posición relativa a la ventana: en Wayland mapToGlobal no da coordenadas útiles
+                    region += roundedRegion(QRect(w->mapTo(widget, QPoint()), w->rect().size()), StyleConfigData::windowCornerRadius(), false, false, true, false);
                 }
                 if (w->inherits("KPageWidget")) {
                     // sidebar
@@ -381,11 +400,15 @@ void BlurHelper::update(QWidget *widget) const
         return;
 
     QRegion region = blurRegion(widget);
-    if (region.isNull())
+    if (region.isEmpty()) {
+        // la ventana pasó a opaca (u oculta): se retira la región que tenía KWin
+        disableBlur(widget);
         return;
+    }
 
     widget->winId(); // force creation of the window handle
     KWindowEffects::enableBlurBehind(widget->windowHandle(), true, region);
+    widget->setProperty(blurEnabledProperty, true);
 
     // force update
     if (widget->isVisible()) {

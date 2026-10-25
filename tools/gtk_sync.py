@@ -62,6 +62,15 @@ def _gtk_config():
     return iface if iface.isValid() else None
 
 
+def _gtk_theme(gtk) -> str | None:
+    """Tema GTK actual, o None si kded no responde (p. ej. mientras se reinicia)."""
+    from PyQt6.QtDBus import QDBusMessage
+    reply = gtk.call("gtkTheme")
+    if reply.type() == QDBusMessage.MessageType.ErrorMessage or not reply.arguments():
+        return None
+    return str(reply.arguments()[0])
+
+
 def _libadwaita_source() -> Path | None:
     for base in DATA_DIRS:
         path = base / "goldenglass" / "gtk" / "libadwaita.css"
@@ -81,7 +90,11 @@ def _ours(path: Path) -> bool:
 def sync(restore: bool = False) -> None:
     active = not restore and _read("kdeglobals", "KDE", "LookAndFeelPackage").startswith("org.goldenglass.")
     gtk = _gtk_config()
-    current = str(gtk.call("gtkTheme").arguments()[0]) if gtk else ""
+    current = _gtk_theme(gtk) if gtk else None
+    if current is None:
+        # sin respuesta de kde-gtk-config no se toca el tema GTK (el próximo
+        # cambio lo vuelve a intentar); el CSS de libadwaita sí se gestiona
+        gtk, current = None, ""
     user_css = CONFIG / "gtk-4.0" / "gtk.css"
 
     if active:
@@ -103,19 +116,30 @@ def sync(restore: bool = False) -> None:
             user_css.unlink()
 
 
+def _safe_sync(restore: bool = False) -> bool:
+    """sync() sin tumbar el proceso: una excepción dentro del slot de PyQt
+    terminaría el demonio en silencio. Se anota y se sigue escuchando."""
+    try:
+        sync(restore=restore)
+    except Exception as exc:  # noqa: BLE001 — cualquier fallo se anota y se sigue
+        print(f"goldenglass-gtk-sync: no se pudo sincronizar: {exc!r}", file=sys.stderr)
+        return False
+    return True
+
+
 def main() -> int:
     from PyQt6.QtCore import QCoreApplication, QObject, pyqtSlot
     from PyQt6.QtDBus import QDBusConnection, QDBusMessage
 
     app = QCoreApplication(sys.argv)
-    sync(restore="--restore" in sys.argv)
+    ok = _safe_sync(restore="--restore" in sys.argv)
     if "--once" in sys.argv or "--restore" in sys.argv:
-        return 0
+        return 0 if ok else 1
 
     class Watcher(QObject):
         @pyqtSlot(QDBusMessage)
         def changed(self, _msg: QDBusMessage) -> None:
-            sync()
+            _safe_sync()
 
     watcher = Watcher()
     # KConfig avisa de cada escritura con notificación en /<archivo>

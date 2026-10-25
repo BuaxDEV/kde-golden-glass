@@ -76,7 +76,7 @@ PlasmoidItem {
     // --- Abrir y cerrar -------------------------------------------------------
     FloatingPanel {
         id: panel
-        content: content
+        content: panelContent
         anchorItem: root.fullRepresentationItem
         onOpened: root.refreshGlassLevel()
     }
@@ -256,7 +256,7 @@ PlasmoidItem {
     // Contenido de FloatingPanel: la cuadrícula o, al pulsar un módulo, su
     // vista de detalle (como macOS 26)
     Component {
-        id: content
+        id: panelContent
 
         Item {
             id: contentRoot

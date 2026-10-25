@@ -49,8 +49,13 @@ def _token(tokens: dict, path: str) -> str:
 def _fill_templates(dst: Path, tokens: dict) -> list[Path]:
     written = []
     for template in sorted(dst.rglob("*.in")):
-        text = re.sub(r"@([a-z_]+(?:\.[a-z_]+)+)@", lambda m: _token(tokens, m.group(1)),
-                      template.read_text(encoding="utf-8"))
+        def value(match: re.Match, template: Path = template) -> str:
+            # un marcador mal escrito o una clave que falta: se dice dónde
+            try:
+                return _token(tokens, match.group(1))
+            except (KeyError, TypeError):
+                raise SystemExit(f"{template.name}: el marcador @{match.group(1)}@ no está en los tokens") from None
+        text = re.sub(r"@([a-z_]+(?:\.[a-z_]+)+)@", value, template.read_text(encoding="utf-8"))
         target = template.with_suffix("")
         target.write_text(text, encoding="utf-8")
         template.unlink()

@@ -29,6 +29,7 @@ import argparse
 import json
 import sys
 import tomllib
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -183,7 +184,22 @@ def build_colors(tokens: dict, variant: str) -> str:
 
 # --- main -------------------------------------------------------------------
 
+# Secciones que leen los generadores: deben existir y ser tablas
+REQUIRED_SECTIONS = (
+    "meta", "radius", "focus_ring", "glass", "plasma", "shadow", "decoration", "menu", "finder",
+    "font", "apps", "scroll", "traffic_lights", "dock", "control_center", "boot", "login",
+    "sounds", "light", "dark",
+)
+
+
 def validate(tokens: dict) -> None:
+    missing = [name for name in REQUIRED_SECTIONS if name not in tokens]
+    if missing:
+        raise SystemExit(f"faltan secciones en los tokens: {', '.join(f'[{name}]' for name in missing)}")
+    not_tables = [name for name in REQUIRED_SECTIONS if not isinstance(tokens[name], dict)]
+    if not_tables:
+        raise SystemExit(f"estas claves de los tokens deben ser secciones: {', '.join(not_tables)}")
+
     light, dark = set(tokens["light"]), set(tokens["dark"])
     if light != dark:
         raise SystemExit(
@@ -245,4 +261,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except KeyError as exc:
+        # una clave que falta en los tokens: se dice cuál y qué generador la leía
+        frame = traceback.extract_tb(exc.__traceback__)[-1]
+        raise SystemExit(f"falta la clave {exc} en los tokens (leída en {Path(frame.filename).name}:{frame.lineno})") from None

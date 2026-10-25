@@ -176,6 +176,17 @@ def metadata(tokens: dict, variant: str) -> str:
     }, indent=4) + "\n"
 
 
+def _fill(text: str, vals: dict[str, str], src: Path) -> str:
+    """Sustituye los marcadores @NOMBRE@; uno desconocido (mal escrito) para
+    la generación diciendo en qué plantilla está."""
+    def value(match: re.Match) -> str:
+        try:
+            return vals[match.group(1)]
+        except KeyError:
+            raise SystemExit(f"{src.relative_to(ROOT)}: marcador desconocido @{match.group(1)}@") from None
+    return re.sub(r"@([A-Z_]+)@", value, text)
+
+
 def build(tokens: dict, out: Path) -> list[Path]:
     written: list[Path] = []
     for variant, (pkg_id, _, _) in VARIANTS.items():
@@ -190,8 +201,7 @@ def build(tokens: dict, out: Path) -> list[Path]:
             dst = root / src.relative_to(COMMON)
             dst.parent.mkdir(parents=True, exist_ok=True)
             if src.suffix in TEMPLATED:
-                text = src.read_text(encoding="utf-8")
-                text = re.sub(r"@([A-Z_]+)@", lambda m: vals[m.group(1)], text)
+                text = _fill(src.read_text(encoding="utf-8"), vals, src)
                 dst.write_text(text, encoding="utf-8")
             else:
                 shutil.copy2(src, dst)

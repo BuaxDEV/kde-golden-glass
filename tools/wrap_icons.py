@@ -205,6 +205,22 @@ def _own_names(icons_dir: Path) -> set[str]:
     return names
 
 
+def _generator_files() -> list[Path]:
+    """Lo que decide el dibujo: este script, los módulos que carga de su
+    carpeta (icons, icons_apps, icons_mime…) y los tokens, si están (en el
+    repositorio; el paquete instala solo los módulos)."""
+    here = Path(__file__).resolve().parent
+    files = {Path(__file__).resolve()}
+    for module in list(sys.modules.values()):
+        origin = getattr(module, "__file__", None)
+        if origin and Path(origin).resolve().parent == here:
+            files.add(Path(origin).resolve())
+    tokens = here.parent / "tokens" / "goldenglass.toml"
+    if tokens.is_file():
+        files.add(tokens)
+    return sorted(files)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--icons-dir", type=Path,
@@ -234,7 +250,9 @@ def main() -> int:
 
     # Huella de lo que se encerraría (nombres, archivos y fechas) y del propio
     # generador: con --if-changed, si coincide con la última, no se repite.
-    digest = hashlib.sha256(Path(__file__).read_bytes())
+    digest = hashlib.sha256()
+    for path in _generator_files():
+        digest.update(f"{path.name}\0".encode() + path.read_bytes())
     for name, _, src in todo:
         digest.update(f"{name}\0{src}\0{src.stat().st_mtime_ns}\0".encode())
     stamp = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "goldenglass" / "wrap-icons.stamp"

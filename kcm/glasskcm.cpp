@@ -5,6 +5,7 @@
 #include "glasskcm.h"
 
 #include "goldenglass_tokens.h"
+#include "processquery.h"
 
 #include <KConfigGroup>
 #include <KLocalizedString>
@@ -52,6 +53,13 @@ GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
         }
         loadRefraction();
     });
+    // sin arrancar no llega finished: el interruptor vuelve al estado real
+    connect(m_refractionProcess, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
+        if (error == QProcess::FailedToStart) {
+            setErrorText(i18nc("@info:status", "goldenglass-glass could not be started: %1", m_refractionProcess->errorString()));
+            loadRefraction();
+        }
+    });
 
     connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError) {
         setErrorText(i18nc("@info:status", "goldenglass-glass could not be started: %1", m_process->errorString()));
@@ -98,6 +106,8 @@ void GlassKcm::setRefraction(bool value)
 {
     const QString program = QStandardPaths::findExecutable(QStringLiteral("goldenglass-glass"));
     if (program.isEmpty() || m_refractionProcess->state() != QProcess::NotRunning) {
+        // rechazado: el interruptor ya se movió y debe volver al valor real
+        Q_EMIT refractionChanged();
         return;
     }
     m_refraction = value;
@@ -131,13 +141,17 @@ void GlassKcm::loadRefraction()
     if (program.isEmpty()) {
         return;
     }
-    QProcess get;
-    get.start(program, {QStringLiteral("--get-refraction")});
-    get.waitForFinished(5000);
-    const QString state = QString::fromLocal8Bit(get.readAllStandardOutput()).trimmed();
-    m_refractionAvailable = state != QLatin1String("unavailable") && !state.isEmpty();
-    m_refraction = state == QLatin1String("on");
-    Q_EMIT refractionChanged();
+    // asíncrono: esperar aquí congelaría la interfaz; solo cuenta la última consulta
+    const int query = ++m_refractionQuery;
+    GoldenGlass::runQuery(this, program, {QStringLiteral("--get-refraction")}, [this, query](bool ok, const QByteArray &output, const QString &) {
+        if (query != m_refractionQuery) {
+            return;
+        }
+        const QString state = ok ? QString::fromLocal8Bit(output).trimmed() : QString();
+        m_refractionAvailable = state != QLatin1String("unavailable") && !state.isEmpty();
+        m_refraction = state == QLatin1String("on");
+        Q_EMIT refractionChanged();
+    });
 }
 
 void GlassKcm::load()

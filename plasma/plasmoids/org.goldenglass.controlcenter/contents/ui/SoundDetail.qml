@@ -34,11 +34,15 @@ DetailView {
         iconClickable: true
         from: Volume.PulseAudio.MinimalVolume
         to: view.maxVolume
+        // sin salida preferida (p. ej. mientras PipeWire arranca) no hay nada que cambiar
         onMoved: {
+            if (!view.sink) {
+                return;
+            }
             view.sink.muted = false;
             view.sink.volume = Math.round(value);
         }
-        onIconClicked: view.sink.muted = !view.sink.muted
+        onIconClicked: if (view.sink) view.sink.muted = !view.sink.muted
 
         Binding on value {
             value: view.sink ? view.sink.volume : 0

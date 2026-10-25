@@ -215,7 +215,10 @@ GlassEffect::GlassEffect()
 
 GlassEffect::~GlassEffect()
 {
-    waylandServer()->backgroundEffectManager()->removeBlurCapability();
+    // si falló un shader, el constructor salió antes de añadir la capacidad
+    if (m_valid) {
+        waylandServer()->backgroundEffectManager()->removeBlurCapability();
+    }
 }
 
 void GlassEffect::initBlurStrengthValues()

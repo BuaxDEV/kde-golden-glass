@@ -174,11 +174,14 @@ Rectangle {
         id: action
         property string icon
         property string label
+        // nombre para el lector de pantalla (el botón de volver no lleva texto)
+        property string accessibleName: label
         signal clicked
         width: Math.max(circleButton.width, caption.implicitWidth) + st.px(16)
         height: circleButton.height + st.px(8) + caption.implicitHeight
+        activeFocusOnTab: true
         Accessible.role: Accessible.Button
-        Accessible.name: label
+        Accessible.name: accessibleName
         Accessible.onPressAction: action.clicked()
 
         Rectangle {
@@ -504,6 +507,7 @@ Rectangle {
         anchors.verticalCenter: loginBox.verticalCenter
         icon: "icons/back.svg"
         label: ""
+        accessibleName: qsTr("Back")
         onClicked: root.picking = true
     }
 

@@ -8,6 +8,7 @@
 
 #include <QStringList>
 
+class QJsonObject;
 class QProcess;
 class QTimer;
 
@@ -54,11 +55,13 @@ private:
     QString program();
     void changed();
     void apply();
+    void applySettings(const QJsonObject &settings);
     void setErrorText(const QString &text);
 
     QProcess *m_process = nullptr;
     QTimer *m_applyTimer = nullptr;
     bool m_pending = false;
+    int m_getQuery = 0;
 
     int m_iconSize;
     bool m_magnification;

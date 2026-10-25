@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -135,6 +136,9 @@ def write_tuned_theme(tokens: dict, level: float) -> None:
 
 def set_level(level: float, reload_plasma: bool = True) -> None:
     tokens = load_tokens()
+    if not math.isfinite(level):
+        # nan pasaría por min/max y se escribiría tal cual
+        raise ValueError(f"nivel de vidrio no válido: {level}")
     level = min(max(level, 0.0), 1.0)
     percent = round(plasma_theme.glass_alpha(tokens, level) * 100)
 
@@ -243,14 +247,30 @@ def set_menubar_background(on: bool) -> None:
 
 
 def get_level() -> float:
-    default = str(load_tokens()["glass"]["default_level"])
-    return float(kread(RC, "Glass", "Level", default))
+    default = float(load_tokens()["glass"]["default_level"])
+    # un valor ilegible (editado a mano, nan…) vale como el de fábrica
+    try:
+        level = float(kread(RC, "Glass", "Level", str(default)))
+    except ValueError:
+        return default
+    return level if math.isfinite(level) else default
+
+
+def _level_arg(text: str) -> float:
+    """--level: un número finito (float() acepta nan e inf)."""
+    try:
+        level = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"no es un número: {text}") from None
+    if not math.isfinite(level):
+        raise argparse.ArgumentTypeError(f"no es un número finito: {text}")
+    return level
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="goldenglass-glass", description="Nivel de vidrio de GoldenGlass")
     group = ap.add_mutually_exclusive_group(required=True)
-    group.add_argument("--level", type=float, metavar="0..1", help="0 = más transparente, 1 = más opaco")
+    group.add_argument("--level", type=_level_arg, metavar="0..1", help="0 = más transparente, 1 = más opaco")
     group.add_argument("--get", action="store_true", help="muestra el nivel actual")
     group.add_argument("--refraction", choices=["on", "off"], help="efecto de refracción de KWin")
     group.add_argument("--get-refraction", action="store_true", help="on, off o unavailable")

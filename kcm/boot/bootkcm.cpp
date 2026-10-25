@@ -4,6 +4,8 @@
  */
 #include "bootkcm.h"
 
+#include "../processquery.h"
+
 #include <KLocalizedString>
 #include <KPluginFactory>
 
@@ -160,14 +162,23 @@ void BootKcm::load()
     if (path.isEmpty()) {
         return;
     }
-    QProcess status;
-    status.start(path, {QStringLiteral("status"), QStringLiteral("--json"), QStringLiteral("plymouth"), QStringLiteral("login")});
-    if (!status.waitForFinished(5000) || status.exitCode() != 0) {
-        setErrorText(i18nc("@info:status", "The current state could not be read: %1", QString::fromLocal8Bit(status.readAllStandardError()).trimmed()));
-        return;
-    }
-    const QJsonObject state = QJsonDocument::fromJson(status.readAllStandardOutput()).object();
+    // asíncrono: esperar aquí congelaría la interfaz; solo cuenta la última consulta
+    const int query = ++m_statusQuery;
+    const QStringList args{QStringLiteral("status"), QStringLiteral("--json"), QStringLiteral("plymouth"), QStringLiteral("login")};
+    GoldenGlass::runQuery(this, path, args, [this, query](bool ok, const QByteArray &output, const QString &error) {
+        if (query != m_statusQuery) {
+            return;
+        }
+        if (!ok) {
+            setErrorText(i18nc("@info:status", "The current state could not be read: %1", error));
+            return;
+        }
+        applyStatus(QJsonDocument::fromJson(output).object());
+    });
+}
 
+void BootKcm::applyStatus(const QJsonObject &state)
+{
     const QJsonObject plymouth = state.value(QStringLiteral("plymouth")).toObject();
     m_loadedPlymouth = plymouth.value(QStringLiteral("enabled")).toBool() ? plymouth.value(QStringLiteral("variant")).toString() : kSystem;
     m_systemTheme = plymouth.value(QStringLiteral("system_theme")).toString();

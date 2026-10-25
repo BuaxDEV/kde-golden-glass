@@ -96,7 +96,15 @@ Item {
             icon: model.decoration,
             id: model.favoriteId || "",
             url: model.url ? String(model.url) : "",
-            actions: () => reader.model.actionList || [],
+            // la entrada puede sobrevivir a su lector (las listas se rehacen
+            // con retraso): sin él, no hay acciones
+            actions: () => {
+                try {
+                    return reader.model.actionList || [];
+                } catch (e) {
+                    return [];
+                }
+            },
             model: sourceModel,
             row: index,
         })

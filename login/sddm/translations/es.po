@@ -1,6 +1,7 @@
 # Traducción al español del tema de SDDM de GoldenGlass (se compila a es.qm).
 # Los textos son los de SddmComponents (contexto TextConstants); aquí solo se
-# corrigen los que SDDM no traduce o se cambian por los términos de macOS.
+# corrigen los que SDDM no traduce o se cambian por los términos de macOS. Los
+# propios del tema (qsTr en Main.qml) van en el contexto Main.
 # SPDX-License-Identifier: GPL-3.0-or-later
 msgid ""
 msgstr ""
@@ -16,3 +17,7 @@ msgstr ""
 msgctxt "TextConstants"
 msgid "Suspend"
 msgstr "Reposo"
+
+msgctxt "Main"
+msgid "Back"
+msgstr "Atrás"

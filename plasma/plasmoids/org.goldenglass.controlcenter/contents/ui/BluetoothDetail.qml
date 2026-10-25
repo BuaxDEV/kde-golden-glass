@@ -39,6 +39,9 @@ DetailView {
             id: deviceRow
             required property var modelData
             property bool connecting: false
+            // la llamada en curso; Connections es hijo del delegado: si este se
+            // destruye antes de que acabe, la conexión desaparece con él
+            property QtObject pendingCall: null
 
             text: modelData.name
             iconName: modelData.icon.length > 0 ? modelData.icon + "-symbolic" : "network-bluetooth-symbolic"
@@ -47,8 +50,15 @@ DetailView {
             busy: connecting
             onClicked: {
                 connecting = true;
-                const call = modelData.connected ? modelData.disconnectFromDevice() : modelData.connectToDevice();
-                call.finished.connect(() => deviceRow.connecting = false);
+                pendingCall = modelData.connected ? modelData.disconnectFromDevice() : modelData.connectToDevice();
+            }
+
+            Connections {
+                target: deviceRow.pendingCall
+                function onFinished() {
+                    deviceRow.connecting = false;
+                    deviceRow.pendingCall = null;
+                }
             }
         }
     }

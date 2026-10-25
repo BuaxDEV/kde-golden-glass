@@ -140,7 +140,8 @@ void Button::paint(QPainter *painter, const QRectF &repaintRegion)
             if (activePalette == QPalette()) {
                 KIconLoader::global()->resetPalette();
             } else {
-                KIconLoader::global()->setCustomPalette(palette);
+                // se devuelve la paleta que tenía KWin, no la del botón
+                KIconLoader::global()->setCustomPalette(activePalette);
             }
         } else {
             c->icon().paint(painter, iconRect.toRect());

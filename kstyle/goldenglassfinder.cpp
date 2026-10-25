@@ -38,6 +38,8 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QRegularExpression>
+#include <QResizeEvent>
+#include <QSaveFile>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QToolBar>
@@ -76,6 +78,72 @@ const char DolphinToolBar[] = R"(<ToolBar noMerge="1" name="mainToolBar" >
         <Separator name="separator_finder_4" />
         <Action name="toggle_search" />
     </ToolBar>)";
+
+//* versión de un ui.rc (atributo version de <gui>); -1 si no la tiene
+int uiRcVersion(const QString &xml)
+{
+    static const QRegularExpression version(QStringLiteral("<gui\\b[^>]*\\bversion=\"(\\d+)\""));
+    const QRegularExpressionMatch match = version.match(xml);
+    return match.hasMatch() ? match.captured(1).toInt() : -1;
+}
+
+//* las propiedades de las acciones (atajos, prioridades) del ui.rc anterior
+//* pasan al nuevo, como hace KXMLGUI al descartar una copia desfasada
+QString mergeActionProperties(QString xml, const QString &previous)
+{
+    static const QRegularExpression block(QStringLiteral("<ActionProperties\\b.*?</ActionProperties>"), QRegularExpression::DotMatchesEverythingOption);
+    static const QRegularExpression action(QStringLiteral("<Action\\b[^>]*\\bname=\"([^\"]+)\"[^>]*/>"));
+    const QRegularExpressionMatch oldBlock = block.match(previous);
+    if (!oldBlock.hasMatch()) {
+        return xml;
+    }
+    const QRegularExpressionMatch newBlock = block.match(xml);
+    if (!newBlock.hasMatch()) {
+        const qsizetype end = xml.lastIndexOf(QLatin1String("</gui>"));
+        if (end >= 0) {
+            xml.insert(end, oldBlock.captured(0) + QLatin1Char('\n'));
+        }
+        return xml;
+    }
+
+    QString merged = newBlock.captured(0);
+    auto oldActions = action.globalMatch(oldBlock.captured(0));
+    while (oldActions.hasNext()) {
+        const QRegularExpressionMatch oldAction = oldActions.next();
+        const QRegularExpression same(QStringLiteral("<Action\\b[^>]*\\bname=\"%1\"[^>]*/>").arg(QRegularExpression::escape(oldAction.captured(1))));
+        const QRegularExpressionMatch current = same.match(merged);
+        if (current.hasMatch()) {
+            merged.replace(current.capturedStart(), current.capturedLength(), oldAction.captured(0));
+        } else {
+            merged.insert(merged.lastIndexOf(QLatin1String("</ActionProperties>")), oldAction.captured(0) + QLatin1Char('\n'));
+        }
+    }
+    xml.replace(newBlock.capturedStart(), newBlock.capturedLength(), merged);
+    return xml;
+}
+
+//* saca de su barra un widget añadido con insertWidget(). La acción (dueña
+//* del widget) se borra más tarde: unpolish() se llama mientras Qt recorre
+//* todos los widgets
+void removeToolBarWidget(QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+    widget->setObjectName(QString());
+    auto toolBar = qobject_cast<QToolBar *>(widget->parentWidget());
+    const auto actions = toolBar ? toolBar->actions() : QList<QAction *>();
+    for (QAction *action : actions) {
+        if (toolBar->widgetForAction(action) == widget) {
+            // la barra devuelve el widget, oculto, a su acción
+            toolBar->removeAction(action);
+            action->deleteLater();
+            return;
+        }
+    }
+    widget->hide();
+    widget->deleteLater();
+}
 
 QString actionName(const QToolButton *button)
 {
@@ -211,6 +279,9 @@ void Finder::polish(QWidget *widget)
 
     if (auto toolBar = qobject_cast<QToolBar *>(widget)) {
         if (isFinderToolBar(toolBar)) {
+            if (!toolBar->property("_goldenglass_toolButtonStyle").isValid()) {
+                toolBar->setProperty("_goldenglass_toolButtonStyle", int(toolBar->toolButtonStyle()));
+            }
             toolBar->setAttribute(Qt::WA_Hover);
             toolBar->setMouseTracking(true);
             toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
@@ -295,9 +366,43 @@ void Finder::unpolish(QWidget *widget)
     widget->removeEventFilter(this);
 
     // another style: undo what polish changed. The toolbar gets back its own
-    // layout (QToolBar resets the margins on the style change)
-    if (qobject_cast<QToolBar *>(widget)) {
-        delete widget->findChild<QWidget *>(QStringLiteral("goldenglass_finder_lead"), Qt::FindDirectChildrenOnly);
+    // layout (QToolBar resets the margins on the style change); además
+    // recupera su estilo de botones y pierde el espaciador y el buscador
+    if (auto toolBar = qobject_cast<QToolBar *>(widget)) {
+        if (const QVariant style = toolBar->property("_goldenglass_toolButtonStyle"); style.isValid()) {
+            toolBar->setToolButtonStyle(Qt::ToolButtonStyle(style.toInt()));
+            toolBar->setProperty("_goldenglass_toolButtonStyle", QVariant());
+        }
+        removeToolBarWidget(toolBar->findChild<QWidget *>(QStringLiteral("goldenglass_finder_lead"), Qt::FindDirectChildrenOnly));
+        for (auto it = _searchFields.begin(); it != _searchFields.end();) {
+            if (it.value() && it.value()->parentWidget() == toolBar) {
+                removeToolBarWidget(it.value());
+                it = _searchFields.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        toolBar->setProperty("_goldenglass_searchShown", QVariant());
+
+    } else if (widget->property("_goldenglass_finderTitle").toBool()) {
+        // la ruta: su fuente y los botones ocultados para el título
+        widget->setProperty("_goldenglass_finderTitle", QVariant());
+        const QVariant font = widget->property("_goldenglass_finderFont");
+        widget->setFont(font.isValid() ? font.value<QFont>() : QFont());
+        widget->setProperty("_goldenglass_finderFont", QVariant());
+        const auto children = widget->findChildren<QWidget *>(Qt::FindDirectChildrenOnly);
+        for (QWidget *child : children) {
+            if (child->property("_goldenglass_finderHidden").toBool()) {
+                child->setProperty("_goldenglass_finderHidden", QVariant());
+                child->show();
+            }
+            if (child->property("_goldenglass_finderTransparent").toBool()) {
+                child->setProperty("_goldenglass_finderTransparent", QVariant());
+                child->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+            }
+        }
+        // KIO vuelve a decidir qué botones caben
+        QCoreApplication::postEvent(widget, new QResizeEvent(widget->size(), widget->size()));
 
     } else if (const QVariant margins = widget->property("_goldenglass_margins"); margins.isValid()) {
         widget->setContentsMargins(margins.value<QMargins>());
@@ -324,8 +429,18 @@ void Finder::unpolish(QWidget *widget)
         if (auto editor = qobject_cast<QLineEdit *>(widget->property("_goldenglass_searchEditor").value<QObject *>())) {
             editor->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
             editor->removeEventFilter(this);
+            editor->setProperty("_goldenglass_searchSource", QVariant());
         }
-        delete _searchFields.take(widget).data();
+        const auto buttons = widget->findChildren<QToolButton *>();
+        for (QToolButton *button : buttons) {
+            if (button->property("_goldenglass_searchHidden").toBool()) {
+                button->setProperty("_goldenglass_searchHidden", QVariant());
+                button->show();
+            }
+        }
+        widget->setProperty("_goldenglass_searchLayout", QVariant());
+        _searchBars.removeAll(widget);
+        removeToolBarWidget(_searchFields.take(widget));
     }
 }
 
@@ -907,7 +1022,8 @@ void Finder::updateSearch(QWidget *bar) const
             if (button->menu()) {
                 firstRow->removeWidget(button);
                 secondRow->addWidget(button);
-            } else {
+            } else if (!button->isHidden()) {
+                button->setProperty("_goldenglass_searchHidden", true);
                 button->hide();
             }
         }
@@ -1257,6 +1373,7 @@ void Finder::updateNavigator(QWidget *navigator) const
     // the folder name is the window title
     if (!navigator->property("_goldenglass_finderTitle").toBool()) {
         navigator->setProperty("_goldenglass_finderTitle", true);
+        navigator->setProperty("_goldenglass_finderFont", navigator->testAttribute(Qt::WA_SetFont) ? QVariant(navigator->font()) : QVariant());
         QFont font(navigator->font());
         font.setPointSizeF(QApplication::font().pointSizeF() * Tokens::FinderTitleScale);
         navigator->setFont(font);
@@ -1288,11 +1405,15 @@ void Finder::updateNavigator(QWidget *navigator) const
         } else if (isKioPrivate(child, "KUrlNavigatorButton") || isKioPrivate(child, "KUrlNavigatorDropDownButton")
                    || isKioPrivate(child, "KUrlNavigatorPlacesSelector")) {
             if (!widget->isHidden()) {
+                widget->setProperty("_goldenglass_finderHidden", true);
                 widget->hide();
             }
         } else if (isKioPrivate(child, "KUrlNavigatorToggleButton")) {
             // the empty space drags the window instead of editing the path
-            widget->setAttribute(Qt::WA_TransparentForMouseEvents);
+            if (!widget->testAttribute(Qt::WA_TransparentForMouseEvents)) {
+                widget->setProperty("_goldenglass_finderTransparent", true);
+                widget->setAttribute(Qt::WA_TransparentForMouseEvents);
+            }
         }
     }
 
@@ -1923,32 +2044,63 @@ bool Finder::drawHeader(const QStyleOptionHeader *option, QPainter *painter, con
 //____________________________________________________________________
 void Finder::applyDolphinDefaults() const
 {
-    // once per version, and only what the user has not changed yet
+    // once per version, and only what the user has not changed yet; solo se
+    // marca como hecho si todo se escribió
     KSharedConfig::Ptr styleConfig = KSharedConfig::openConfig(QStringLiteral("goldenglassrc"));
     KConfigGroup finder = styleConfig->group(QStringLiteral("Finder"));
-    if (finder.readEntry("DolphinDefaults", 0) >= DolphinDefaultsVersion) {
-        return;
-    }
+    const bool firstRun = finder.readEntry("DolphinDefaults", 0) < DolphinDefaultsVersion;
 
     const QString dataDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+    bool done = true;
 
-    // toolbar: Dolphin's own ui.rc (same version) with Finder's main toolbar
+    // toolbar: Dolphin's own ui.rc (same version) with Finder's main toolbar.
+    // Si Dolphin trae un ui.rc más nuevo, KXMLGUI descarta la copia local y
+    // vuelve la barra de Dolphin: la nuestra se escribe de nuevo a partir del
+    // nuevo. DolphinUiVersion es la versión del ui.rc ya atendida
     const QString uiFile = dataDir + QStringLiteral("/kxmlgui5/dolphin/dolphinui.rc");
-    if (!QFile::exists(uiFile)) {
-        QFile shipped(QStringLiteral(":/kxmlgui5/dolphin/dolphinui.rc"));
-        if (shipped.open(QIODevice::ReadOnly)) {
-            QString xml = QString::fromUtf8(shipped.readAll());
+    const bool uiExists = QFile::exists(uiFile);
+    QFile shipped(QStringLiteral(":/kxmlgui5/dolphin/dolphinui.rc"));
+    if ((uiExists || firstRun) && shipped.open(QIODevice::ReadOnly)) {
+        QString xml = QString::fromUtf8(shipped.readAll());
+        const int shippedVersion = uiRcVersion(xml);
+        if (!uiExists || finder.readEntry("DolphinUiVersion", -1) != shippedVersion) {
+            QString previous;
+            bool write = !uiExists;
+            if (uiExists) {
+                QFile file(uiFile);
+                if (file.open(QIODevice::ReadOnly)) {
+                    previous = QString::fromUtf8(file.readAll());
+                }
+                // solo nuestra barra (el usuario puede haber puesto otra) y
+                // solo si es más antigua que la de Dolphin
+                write = previous.contains(QLatin1String("separator_finder_")) && uiRcVersion(previous) < shippedVersion;
+            }
+
+            bool written = true;
             static const QRegularExpression toolBar(QStringLiteral("<ToolBar[^>]*name=\"mainToolBar\"[^>]*>.*?</ToolBar>"),
                                                     QRegularExpression::DotMatchesEverythingOption);
-            if (xml.contains(toolBar)) {
-                xml.replace(toolBar, QString::fromUtf8(DolphinToolBar));
+            if (const QRegularExpressionMatch match = toolBar.match(xml); write && match.hasMatch()) {
+                xml.replace(match.capturedStart(), match.capturedLength(), QString::fromUtf8(DolphinToolBar));
+                xml = mergeActionProperties(xml, previous);
                 QDir().mkpath(QFileInfo(uiFile).absolutePath());
-                QFile out(uiFile);
-                if (out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-                    out.write(xml.toUtf8());
+                QSaveFile out(uiFile);
+                const QByteArray data = xml.toUtf8();
+                written = out.open(QIODevice::WriteOnly) && out.write(data) == data.size() && out.commit();
+                if (!written) {
+                    qWarning() << "GoldenGlass: cannot write" << uiFile << out.errorString();
                 }
             }
+            if (written) {
+                finder.writeEntry("DolphinUiVersion", shippedVersion);
+            } else {
+                done = false;
+            }
         }
+    }
+
+    if (!firstRun) {
+        styleConfig->sync();
+        return;
     }
 
     // no status bar, icon-only toolbar buttons and small icons in the list.
@@ -1969,7 +2121,7 @@ void Finder::applyDolphinDefaults() const
             details.writeEntry(key, Tokens::FinderListIconSize);
         }
     }
-    dolphinConfig->sync();
+    done = dolphinConfig->sync() && done;
 
     // list view with Finder's columns: name, size, kind and date. Dolphin
     // keeps the properties of all folders in an extended attribute of this
@@ -2000,9 +2152,7 @@ void Finder::applyDolphinDefaults() const
         // (sorting, hidden files…), so only the view mode and columns change
         if (!attributeProps.isEmpty()) {
             QFile file(dotDirectory);
-            if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-                file.write(attributeProps);
-            }
+            done = file.open(QIODevice::WriteOnly | QIODevice::Truncate) && file.write(attributeProps) == attributeProps.size() && done;
         }
         KConfig props(dotDirectory, KConfig::SimpleConfig);
         KConfigGroup dolphin = props.group(QStringLiteral("Dolphin"));
@@ -2014,10 +2164,12 @@ void Finder::applyDolphinDefaults() const
                                        QStringLiteral("Details_type"),
                                        QStringLiteral("Details_modificationtime"),
                                        QStringLiteral("CustomizedDetails")});
-        props.sync();
+        done = props.sync() && done;
     }
 
-    finder.writeEntry("DolphinDefaults", DolphinDefaultsVersion);
+    if (done) {
+        finder.writeEntry("DolphinDefaults", DolphinDefaultsVersion);
+    }
     styleConfig->sync();
 }
 

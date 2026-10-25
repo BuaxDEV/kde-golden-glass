@@ -12,6 +12,7 @@ import QtQuick
 import QtQuick.Layouts
 
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.clock as PlasmaClock
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.plasmoid
 import org.kde.plasma.workspace.calendar as PlasmaCalendar
@@ -19,7 +20,14 @@ import org.kde.plasma.workspace.calendar as PlasmaCalendar
 PlasmoidItem {
     id: root
 
-    property date now: new Date()
+    // El reloj de Plasma avisa en cada cambio de minuto, alineado, y también
+    // al cambiar la zona horaria o la hora del sistema y al volver de la
+    // suspensión (un Timer se queda atrás en esos casos)
+    PlasmaClock.Clock {
+        id: clock
+        trackSeconds: false
+    }
+    readonly property date now: clock.dateTime
 
     // Orden de día, fecha y mes de la barra de menús de macOS en cada idioma
     // (el formato corto de Qt no lo trae): «Vie 16 de oct», «Fri Oct 16»,
@@ -47,20 +55,6 @@ PlasmoidItem {
     preferredRepresentation: compactRepresentation
     toolTipMainText: capitalized(Qt.locale().toString(now, "dddd"))
     toolTipSubText: Qt.locale().toString(now, Qt.locale().dateFormat(Locale.LongFormat))
-
-    // Despierta en cada cambio de minuto (no cada segundo).
-    function tick() {
-        now = new Date();
-        minuteTimer.interval = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds()) + 20;
-        minuteTimer.start();
-    }
-
-    Timer {
-        id: minuteTimer
-        onTriggered: root.tick()
-    }
-
-    Component.onCompleted: tick()
 
     compactRepresentation: MouseArea {
         Layout.minimumWidth: clockLabel.implicitWidth

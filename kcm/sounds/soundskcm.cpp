@@ -4,6 +4,8 @@
  */
 #include "soundskcm.h"
 
+#include "../processquery.h"
+
 #include <KLocalizedString>
 #include <KPluginFactory>
 
@@ -89,23 +91,27 @@ void SoundsKcm::load()
     if (path.isEmpty()) {
         return;
     }
-    // Son unas pocas lecturas de kreadconfig6: se espera en el sitio.
-    QProcess status;
-    status.start(path, {QStringLiteral("status"), QStringLiteral("--json")});
-    if (!status.waitForFinished(5000) || status.exitCode() != 0) {
-        setErrorText(i18nc("@info:status", "The current state could not be read: %1", QString::fromLocal8Bit(status.readAllStandardError()).trimmed()));
-        return;
-    }
-    const QJsonObject state = QJsonDocument::fromJson(status.readAllStandardOutput()).object();
-    m_sounds = state.value(QStringLiteral("sounds")).toBool();
-    m_chime = state.value(QStringLiteral("chime")).toBool();
-    Q_EMIT stateChanged();
+    // asíncrono: esperar aquí congelaría la interfaz; solo cuenta la última consulta
+    const int query = ++m_statusQuery;
+    GoldenGlass::runQuery(this, path, {QStringLiteral("status"), QStringLiteral("--json")}, [this, query](bool ok, const QByteArray &output, const QString &error) {
+        if (query != m_statusQuery) {
+            return;
+        }
+        if (!ok) {
+            setErrorText(i18nc("@info:status", "The current state could not be read: %1", error));
+            return;
+        }
+        const QJsonObject state = QJsonDocument::fromJson(output).object();
+        m_sounds = state.value(QStringLiteral("sounds")).toBool();
+        m_chime = state.value(QStringLiteral("chime")).toBool();
+        Q_EMIT stateChanged();
+    });
 }
 
 void SoundsKcm::setPart(const QString &part, bool enabled)
 {
     setErrorText(QString());
-    m_queue.append((enabled ? QStringLiteral("enable ") : QStringLiteral("disable ")) + part);
+    m_queue.append({enabled ? QStringLiteral("enable") : QStringLiteral("disable"), part});
     if (!busy()) {
         startNext();
     }
@@ -118,7 +124,7 @@ void SoundsKcm::startNext()
         m_queue.clear();
         return;
     }
-    m_process->start(path, m_queue.takeFirst().split(QLatin1Char(' ')));
+    m_process->start(path, m_queue.takeFirst());
     Q_EMIT busyChanged();
 }
 
