@@ -124,6 +124,7 @@ if [[ -z ${GG_SANDBOX_INNER:-} ]]; then
       >"$XDG_DATA_HOME/dbus-1/services/$svc.service"
   done
 
+  # shellcheck disable=SC2329  # invoked by the EXIT trap
   cleanup() {
     reap "$GG_SANDBOX_ID"
     if [[ ${GG_SANDBOX_SYSTEMD:-0} == 1 ]]; then
