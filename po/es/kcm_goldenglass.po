@@ -89,3 +89,27 @@ msgstr "Mostrar fondo de la barra de menús"
 msgctxt "@info"
 msgid "Off, like macOS: the menu bar is drawn straight over the wallpaper. On: a strip of glass behind it."
 msgstr "Desactivado, como en macOS: la barra de menús se dibuja directamente sobre el fondo de pantalla. Activado: lleva detrás una franja de vidrio."
+
+msgctxt "@info:status"
+msgid "Reduce motion could not be changed: %1"
+msgstr "No se pudo cambiar «Reducir movimiento»: %1"
+
+msgctxt "@info:status"
+msgid "goldenglass-windows could not be started: %1"
+msgstr "No se pudo iniciar goldenglass-windows: %1"
+
+msgctxt "@info:status"
+msgid "goldenglass-windows was not found. Is the goldenglass-plasma package installed?"
+msgstr "No se encontró goldenglass-windows. ¿Está instalado el paquete goldenglass-plasma?"
+
+msgctxt "@label"
+msgid "Accessibility:"
+msgstr "Accesibilidad:"
+
+msgctxt "@option:check"
+msgid "Reduce motion"
+msgstr "Reducir movimiento"
+
+msgctxt "@info"
+msgid "Windows, the dock and panels fade in and out instead of zooming, sliding or bouncing."
+msgstr "Las ventanas, el dock y los paneles aparecen y desaparecen con un fundido en lugar de ampliarse, deslizarse o rebotar."

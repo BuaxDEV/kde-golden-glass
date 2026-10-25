@@ -8,6 +8,8 @@
 
 #include <QVariantList>
 
+#include <optional>
+
 class QProcess;
 
 //* Módulo de Ajustes «Vidrio»: aplica el nivel de vidrio en vivo con
@@ -29,6 +31,8 @@ class GlassKcm : public KQuickConfigModule
     Q_PROPERTY(bool refractionAvailable READ refractionAvailable NOTIFY refractionChanged)
     //* franja de vidrio translúcido tras la barra de menús (de fábrica sin fondo, como macOS)
     Q_PROPERTY(bool menubarBackground READ menubarBackground WRITE setMenubarBackground NOTIFY menubarBackgroundChanged)
+    //* «Reduce motion»: written by goldenglass-windows, which also swaps KWin's effects for fades
+    Q_PROPERTY(bool reduceMotion READ reduceMotion WRITE setReduceMotion NOTIFY reduceMotionChanged)
 
 public:
     GlassKcm(QObject *parent, const KPluginMetaData &data);
@@ -45,6 +49,8 @@ public:
     bool refractionAvailable() const;
     bool menubarBackground() const;
     void setMenubarBackground(bool value);
+    bool reduceMotion() const;
+    void setReduceMotion(bool value);
 
     //* aplica un nivel (0 = más transparente, 1 = más opaco); si ya hay uno
     //* aplicándose, se aplica el último pedido al terminar
@@ -59,10 +65,13 @@ Q_SIGNALS:
     void errorTextChanged();
     void refractionChanged();
     void menubarBackgroundChanged();
+    void reduceMotionChanged();
 
 private:
     void startProcess(double level);
     void loadRefraction();
+    void startReduceMotion(bool value);
+    void loadReduceMotion();
     void setLevel(double level);
     void updateRepresentsDefaults();
     void setErrorText(const QString &text);
@@ -76,4 +85,7 @@ private:
     bool m_refractionAvailable = false;
     int m_refractionQuery = 0;
     bool m_menubarBackground;
+    QProcess *m_reduceMotionProcess = nullptr;
+    bool m_reduceMotion;
+    std::optional<bool> m_pendingReduceMotion;
 };

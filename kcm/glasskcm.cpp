@@ -7,6 +7,7 @@
 #include "goldenglass_tokens.h"
 #include "processquery.h"
 
+#include <KConfig>
 #include <KConfigGroup>
 #include <KLocalizedString>
 #include <KPluginFactory>
@@ -20,6 +21,11 @@ K_PLUGIN_CLASS_WITH_JSON(GlassKcm, "kcm_goldenglass.json")
 namespace
 {
 constexpr double kSameLevel = 0.005;
+
+QString onOff(bool value)
+{
+    return value ? QStringLiteral("on") : QStringLiteral("off");
+}
 }
 
 GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
@@ -27,6 +33,8 @@ GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
     , m_process(new QProcess(this))
     , m_level(GoldenGlass::Tokens::GlassDefaultLevel)
     , m_menubarBackground(GoldenGlass::Tokens::MenubarBackground)
+    , m_reduceMotionProcess(new QProcess(this))
+    , m_reduceMotion(GoldenGlass::Tokens::AccessibilityReduceMotion)
 {
     // Los cambios se aplican en vivo al soltar el control: no hay «Aplicar».
     setButtons(KAbstractConfigModule::Default);
@@ -64,6 +72,30 @@ GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
     connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError) {
         setErrorText(i18nc("@info:status", "goldenglass-glass could not be started: %1", m_process->errorString()));
         Q_EMIT busyChanged();
+    });
+
+    // One goldenglass-windows at a time; a switch flipped meanwhile runs next with its last value.
+    m_reduceMotionProcess->setProcessChannelMode(QProcess::MergedChannels);
+    connect(m_reduceMotionProcess, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus status) {
+        if (status != QProcess::NormalExit || exitCode != 0) {
+            setErrorText(i18nc("@info:status",
+                               "Reduce motion could not be changed: %1",
+                               QString::fromLocal8Bit(m_reduceMotionProcess->readAll()).trimmed()));
+        }
+        if (m_pendingReduceMotion) {
+            const bool next = *m_pendingReduceMotion;
+            m_pendingReduceMotion.reset();
+            startReduceMotion(next);
+            return;
+        }
+        loadReduceMotion();
+    });
+    connect(m_reduceMotionProcess, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
+        if (error == QProcess::FailedToStart) {
+            setErrorText(i18nc("@info:status", "goldenglass-windows could not be started: %1", m_reduceMotionProcess->errorString()));
+            m_pendingReduceMotion.reset();
+            loadReduceMotion();
+        }
     });
 }
 
@@ -145,6 +177,50 @@ void GlassKcm::setMenubarBackground(bool value)
     updateRepresentsDefaults();
 }
 
+bool GlassKcm::reduceMotion() const
+{
+    return m_reduceMotion;
+}
+
+void GlassKcm::setReduceMotion(bool value)
+{
+    if (m_reduceMotion == value) {
+        return;
+    }
+    m_reduceMotion = value;
+    Q_EMIT reduceMotionChanged();
+    updateRepresentsDefaults();
+    setErrorText(QString());
+    if (m_reduceMotionProcess->state() != QProcess::NotRunning) {
+        m_pendingReduceMotion = value;
+        return;
+    }
+    startReduceMotion(value);
+}
+
+void GlassKcm::startReduceMotion(bool value)
+{
+    const QString program = QStandardPaths::findExecutable(QStringLiteral("goldenglass-windows"));
+    if (program.isEmpty()) {
+        setErrorText(i18nc("@info:status", "goldenglass-windows was not found. Is the goldenglass-plasma package installed?"));
+        loadReduceMotion();
+        return;
+    }
+    m_reduceMotionProcess->start(program, {QStringLiteral("--reduce-motion"), onOff(value)});
+}
+
+void GlassKcm::loadReduceMotion()
+{
+    // a fresh KConfig: goldenglass-windows has just written the file
+    const KConfig config(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig);
+    const bool value = config.group(QStringLiteral("Accessibility")).readEntry("ReduceMotion", GoldenGlass::Tokens::AccessibilityReduceMotion);
+    if (m_reduceMotion != value) {
+        m_reduceMotion = value;
+        Q_EMIT reduceMotionChanged();
+    }
+    updateRepresentsDefaults();
+}
+
 void GlassKcm::loadRefraction()
 {
     const QString program = QStandardPaths::findExecutable(QStringLiteral("goldenglass-glass"));
@@ -174,12 +250,14 @@ void GlassKcm::load()
         Q_EMIT menubarBackgroundChanged();
     }
     setLevel(config->group(QStringLiteral("Glass")).readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel));
+    loadReduceMotion();
 }
 
 void GlassKcm::defaults()
 {
     applyLevel(GoldenGlass::Tokens::GlassDefaultLevel);
     setMenubarBackground(GoldenGlass::Tokens::MenubarBackground);
+    setReduceMotion(GoldenGlass::Tokens::AccessibilityReduceMotion);
 }
 
 void GlassKcm::applyLevel(double level)
@@ -218,7 +296,8 @@ void GlassKcm::setLevel(double level)
 void GlassKcm::updateRepresentsDefaults()
 {
     setRepresentsDefaults(qAbs(m_level - GoldenGlass::Tokens::GlassDefaultLevel) < kSameLevel
-                          && m_menubarBackground == GoldenGlass::Tokens::MenubarBackground);
+                          && m_menubarBackground == GoldenGlass::Tokens::MenubarBackground
+                          && m_reduceMotion == GoldenGlass::Tokens::AccessibilityReduceMotion);
 }
 
 void GlassKcm::setErrorText(const QString &text)
