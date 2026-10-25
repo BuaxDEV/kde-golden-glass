@@ -85,8 +85,9 @@
   dejaba a Plasma sin blur hasta reiniciar KWin.
 - **Barra de menús de 24 px**, como macOS (antes 28). El texto y los iconos
   de la bandeja conservan su tamaño. Las barras
-  de 28 px de una instalación anterior pasan a 24 la primera vez que se
-  inicia Plasma tras actualizar el paquete, una sola vez; si elegiste otra
+  de 28 px de una instalación anterior pasan a 24 una sola vez: con el
+  paquete, la primera vez que se inicia Plasma tras actualizar; con
+  `tools/install.sh`, al iniciar la siguiente sesión. Si elegiste otra
   altura, se respeta. Con «Mostrar fondo de la barra de menús» la franja de
   vidrio es recta, sin esquinas redondeadas, y la barra ya no queda atada al
   radio del dock.

@@ -882,11 +882,16 @@ Primera parte de F14 (plan de macOS 27 §3.5 y §4.8).
   shell (plantilla `.js.in`) pasa a la altura del token los paneles
   superiores con `org.goldenglass.systemmenu` y exactamente 28 px; cualquier
   otra altura se respeta. plasmashell lo ejecuta una vez por usuario y lo
-  anota en `plasmashellrc [Updates] performed`. **No se ejecuta si el shell
-  está en `XDG_DATA_HOME`** (plasmashell salta los scripts locales del
-  usuario): llega con el paquete, no con `tools/install.sh`.
-  `tools/tests/test_shell_updates.py` lo ejecuta en un `QJSEngine` con un
-  `panels()` falso.
+  anota en `plasmashellrc [Updates] performed`. plasmashell **no lo ejecuta
+  si el shell está en `XDG_DATA_HOME`** (salta los scripts locales del
+  usuario). Para esa instalación, `tools/install.sh` deja el autostart
+  `goldenglass-shell-updates` (fase 2, con el escritorio ya cargado):
+  `tools/run_shell_updates.py` espera a plasmashell, ejecuta con
+  `evaluateScript` los scripts que aún no estén en esa lista (por nombre, así
+  que no repite lo que ya hizo el paquete) y los añade a ella. Solo los anota
+  si había paneles: si plasmashell responde antes de cargarlos, reintenta.
+  `tools/tests/test_shell_updates.py` ejecuta el script en un `QJSEngine` con
+  un `panels()` falso, y `test_run_shell_updates.py` prueba el lanzador.
 
 **Spike SP-07 — go.** Sandbox (`tools/sandbox.sh`, KWin 6.8.1 virtual de
 1600×1000, plasmashell 6.8.1, layout de `org.goldenglass.light.desktop`),
@@ -913,8 +918,11 @@ tras reiniciar) y desactivado (ídem).
   también a escala 1,5 y 2; el Centro de control se abre a 24 + 6 px y su
   resaltado mide 20 px.
 - No hizo falta el plan B (barra de 26 o 28 px conservando el desacople).
-- Sin probar: un `tools/install.sh` sobre una instalación previa (no migra,
-  ver arriba) ni pantallas físicas.
+- **Instalación de desarrollo:** en el sandbox, con el shell en
+  `XDG_DATA_HOME` y la barra guardada a 28, un reinicio de plasmashell la deja
+  en 28; `tools/run_shell_updates.py` la pasa a 24 y la anota, una segunda
+  ejecución no hace nada y tras otro reinicio sigue en 24.
+- Sin probar: pantallas físicas.
 
 #### Apps en segundo plano en el Dock (F14)
 
