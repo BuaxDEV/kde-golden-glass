@@ -807,6 +807,8 @@ void Helper::renderButtonFrame(QPainter *painter,
         painter->setBrush(alphaColor(fc.darker(200), 0.5));
         painter->drawRoundedRect(frameRect, radius, radius);
     }
+
+    renderAccessibilityBorder(painter, frameRect, radius, palette.color(QPalette::ButtonText), Tokens::AccessibilityBordersControlAlpha);
 }
 
 //______________________________________________________________________________
@@ -836,6 +838,35 @@ void Helper::renderToolButtonFrame(QPainter *painter, const QRect &rect, const Q
         painter->setBrush(color);
         painter->drawRoundedRect(baseRect, radius, radius);
     }
+}
+
+//______________________________________________________________________________
+void Helper::renderToolBarButtonBorder(QPainter *painter, const QRect &rect, const QPalette &palette) const
+{
+    // same rectangle and corners as renderToolButtonFrame's hover
+    renderAccessibilityBorder(painter,
+                              QRectF(rect.adjusted(1, 1, -1, -1)),
+                              frameRadius(PenWidth::Frame),
+                              palette.color(QPalette::WindowText),
+                              Tokens::AccessibilityBordersToolbarButtonAlpha);
+}
+
+//______________________________________________________________________________
+void Helper::renderAccessibilityBorder(QPainter *painter, const QRectF &rect, qreal radius, const QColor &textColor, qreal alpha) const
+{
+    if (!StyleConfigData::showBorders()) {
+        return;
+    }
+    constexpr qreal penWidth = 1;
+    const QRectF edgeRect = rect.adjusted(penWidth / 2, penWidth / 2, -penWidth / 2, -penWidth / 2);
+    const qreal edgeRadius = qMax<qreal>(radius - penWidth / 2, 0);
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing);
+    painter->setPen(QPen(alphaColor(textColor, alpha), penWidth));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRoundedRect(edgeRect, edgeRadius, edgeRadius);
+    painter->restore();
 }
 
 //______________________________________________________________________________
@@ -934,6 +965,7 @@ void Helper::renderLineEdit(QPainter *painter,
                             const QRect &rect,
                             const QColor &background,
                             const QColor &outline,
+                            const QPalette &palette,
                             const bool hasFocus,
                             const bool mouseOver,
                             bool enabled,
@@ -959,6 +991,7 @@ void Helper::renderLineEdit(QPainter *painter,
 
     // render
     painter->drawRoundedRect(frameRect, radius, radius);
+    renderAccessibilityBorder(painter, frameRect, radius, palette.color(QPalette::Text), Tokens::AccessibilityBordersControlAlpha);
 
     // focus ring (macOS): translucent accent hugging the field edge, it covers
     // the field's border and grows outwards only as far as the frame margin

@@ -84,6 +84,8 @@ public:
     //@{
     QColor titleBarColor() const;
     QColor outlineColor() const;
+    //* window outline: the frame colour mixed towards the text colour
+    QColor windowOutlineColor() const;
     QColor fontColor() const;
     //@}
 
@@ -250,6 +252,6 @@ bool Decoration::hideTitleBar() const
 
 bool Decoration::outlinesEnabled() const
 {
-    return m_internalSettings->outlineEnabled();
+    return m_internalSettings->outlineEnabled() || m_internalSettings->showBorders();
 }
 }

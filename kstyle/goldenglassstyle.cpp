@@ -4271,10 +4271,10 @@ bool Style::drawFrameLineEditPrimitive(const QStyleOption *option, QPainter *pai
         if (isVisible) {
             QLineEdit* dolphinLineEdit = widget->findChild<QLineEdit *>();
             if (dolphinLineEdit->isVisible()) {
-                _helper->renderLineEdit(painter, rect.adjusted(0, -2, 0, 2), background, outline, hasFocus, mouseOver, enabled, windowActive, mode, opacity);
+                _helper->renderLineEdit(painter, rect.adjusted(0, -2, 0, 2), background, outline, palette, hasFocus, mouseOver, enabled, windowActive, mode, opacity);
             }
         } else {
-            _helper->renderLineEdit(painter, rect, background, outline, hasFocus, mouseOver, enabled, windowActive, mode, opacity);
+            _helper->renderLineEdit(painter, rect, background, outline, palette, hasFocus, mouseOver, enabled, windowActive, mode, opacity);
         }
     }
 
@@ -4656,9 +4656,20 @@ bool Style::drawPanelButtonToolPrimitive(const QStyleOption *option, QPainter *p
     } else {
         const auto color(_helper->toolButtonColor(palette, mouseOver, hasFocus, sunken, opacity, mode));
         _helper->renderToolButtonFrame(painter, rect, color, sunken);
+        if (isToolBarButton(option, widget)) {
+            _helper->renderToolBarButtonBorder(painter, rect, palette);
+        }
     }
 
     return true;
+}
+
+//______________________________________________________________
+bool Style::isToolBarButton(const QStyleOption *option, const QWidget *widget) const
+{
+    // Qt Quick tool buttons have no widget to look up; flat ones are the
+    // actions of Kirigami's toolbars and page headers
+    return (widget && qobject_cast<const QToolBar *>(widget->parentWidget())) || isQtQuickControl(option, widget);
 }
 
 //______________________________________________________________

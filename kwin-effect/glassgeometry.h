@@ -82,4 +82,25 @@ QList<GlassPiece<Rect>> glassPieces(QSpan<const Rect> rects)
     return pieces.values();
 }
 
+// The band `depth` px deep along the outline of a piece, as at most four
+// rectangles (top, bottom, left, right) so that a pass over the window only
+// touches its edge. A rounded corner bends inwards, so near it the band
+// reaches further from the bounding box: r·(1 − 1/√2) + depth/√2 at 45°.
+template<typename Rect>
+QList<Rect> edgeBand(const Rect &box, float depth, float maxCornerRadius)
+{
+    constexpr float invSqrt2 = 0.70710678f;
+    const float reach = std::ceil(std::max(depth, maxCornerRadius * (1 - invSqrt2) + depth * invSqrt2));
+    if (2 * reach >= std::min(box.width(), box.height())) {
+        return {box};
+    }
+    const float middle = box.height() - 2 * reach;
+    return {
+        Rect(box.left(), box.top(), box.width(), reach),
+        Rect(box.left(), box.top() + box.height() - reach, box.width(), reach),
+        Rect(box.left(), box.top() + reach, reach, middle),
+        Rect(box.left() + box.width() - reach, box.top() + reach, reach, middle),
+    };
+}
+
 } // namespace GoldenGlass

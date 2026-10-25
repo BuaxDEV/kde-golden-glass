@@ -39,13 +39,8 @@ QtObject {
     readonly property real factor: Kirigami.Units.longDuration / T.tokens.motion.kirigami_long_ms
     // false con «Velocidad de animación» al mínimo (sin animaciones)
     readonly property bool animated: Kirigami.Units.longDuration > 1
-    // «Reduce motion»: no zooms, slides or bounces; panels only fade. Read
-    // live from AccessibilitySettings, behind a Loader so that it stays false
-    // without the org.goldenglass.glass module.
-    readonly property Loader reduceLoader: Loader {
-        source: "MotionReduce.qml"
-    }
-    readonly property bool reduced: reduceLoader.item ? reduceLoader.item.reduceMotion : false
+    // «Reduce motion»: no zooms, slides or bounces; panels only fade
+    readonly property bool reduced: Accessibility.reduceMotion
 
     // fundidos y colores: duración × factor (0 sin animaciones)
     function ms(base) {

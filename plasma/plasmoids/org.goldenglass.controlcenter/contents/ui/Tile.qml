@@ -29,7 +29,9 @@ Rectangle {
     // 0 en reposo, 1 pulsada; al soltar pasa un poco por debajo de 0 (rebote)
     property real pressAmount: 0
 
-    readonly property color glassColor: Qt.alpha(Kirigami.Theme.backgroundColor, T.tokens.control_center.tile_alpha)
+    readonly property real glassAlpha: Accessibility.reduceTransparency ? T.tokens.accessibility.reduce_transparency_alpha
+                                                                        : T.tokens.control_center.tile_alpha
+    readonly property color glassColor: Qt.alpha(Kirigami.Theme.backgroundColor, glassAlpha)
 
     radius: T.tokens.control_center.tile_radius
     color: glassColor

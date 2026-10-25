@@ -169,6 +169,10 @@ REQUIRED_SECTIONS = (
 # opacidad con «Reducir transparencia» (docs/ARCHITECTURE.md, «Accesibilidad»)
 ACCESSIBILITY_FLAGS = ("show_borders", "reduce_transparency", "reduce_motion")
 
+# [accessibility.borders]: «Show borders» (docs/MACOS27-PLAN.md §4.5)
+ACCESSIBILITY_BORDER_KEYS = ("surface_alpha", "field_alpha", "edge_shade", "window_outline_contrast",
+                             "window_shadow_outline_alpha", "control_alpha", "toolbar_button_alpha", "gtk_alpha")
+
 # [motion]: clave → si admite 0 (Motion.qml divide por kirigami_long_ms)
 MOTION_KEYS = {"kirigami_long_ms": False, "reduced_fade_ms": True}
 
@@ -183,6 +187,24 @@ def validate_motion(motion: dict) -> None:
         if not _is_number(value) or value < 0 or (value == 0 and not zero_ok):
             limit = "≥ 0" if zero_ok else "> 0"
             raise SystemExit(f"[motion].{key} debe ser un número {limit} (ms), no {value!r}")
+
+
+# glass edge contrast (docs/MACOS27-PLAN.md §4.3): key → (minimum, maximum)
+GLASS_EDGE_KEYS = {
+    ("refraction", "rim_opaque_factor"): (0.0, 1.0),
+    ("refraction", "edge_shade"): (0.0, 1.0),
+    ("refraction", "edge_shade_width"): (0.0, 8.0),
+    ("border", "shade_alpha"): (0.0, 1.0),
+    ("border", "highlight_alpha"): (0.0, 1.0),
+    ("border", "width"): (0.5, 4.0),
+}
+
+
+def validate_glass_edge(glass: dict) -> None:
+    for (section, key), (low, high) in GLASS_EDGE_KEYS.items():
+        value = glass.get(section, {}).get(key)
+        if not _is_number(value) or not low <= value <= high:
+            raise SystemExit(f"[glass.{section}].{key} must be a number in [{low:g}, {high:g}], not {value!r}")
 
 
 def validate_kwin(kwin: dict) -> None:
@@ -253,6 +275,7 @@ def validate(tokens: dict) -> None:
         raise SystemExit(f"estas claves de los tokens deben ser secciones: {', '.join(not_tables)}")
     validate_motion(tokens["motion"])
     validate_kwin(tokens["kwin"])
+    validate_glass_edge(tokens["glass"])
 
     validate_icon_tile(tokens["icon_tile"])
 
@@ -304,6 +327,17 @@ def _validate_accessibility(section: dict) -> None:
     # bool es subclase de int: true/false no valen como opacidad
     if isinstance(alpha, bool) or not isinstance(alpha, (int, float)) or not 0.0 <= alpha <= 1.0:
         raise SystemExit(f"[accessibility].reduce_transparency_alpha debe ser un número entre 0 y 1, no {alpha!r}")
+    validate_borders(section.get("borders"))
+
+
+def validate_borders(borders: object) -> None:
+    """[accessibility.borders]: every «Show borders» value is a fraction in [0, 1]."""
+    if not isinstance(borders, dict):
+        raise SystemExit("missing section [accessibility.borders] in the tokens")
+    for key in ACCESSIBILITY_BORDER_KEYS:
+        value = borders.get(key)
+        if not _is_number(value) or not 0 <= value <= 1:
+            raise SystemExit(f"[accessibility.borders].{key} must be a number in [0, 1], not {value!r}")
 
 
 def main(argv: list[str] | None = None) -> int:

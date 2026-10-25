@@ -118,8 +118,10 @@ The first commit is the upstream copy with only mechanical changes (the
 built-in blur in `libkwin`, its own resource prefix and logging category,
 linking xcb); `git log -- kwin-effect` shows the GoldenGlass changes on top:
 the refraction pass (`shaders/glass.frag`, `drawGlass()`, `isGlassSurface()`,
-corner radii from the blur region, in `glassgeometry.h` with its tests) and
-reading the glass level from `goldenglassrc`. `shaders/glass.frag` includes
+corner radii from the blur region, in `glassgeometry.h` with its tests), the
+edge pass drawn after the window (`shaders/edge.frag`, `drawEdge()`, the band
+quads of `edgeBand()`) and reading the glass level from `goldenglassrc`.
+`shaders/glass.frag` and `shaders/edge.frag` include
 KWin's `src/opengl/sdf.glsl` for `sdfRoundedBox`, as the upstream
 `onscreen_rounded.frag` does.
 It reads the same `Effect-blur` settings as KWin's Blur.

@@ -79,8 +79,12 @@ PlasmaCore.Dialog {
     property real glassLevel: T.tokens.glass.default_level
     readonly property string glassLevelCommand: "kreadconfig6 --file goldenglassrc --group Glass --key Level --default "
                                                 + T.tokens.glass.default_level
-    // opacidad del vidrio para ese nivel, interpolada entre las muescas (como plasma_theme.glass_alpha)
+    // glass opacity for that level, interpolated between the notches like
+    // plasma_theme.glass_alpha; opaque with «Reduce transparency», like the Plasma Style
     readonly property real glassAlpha: {
+        if (Accessibility.reduceTransparency) {
+            return T.tokens.accessibility.reduce_transparency_alpha;
+        }
         const notches = Object.values(T.tokens.glass.notch).sort((a, b) => a.position - b.position);
         const level = Math.min(Math.max(glassLevel, notches[0].position), notches[notches.length - 1].position);
         for (let i = 0; i + 1 < notches.length; ++i) {

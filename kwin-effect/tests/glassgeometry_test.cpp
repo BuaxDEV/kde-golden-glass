@@ -119,6 +119,35 @@ private Q_SLOTS:
         QCOMPARE(result[0].bounds, QRectF(0, 0, 30, 20));
         QCOMPARE(result[0].rects.size(), 3);
     }
+
+    void edgeBandIsARing()
+    {
+        const QList<QRectF> band = GoldenGlass::edgeBand(QRectF(10, 20, 100, 50), 4, 0);
+        QCOMPARE(band,
+                 (QList<QRectF>{QRectF(10, 20, 100, 4), QRectF(10, 66, 100, 4), QRectF(10, 24, 4, 42), QRectF(106, 24, 4, 42)}));
+        // the four pieces cover the ring once
+        qreal area = 0;
+        for (const QRectF &rect : band) {
+            area += rect.width() * rect.height();
+        }
+        QCOMPARE(area, 100.0 * 50 - 92.0 * 42);
+    }
+
+    void edgeBandReachesPastRoundedCorners()
+    {
+        // 45° on a corner of radius 14: the band 6 px deep ends 14·0.293 + 6·0.707 ≈ 8.3 px from both sides
+        const QList<QRectF> band = GoldenGlass::edgeBand(QRectF(0, 0, 200, 60), 6, 14);
+        QCOMPARE(band[0].height(), 9.0);
+        QCOMPARE(band[2].width(), 9.0);
+        // a deeper band than the corner bend keeps its depth (rounded up to whole pixels)
+        QCOMPARE(GoldenGlass::edgeBand(QRectF(0, 0, 200, 60), 6.5, 2)[0].height(), 7.0);
+    }
+
+    void edgeBandOfASmallPieceIsThePiece()
+    {
+        const QRectF box(0, 0, 200, 16);
+        QCOMPARE(GoldenGlass::edgeBand(box, 8, 4), QList<QRectF>{box});
+    }
 };
 
 QTEST_GUILESS_MAIN(GlassGeometryTest)

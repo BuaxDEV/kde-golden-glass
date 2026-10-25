@@ -252,13 +252,18 @@ Dolphin imita el Finder de macOS 27 (tokens `[finder]` y los colores
 ### 4.4 Nivel de vidrio — `goldenglass-glass` y módulo de Ajustes (`kcm/`)
 
 **`goldenglass-glass --level N`** (`tools/glass.py`, instalado con sus archivos
-en `share/goldenglass`) aplica un nivel en vivo a las tres capas:
+en `share/goldenglass`) aplica un nivel en vivo a las tres capas. Por dentro,
+`--level`, `--reduce-transparency` y `--show-borders` llaman a `apply(tokens, *,
+level=None, reduce_transparency=None, borders=None, reload_plasma=True)`: lo que
+se pasa se guarda en `goldenglassrc` (con aviso de cambio) y lo que no se lee de
+ahí, así que cada llamada deja las capas de acuerdo con todos los ajustes:
 
 | Capa | Cómo |
 |---|---|
 | Estilo de apps | `goldenglassrc [Style]` (`MenuOpacity`, `ToolBarOpacity`, `DolphinSidebarOpacity`: menús, toolbars, barra lateral; el diálogo del estilo no tiene controles para ellas) + señal D-Bus `org.goldenglass.Style` → repinta las ventanas abiertas |
 | Decoración | misma opacidad (`ToolBarOpacity`) + `KWin.reconfigure` → relee `goldenglassrc` |
-| Plasma Style | nivel por defecto → tema del paquete `GoldenGlass`; otro nivel → genera `GoldenGlassTuned` en `~/.local/share` y cambia a él (con rebote por `GoldenGlass` si ya estaba activo). El tema del paquete nunca se sobrescribe |
+| Plasma Style | nivel por defecto (y sin «Reducir transparencia» ni «Mostrar bordes») → tema del paquete `GoldenGlass`; si no → genera `GoldenGlassTuned` en `~/.local/share` y cambia a él (con rebote por `GoldenGlass` si ya estaba activo). El tema del paquete nunca se sobrescribe |
+| Efecto de KWin | `org.kde.kwin.Effects.reconfigureEffect goldenglass_glass`: `KWin.reconfigure` no llega a los efectos, y el efecto vuelve a leer (`reparseConfiguration`) `goldenglassrc`, que la decoración tiene abierto en KWin |
 
 El cambio de tema se hace dentro de plasmashell (`evaluateScript`,
 `theme = …`), de forma síncrona; si plasmashell no corre, se escribe `plasmarc`.
@@ -293,25 +298,31 @@ Ese `goldenglass-glass` de prueba solo cambia `[Glass] Level`, como
 
 Contrato común de «Mostrar bordes», «Reducir transparencia» y «Reducir
 movimiento» (detalle en [MACOS27-PLAN.md](MACOS27-PLAN.md) §3.1, §4.4, §4.5 y
-§4.7). **«Reducir movimiento» ya funciona** (interruptor en el módulo
-«Vidrio», `goldenglass-windows` y `Motion.qml`); de las otras dos solo existe
-el contrato: se leen, pero nada las escribe ni las aplica todavía.
+§4.7). **«Reducir movimiento»** (interruptor en el módulo «Vidrio»,
+`goldenglass-windows` y `Motion.qml`) y **«Reducir transparencia»** (ver abajo)
+y **«Mostrar bordes»** (ver abajo) ya funcionan; de «Mostrar bordes» falta la
+fase 2 en GTK.
 
 | Clave en `goldenglassrc [Accessibility]` (bool) | Token de fábrica | La escribe |
 |---|---|---|
-| `ShowBorders` | `accessibility.show_borders = false` | `goldenglass-glass --borders on\|off` (F12, pendiente) |
-| `ReduceTransparency` | `accessibility.reduce_transparency = false` | `goldenglass-glass --reduce-transparency on\|off` (F12, pendiente) |
+| `ShowBorders` | `accessibility.show_borders = false` | `goldenglass-glass --show-borders on\|off` ✅ (F12; GTK pendiente de SP-02) |
+| `ReduceTransparency` | `accessibility.reduce_transparency = false` | `goldenglass-glass --reduce-transparency on\|off` ✅ (F12) |
 | `ReduceMotion` | `accessibility.reduce_motion = false` | `goldenglass-windows --reduce-motion on\|off` ✅ (efectos de KWin: «Efectos de ventana» en 4.5; plasmoids: «Movimiento») |
 
 - **Escritura:** siempre con aviso de cambio (`KConfig::Notify`, `kwriteconfig6
   --notify`) y solo la clave propia, sin reescribir el archivo. El módulo
   «Vidrio» llamará a cada herramienta según la clave.
 - **Tokens:** `[accessibility]` también trae `reduce_transparency_alpha = 1.0`,
-  la opacidad del vidrio con «Reducir transparencia». `gen_tokens.py` exige los
-  tres interruptores booleanos y el alfa en [0, 1].
+  la opacidad del vidrio con «Reducir transparencia», y `[accessibility.borders]`
+  los valores de «Mostrar bordes» (`surface_alpha`, `field_alpha`,
+  `edge_shade`, `window_outline_contrast`, `window_shadow_outline_alpha`,
+  `control_alpha`, `toolbar_button_alpha` y `gtk_alpha`, este para la fase 2).
+  `gen_tokens.py` exige los tres interruptores booleanos y los alfas y mezclas
+  en [0, 1].
 - **C++:** `goldenglass_tokens.h` exporta `AccessibilityShowBorders`,
-  `AccessibilityReduceTransparency`, `AccessibilityReduceMotion` y
-  `AccessibilityReduceTransparencyAlpha`. `kstyle/goldenglass.kcfg` y
+  `AccessibilityReduceTransparency`, `AccessibilityReduceMotion`,
+  `AccessibilityReduceTransparencyAlpha` y los `AccessibilityBorders*` que leen
+  el efecto, la decoración y el estilo. `kstyle/goldenglass.kcfg` y
   `kdecoration/goldenglasssettingsdata.kcfg` (los dos sobre `goldenglassrc`)
   tienen el grupo `Accessibility` con esos valores de fábrica:
   `StyleConfigData::showBorders()` y `InternalSettings::showBorders()`, etc.
@@ -322,8 +333,71 @@ el contrato: se leen, pero nada las escribe ni las aplica todavía.
   `MenuBarSettings`, sigue el archivo con `KConfigWatcher` filtrado por el
   grupo `Accessibility`. Pruebas: `accessibilitysettings_test` y
   `accessibilitysettings_watch_test` (D-Bus).
-- **Módulo «Vidrio»:** bloque «Accesibilidad» bajo «Barra de menús», hoy con
-  el interruptor «Reducir movimiento» (propiedad `reduceMotion` de `GlassKcm`).
+- **QML de los plasmoids:** el singleton `Accessibility.qml` (compartido con
+  `Motion.qml` por `SHARED`) es el único lector por plasmoide: carga con un
+  `Loader` `AccessibilityReader.qml` (un `AccessibilitySettings`; sin el
+  módulo, todo queda en `false`) y expone `reduceMotion`, `reduceTransparency`
+  y `showBorders`. `Motion.reduced` sale de ahí.
+- **«Reducir transparencia»:** conserva `[Glass] Level` y aplica un nivel
+  efectivo opaco:
+  - `goldenglass-glass`: `STYLE_KEYS` a `reduce_transparency_alpha` (100 %:
+    estilo y decoración opacos sin cambiar su código) y `GoldenGlassTuned`
+    con `translucent/` a ese alfa y, en su `plasmarc`, `[BlurBehindEffect]` y
+    `[ContrastEffect]` con `enabled=false`;
+  - efecto `goldenglass_glass`: lee la clave en `reconfigure` y pone a 0 la
+    lente, la claridad, el filo y el oscurecido, y no difumina ninguna
+    superficie de Plasma (spike SP-03, abajo); no toca `kwinrc [Plugins]`;
+  - plasmoids: las tarjetas del Centro de control (`Tile.qml`) y el panel de
+    Apps usan `reduce_transparency_alpha`, y el slider de vidrio del Centro
+    de control queda deshabilitado; todo en vivo.
+- **«Mostrar bordes»:** un borde fino de color de texto que separa el vidrio,
+  las ventanas y los controles de lo que hay detrás. Todas las capas leen
+  `ShowBorders`:
+
+  | Capa | Cambio | Cómo se entera |
+  |---|---|---|
+  | Plasma Style | `build(..., borders=True)`: la línea exterior del filo del vidrio pasa de negra a `ColorScheme-Text` con `surface_alpha` (la interior blanca se queda) y el filo de los campos (`lineedit.svg`) usa `field_alpha`. Se combina con cualquier nivel y con «Reducir transparencia», que solo cambian el relleno; el tema del paquete solo sirve sin bordes | `goldenglass-glass` regenera `GoldenGlassTuned` |
+  | Efecto `goldenglass_glass` | oscurecido de la banda exterior `edge_shade` y filo sin atenuar por el nivel (`rimFactor = 1`). Con «Reducir transparencia» el efecto sigue sin dibujar nada sobre Plasma: casi ninguna superficie pide ya blur y el contorno lo pone el Plasma Style sobre el vidrio opaco | `reconfigureEffect goldenglass_glass` |
+  | Decoración | contorno de la ventana con `OutlineEnabled` **o** `ShowBorders`; color `mix(Frame, Text, window_outline_contrast)` y contorno de la sombra con `window_shadow_outline_alpha`. `ShowBorders` forma parte de la clave de la caché de sombras | `KWin.reconfigure` |
+  | Estilo de apps | filo de 1 px de color de texto con `control_alpha` en `renderButtonFrame` y `renderLineEdit`; los botones planos de las toolbars (también los de Qt Quick, sin widget) muestran su forma sin el ratón encima con `toolbar_button_alpha`; las cápsulas y el buscador del Finder usan el color de texto con `control_alpha` | señal D-Bus `reparseConfiguration` → `StyleConfigData::load()` |
+  | GTK (fase 2) | bloque CSS de usuario con `gtk_alpha` vía `gtk_sync` | **pendiente** del spike SP-02 |
+
+  Las ventanas QML ya abiertas (p. ej. Preferencias del sistema) solo se
+  repintan con el estilo nuevo cuando algo las invalida: el estilo repinta los
+  widgets, no los elementos de qqc2-desktop-style. Los plasmoids no cambian:
+  sus tarjetas ya llevan filo y macOS no documenta un cambio en ellas.
+  Pruebas: matriz nivel × «Reducir transparencia» × «Mostrar bordes» de
+  `apply()` y el cerrojo (pytest), el SVG con bordes (`test_plasma_theme.py`),
+  `shadowparams_test` (clave de la sombra), `styleconfig_test` (relectura) y
+  `kcm_apply_test`. `tools/preview_style.py --show-borders` muestra el estilo
+  con bordes. Comprobado en el sandbox, en claro y en oscuro, con y sin
+  «Reducir transparencia»: Spotlight lleva el filo de color de texto en los
+  niveles 0, 0,5 y 1 y con el vidrio opaco; Dolphin (cápsulas y contorno) y
+  Preferencias del sistema (botones y toolbar QML) lo muestran al abrirse.
+- **Spike SP-03** (libplasma 6.8.1, sandbox con el efecto instrumentado para
+  listar qué ventanas piden blur): con `[BlurBehindEffect] enabled=false` en
+  el `plasmarc` del tema, el dock y la barra (PanelView) dejan de pedir blur
+  al momento, y KRunner tampoco lo pide; libplasma 6.8.1 lo respeta. Lo que
+  pide el blur por su cuenta (`GlassRegion`, `KWindowEffects` directo: panel de
+  Apps y Centro de control) lo sigue pidiendo. **No-go parcial → plan B:** el
+  efecto descarta él mismo las superficies de Plasma con RT. Comprobado: con
+  RT, 0 superficies difuminadas por fotograma (antes 2) y el panel de Apps, el
+  dock y KRunner opacos; al quitarlo, todo vuelve. Los popups de plasmoids con
+  fondo estándar (Dialog) no se pudieron abrir en el sandbox sin simular
+  entrada; usan el mismo `Theme::blurBehindEnabled()` de libplasma.
+- **Módulo «Vidrio»:** bloque «Accesibilidad» bajo «Barra de menús», con los
+  interruptores «Reducir transparencia» (propiedad `reduceTransparency`),
+  «Mostrar bordes» (`showBorders`) y «Reducir movimiento» (propiedad
+  `reduceMotion` de `GlassKcm`). Con
+  «Reducir transparencia», el slider y «Refracción» quedan deshabilitados con
+  la nota «Desactivado por Reducir transparencia». El nivel y «Reducir
+  transparencia» y «Mostrar bordes» van por el mismo `goldenglass-glass`: las
+  peticiones se encolan por tipo (`GlassRequest` `Level`, `ReduceTransparency`
+  y `Borders`), un proceso a la vez y la última de cada tipo después; si
+  falla, el interruptor vuelve a lo que diga el archivo. `kcm_apply_test`
+  pulsa «Reducir transparencia» tres veces con un nivel encima, y luego
+  «Mostrar bordes» tres veces junto a «Reducir transparencia», y comprueba que
+  quedan todos.
   Lee la clave y la cambia con `goldenglass-windows --reduce-motion` por
   `QProcess`: un proceso a la vez y, si se pulsa mientras tanto, el último
   valor después; si falla, el interruptor vuelve a lo que diga el archivo.
@@ -340,7 +414,7 @@ dentro de «Vidrio».
 
 | Módulo | Dónde | Contenido | Fase |
 |---|---|---|---|
-| Vidrio (`kcm_goldenglass`) | Colores y temas | slider + interruptor **Refracción** (`goldenglass-glass --refraction`; apagado y explicado si KWin no cargó el efecto) + interruptor **Mostrar fondo de la barra de menús** + bloque **Accesibilidad** con «Reducir movimiento» (`goldenglass-windows --reduce-motion`) | ✅ |
+| Vidrio (`kcm_goldenglass`) | Colores y temas | slider + interruptor **Refracción** (`goldenglass-glass --refraction`; apagado y explicado si KWin no cargó el efecto) + interruptor **Mostrar fondo de la barra de menús** + bloque **Accesibilidad** con «Reducir transparencia» y «Mostrar bordes» (`goldenglass-glass --reduce-transparency` / `--show-borders`) y «Reducir movimiento» (`goldenglass-windows --reduce-motion`) | ✅ |
 | Efectos de sonido (`kcm_goldenglass_sounds`) | Multimedia | sonidos de GoldenGlass y sonido al iniciar sesión, con botón para escucharlos (`pw-play`); llama a `goldenglass-system` (4.9) | ✅ F7 |
 | Arranque e inicio de sesión (`kcm_goldenglass_boot`) | Colores y temas, junto a «Pantalla de bienvenida» | Pantalla de arranque: del sistema, GoldenGlass o GoldenGlass gris, con miniaturas dibujadas con las piezas del tema y los avisos de `goldenglass-system`. Pantalla de inicio de sesión: interruptor según el gestor activo (con SDDM, el tema; con Plasma Login Manager, fondo y ajustes, con la explicación). Se aplica con «Aplicar»: pide la contraseña (una vez para los dos cambios) y, si cambia Plymouth, regenera el initramfs | ✅ F8 / F9 |
 | Dock (`kcm_goldenglass_dock`) | Espacio de trabajo (como «Escritorio y Dock») | Tamaño, **ampliación** (activada de fábrica) y su tamaño, apps recientes. En vivo con `goldenglass-dock` | ✅ F10 |
@@ -609,11 +683,11 @@ contents/ui/Motion.qml` y su `qmldir`, que `tools/plasmoids.py` copia por
 - `fadeMs(base)`: el fundido de una transición que también se mueve (abrir y
   cerrar paneles).
 - `overshoot(v)`: el rebote de `Easing.OutBack`.
-- `reduced` («Reducir movimiento»): la clave `ReduceMotion`, en vivo. La lee
-  `MotionReduce.qml` (un `AccessibilitySettings` del módulo
-  `org.goldenglass.glass`), que `Motion` carga con un `Loader`: sin
-  `goldenglass-kstyle` falla solo ese archivo y `reduced` vale `false`.
-  `SHARED` lo copia junto a `Motion.qml`. Con `reduced`, `moveMs` y
+- `reduced` («Reducir movimiento»): la clave `ReduceMotion`, en vivo, del
+  singleton `Accessibility.qml`, que carga `AccessibilityReader.qml` (un
+  `AccessibilitySettings` del módulo `org.goldenglass.glass`) con un
+  `Loader`: sin `goldenglass-kstyle` falla solo ese archivo y `reduced` vale
+  `false`. `SHARED` los copia junto a `Motion.qml`. Con `reduced`, `moveMs` y
   `overshoot` dan 0 y `fadeMs` da `ms(motion.reduced_fade_ms)`: los paneles
   solo se funden, los iconos del dock no rebotan (el rebote no arranca con
   tramos de menos de 1 ms) y `GlassScrollView` se detiene en los extremos
@@ -628,7 +702,7 @@ test_motion.py` falla si un `duration:` o un `easing.overshoot` de los
 plasmoids usa un token sin pasar por `Motion`, y comprueba en ejecución
 (offscreen, `kdeglobals` temporal; se salta sin `qml6` o sin el plugin de
 plataforma de Kirigami) `Motion.ms(100)` con factor 0, 0,25, 1 y 2; con un
-`MotionReduce.qml` que da `reduceMotion: true`, `moveMs` 0, `fadeMs` 150 y
+`AccessibilityReader.qml` que da `reduceMotion: true`, `moveMs` 0, `fadeMs` 150 y
 sin rebote; sin el módulo, `reduced` false; y, si `build/cmake` tiene el
 módulo compilado, que `reduced` sigue a un `goldenglassrc` temporal.
 
@@ -1180,17 +1254,47 @@ para capturar fotogramas a mitad de animación; minimizado con
     fondo **sin difuminar** (`clarity`): con solo el difuminado la curvatura no
     se vería. El centro queda esmerilado, como Liquid Glass.
   - **Dispersión:** rojo y azul se desplazan algo más y algo menos que el verde.
-  - **Filo de luz:** brillo en el borde, más fuerte arriba (`specular`).
+  - **Borde** (`shaders/edge.frag`, pase aparte): ver abajo.
   - **Tinte adaptativo:** la luminancia del fondo se acerca a la media (`tint`).
+- **Borde oscurecido y filo de luz** (macOS 27, «improved contrast»): un
+  segundo pase **después** de dibujar la ventana (`drawEdge()`), solo sobre la
+  banda del borde de cada pieza (hasta cuatro rectángulos por pieza,
+  `edgeBand()` en `glassgeometry.h`, con la curva de las esquinas): una banda
+  exterior multiplicativa de `edge_shade_width` px (× escala) que oscurece
+  por `edge_shade`, y justo después el filo de luz (`specular`, más fuerte
+  arriba, ancho `rim_width` × `edge`). Premultiplicado: el alfa multiplica lo
+  de debajo y el color suma. El Plasma Style dibuja además dos líneas fijas,
+  negra (`[glass.border] shade_alpha`) y blanca por dentro
+  (`highlight_alpha`), que se ven también con el Blur de reserva.
+- **Spike SP-01** (go): antes el filo se pintaba debajo del relleno del SVG y
+  solo asomaba (1 − α) × aporte (0,026 en el nivel medio). Medido en el
+  sandbox con temporizadores de GPU (`GL_TIMESTAMP`, efecto instrumentado
+  aparte; Radeon RX 9070, no una iGPU): en una salida 4K al 150 % con el dock
+  y un popup, el pase cuesta ≈ 0,04 ms por fotograma (0,147 ms medidos con el
+  pase frente a 0,107 ms de la propia medida sin él); el fotograma completo
+  de GPU, 0,94 ms frente a 0,93–0,95 ms sin el pase (dentro del ruido, < 2 %).
+  Sin artefactos a escala 1, 1,25 y 1,5, en claro y oscuro; el texto de los
+  popups queda fuera de la banda (margen del popup). En un corte
+  perpendicular al borde del dock (claro, escala 1), de fuera a dentro:
+  línea oscura de 1 px (76 / 89 / 101 en los niveles 0 / 0,5 / 1), pico de
+  luz (179 / 207 / 237) y cuerpo (136 / 177 / 219). Con el pase, `specular`
+  baja a 0,10.
 - **Sigue al slider de vidrio:** con el nivel más claro, la refracción entera;
-  con el más opaco, por `opaque_factor` (desplazamiento, brillo y nitidez).
-  `goldenglass-glass --level` ya llama a `KWin.reconfigure`, que relee
-  `goldenglassrc`. Valores en `[glass.refraction]` de los tokens
+  con el más opaco, por `opaque_factor` (desplazamiento y nitidez); el borde
+  por su propio `rim_opaque_factor` (filo y oscurecido), para conservar más
+  contraste con el vidrio opaco. Con «Reducir transparencia», nada (4.4).
+  `goldenglass-glass` pide a KWin `reconfigureEffect goldenglass_glass`, y el
+  efecto relee `goldenglassrc`. Valores en `[glass.refraction]` de los tokens
   (`goldenglass_tokens.h`), calibrados con el nivel por defecto para que sea
   sutil.
 - **Activación:** `goldenglass-glass --refraction on|off` (y
   `--get-refraction`: on, off o unavailable), que usa el interruptor del
-  módulo Vidrio.
+  módulo Vidrio. El cambio en vivo descarga el efecto anterior, carga el
+  nuevo y solo después escribe `kwinrc [Plugins]`: escrito antes, KWin
+  recargaba los dos desde el aviso en el orden contrario y retiraba la
+  capacidad de blur (ext-background-effect), con lo que Plasma pasaba a su
+  tema opaco hasta reiniciar KWin (visto en el sandbox en el primer
+  `--check` de la sesión).
 - **Red de seguridad** (`goldenglass-glass --check`, autostart de
   `goldenglass-kstyle`): la primera vez lo activa (es el valor de fábrica); si
   está pedido pero KWin no lo cargó (el plugin solo carga con la versión de
@@ -1294,7 +1398,7 @@ para capturar fotogramas a mitad de animación; minimizado con
 | F9 | Tema de SDDM + fondo y sincronización en Plasma Login Manager | ✅ |
 | F10 | Dock unificado: ampliación, rebote, vistas previas, recientes; módulo Dock | ✅ |
 | F11 | Efecto de KWin `goldenglass_glass` (fork de Blur) con refracción; interruptor en Vidrio | ✅ |
-| F12 | Material y accesibilidad: filo del vidrio, sombra inactiva, semáforos grises, Reducir transparencia, Mostrar bordes | 📋 |
+| F12 | Material y accesibilidad: filo del vidrio, sombra inactiva, semáforos grises, Reducir transparencia, Mostrar bordes | 🚧 |
 | F13 | Ventanas y movimiento: efectos de KWin, atajos de tiling, velocidad de animación global, Reducir movimiento | 🚧 |
 | F14 | Barra de menús y Dock: barra a 24 px, HUD de volumen y brillo, apps en segundo plano | 📋 |
 | F15 | Estilos de icono Tintado y Transparente; módulo Estilo de iconos | 📋 |

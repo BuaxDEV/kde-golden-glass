@@ -597,6 +597,14 @@ QColor Finder::token(unsigned int light, unsigned int dark, const QPalette &pale
     return QColor::fromRgba(isDark(palette) ? dark : light);
 }
 
+QColor Finder::capsuleBorderColor(const QPalette &palette) const
+{
+    if (StyleConfigData::showBorders()) {
+        return _helper.alphaColor(palette.color(QPalette::WindowText), Tokens::AccessibilityBordersControlAlpha);
+    }
+    return token(Tokens::FinderCapsuleBorderLight, Tokens::FinderCapsuleBorderDark, palette);
+}
+
 //____________________________________________________________________
 Finder::ButtonState &Finder::buttonState(const QWidget *button) const
 {
@@ -778,7 +786,7 @@ bool Finder::drawToolButton(const QStyleOptionToolButton *option, QPainter *pain
     }
 
     // capsule
-    painter->setPen(QPen(token(Tokens::FinderCapsuleBorderLight, Tokens::FinderCapsuleBorderDark, palette), 1));
+    painter->setPen(QPen(capsuleBorderColor(palette), 1));
     painter->setBrush(token(Tokens::FinderCapsuleLight, Tokens::FinderCapsuleDark, palette));
     painter->drawRoundedRect(capsule, radius, radius);
     painter->setPen(Qt::NoPen);
@@ -1171,7 +1179,7 @@ bool Finder::drawSearchField(const QStyleOption *option, QPainter *painter, cons
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
-    painter->setPen(QPen(token(Tokens::FinderCapsuleBorderLight, Tokens::FinderCapsuleBorderDark, palette), 1));
+    painter->setPen(QPen(capsuleBorderColor(palette), 1));
     painter->setBrush(token(Tokens::FinderCapsuleLight, Tokens::FinderCapsuleDark, palette));
     painter->drawRoundedRect(body, radius, radius);
 

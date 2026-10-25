@@ -7,7 +7,10 @@ Renderiza un menú abierto (elemento seleccionado, casillas, separador,
 submenú) y algunos controles con el estilo GoldenGlass y la paleta del esquema
 de color, a través del tema de plataforma de KDE, en un entorno temporal.
 
-  python3 tools/preview_style.py [--variant light|dark] [--out build/style-preview-light.png]
+  python3 tools/preview_style.py [--variant light|dark] [--show-borders] [--out build/style-preview-light.png]
+
+--show-borders writes goldenglassrc [Accessibility] ShowBorders=true in the
+temporary configuration («Show borders»).
 
 Requiere PyQt6 y haber compilado build/cmake.
 """
@@ -26,8 +29,8 @@ ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build" / "cmake"
 
 
-def prepare_environment(variant: str, workdir: Path) -> dict[str, str]:
-    """Instala los plugins en workdir con DESTDIR y prepara un kdeglobals."""
+def prepare_environment(variant: str, workdir: Path, show_borders: bool = False) -> dict[str, str]:
+    """Instala los plugins en workdir con DESTDIR y prepara un kdeglobals (y goldenglassrc)."""
     stage = workdir / "stage"
     subprocess.run(["cmake", "--install", str(BUILD)], check=True, stdout=subprocess.DEVNULL,
                    env={**os.environ, "DESTDIR": str(stage)})
@@ -42,6 +45,8 @@ def prepare_environment(variant: str, workdir: Path) -> dict[str, str]:
     kdeglobals += "\n[KDE]\nwidgetStyle=GoldenGlass\n"
     kdeglobals += "\n[General]\nfont=GoldenGlass Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0\n"
     (config / "kdeglobals").write_text(kdeglobals, encoding="utf-8")
+    if show_borders:
+        (config / "goldenglassrc").write_text("[Accessibility]\nShowBorders=true\n", encoding="utf-8")
 
     env = dict(os.environ)
     env.update({
@@ -60,7 +65,7 @@ def render(out: Path) -> int:
     from PyQt6.QtCore import QPoint, Qt
     from PyQt6.QtGui import QColor, QIcon, QImage, QPainter
     from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QLineEdit, QMenu, QPushButton,
-                                 QSlider, QVBoxLayout, QWidget)
+                                 QSlider, QToolBar, QVBoxLayout, QWidget)
 
     app = QApplication(sys.argv[:1])
     if app.style().name().lower() != "goldenglass":
@@ -84,8 +89,12 @@ def render(out: Path) -> int:
     menu.addAction(QIcon.fromTheme("application-exit"), "Salir")
 
     panel = QWidget()
-    panel.resize(300, 280)
+    panel.resize(300, 320)
     lay = QVBoxLayout(panel)
+    toolbar = QToolBar()
+    toolbar.addAction(QIcon.fromTheme("go-previous"), "Atrás")
+    toolbar.addAction(QIcon.fromTheme("view-list-details"), "Detalles")
+    lay.addWidget(toolbar)
     b = QPushButton("Aceptar"); b.setDefault(True); lay.addWidget(b)
     lay.addWidget(QPushButton("Cancelar"))
     lay.addWidget(QLineEdit("Texto"))
@@ -121,6 +130,7 @@ def render(out: Path) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant", choices=("light", "dark"), default="light")
+    ap.add_argument("--show-borders", action="store_true", help="«Show borders» on")
     ap.add_argument("--out", type=Path)
     args = ap.parse_args()
     out = args.out or ROOT / "build" / f"style-preview-{args.variant}.png"
@@ -130,7 +140,7 @@ def main() -> int:
 
     workdir = Path(tempfile.mkdtemp(prefix="gg-style-preview."))
     try:
-        env = prepare_environment(args.variant, workdir)
+        env = prepare_environment(args.variant, workdir, args.show_borders)
         return subprocess.run([sys.executable, __file__, "--variant", args.variant, "--out", str(out)], env=env).returncode
     finally:
         shutil.rmtree(workdir, ignore_errors=True)

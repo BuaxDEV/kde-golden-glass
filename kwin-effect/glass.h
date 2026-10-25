@@ -97,8 +97,11 @@ private:
 
     // GoldenGlass: refracción en las superficies de Plasma
     bool isGlassSurface(const EffectWindow *w) const;
+    RegionF paintedBlurShape(EffectWindow *w, const WindowPaintData &data) const;
+    float lensEdge(const RectF &deviceBox, qreal scale) const;
     void drawGlass(const RenderViewport &viewport, const RegionF &blurShape, const Rect &backgroundRect,
                    const Rect &scaledBackgroundRect, GLFramebuffer *read, GLTexture *sharp, int vertexCount, float modulation);
+    void drawEdge(const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, const WindowPaintData &data);
 
 private:
     struct
@@ -136,21 +139,36 @@ private:
         int edgeLocation;
         int strengthLocation;
         int dispersionLocation;
-        int specularLocation;
         int tintLocation;
         int clarityLocation;
-        int rimWidthLocation;
-        int rimBottomLocation;
-        int rimTopGainLocation;
         int sharpTextureLocation;
     } m_glassPass;
     // refracción, ya con el nivel de vidrio aplicado (px lógicos)
     float m_refractionEdge = 0;
     float m_refractionStrength = 0;
     float m_refractionDispersion = 0;
-    float m_refractionSpecular = 0;
     float m_refractionTint = 0;
     float m_refractionClarity = 0;
+
+    // the edge over the window: dark band and light rim (logical px)
+    struct
+    {
+        std::unique_ptr<GLShader> shader;
+        int mvpMatrixLocation;
+        int boxLocation;
+        int cornerRadiusLocation;
+        int opacityLocation;
+        int shadeLocation;
+        int shadeWidthLocation;
+        int specularLocation;
+        int rimWidthLocation;
+        int rimBottomLocation;
+        int rimTopGainLocation;
+    } m_edgePass;
+    float m_edgeShade = 0;
+    float m_edgeShadeWidth = 0;
+    float m_rimSpecular = 0;
+    bool m_reduceTransparency = false;
 
     struct
     {

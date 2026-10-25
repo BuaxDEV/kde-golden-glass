@@ -9,7 +9,8 @@
 //     largo de la normal (más fuerte cuanto más cerca del borde) y deja ver el
 //     fondo nítido: el difuminado lo borraría (el centro sigue esmerilado)
 //   - dispersión: rojo y azul se desplazan algo más y algo menos que el verde
-//   - filo de luz: brillo en el borde, más arriba que abajo
+//   - the light rim and the dark band of the edge go over the window, in
+//     edge.frag
 //   - tinte adaptativo: la luminancia del fondo se acerca a la media
 
 uniform sampler2D texUnit;       // fondo difuminado (media resolución)
@@ -24,12 +25,8 @@ uniform vec2 backgroundSize;
 uniform float edge;
 uniform float strength;
 uniform float dispersion;
-uniform float specular;
 uniform float tint;
 uniform float clarity;
-uniform float rimWidth;    // ancho del filo de luz (fracción de edge)
-uniform float rimBottom;   // brillo del filo donde la normal mira hacia abajo
-uniform float rimTopGain;  // lo que suma donde mira hacia arriba (1 - rimBottom)
 
 in vec2 uv;
 in vec2 vertex;
@@ -87,11 +84,6 @@ void main(void)
 
     float luminance = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
     color.rgb = clamp(color.rgb + (0.5 - luminance) * tint, 0.0, 1.0);
-
-    // filo de luz: estrecho, y más fuerte donde la normal mira hacia arriba
-    float rim = edge > 0.0 ? 1.0 - smoothstep(0.0, edge * rimWidth, -d) : 0.0;
-    float top = clamp(-n.y, 0.0, 1.0);
-    color.rgb = min(color.rgb + specular * rim * (rimBottom + rimTopGain * top), 1.0);
 
     color *= opacity;
 

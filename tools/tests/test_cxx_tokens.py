@@ -46,6 +46,35 @@ def test_accessibility(tokens):
     assert re.search(r"^inline constexpr double AccessibilityReduceTransparencyAlpha = 1\.0;", header, re.M)
 
 
+def test_show_borders(tokens):
+    borders = tokens["accessibility"]["borders"]
+    header = cxx_tokens.header(tokens)
+    for name, key in (("EdgeShade", "edge_shade"), ("WindowOutlineContrast", "window_outline_contrast"),
+                      ("WindowShadowOutlineAlpha", "window_shadow_outline_alpha"), ("ControlAlpha", "control_alpha"),
+                      ("ToolbarButtonAlpha", "toolbar_button_alpha")):
+        assert float(constant(header, f"AccessibilityBorders{name}")) == borders[key]
+    borders["control_alpha"] = 1
+    assert re.search(r"^inline constexpr double AccessibilityBordersControlAlpha = 1\.0;", cxx_tokens.header(tokens), re.M)
+
+
+@pytest.mark.parametrize("key", gen_tokens.ACCESSIBILITY_BORDER_KEYS)
+@pytest.mark.parametrize("value", [-0.1, 1.01, float("nan"), True, "0.5", None])
+def test_invalid_show_borders_tokens(tokens, key, value):
+    gen_tokens.validate(tokens)
+    if value is None:
+        del tokens["accessibility"]["borders"][key]
+    else:
+        tokens["accessibility"]["borders"][key] = value
+    with pytest.raises(SystemExit, match=rf"\[accessibility\.borders\]\.{key}"):
+        gen_tokens.validate(tokens)
+
+
+def test_show_borders_section_is_required(tokens):
+    del tokens["accessibility"]["borders"]
+    with pytest.raises(SystemExit, match=r"\[accessibility\.borders\]"):
+        gen_tokens.validate(tokens)
+
+
 @pytest.mark.parametrize(("px", "index"), [
     (0, 0), (-5, 0),          # ShadowNone
     (1, 1), (24, 1),          # ShadowSmall
@@ -96,6 +125,32 @@ def test_inactive_shadow_may_equal_active(tokens):
 def test_invalid_shadow_tokens(tokens, change):
     change(tokens["shadow"])
     with pytest.raises(SystemExit, match=r"shadow"):
+        gen_tokens.validate(tokens)
+
+
+def test_glass_edge(tokens):
+    refraction = tokens["glass"]["refraction"]
+    header = cxx_tokens.header(tokens)
+    assert float(constant(header, "RefractionRimOpaqueFactor")) == refraction["rim_opaque_factor"]
+    assert float(constant(header, "RefractionEdgeShade")) == refraction["edge_shade"]
+    assert float(constant(header, "RefractionEdgeShadeWidth")) == refraction["edge_shade_width"]
+    refraction["edge_shade_width"] = 2
+    assert re.search(r"^inline constexpr double RefractionEdgeShadeWidth = 2\.0;",
+                     cxx_tokens.header(tokens), re.M)
+
+
+@pytest.mark.parametrize(("section", "key", "value"), [
+    ("refraction", "rim_opaque_factor", 1.5),
+    ("refraction", "edge_shade", -0.1),
+    ("refraction", "edge_shade_width", True),
+    ("border", "shade_alpha", "0.16"),
+    ("border", "highlight_alpha", float("nan")),
+    ("border", "width", 0),
+])
+def test_invalid_glass_edge_tokens(tokens, section, key, value):
+    gen_tokens.validate(tokens)
+    tokens["glass"][section][key] = value
+    with pytest.raises(SystemExit, match=rf"\[glass\.{section}\]\.{key}"):
         gen_tokens.validate(tokens)
 
 

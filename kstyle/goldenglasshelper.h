@@ -271,6 +271,12 @@ public:
     //* toolbutton frame
     void renderToolButtonFrame(QPainter *, const QRect &, const QColor &color, bool sunken) const;
 
+    //* «Show borders»: shape of a toolbar button, also without hover; draws nothing when the setting is off
+    void renderToolBarButtonBorder(QPainter *, const QRect &, const QPalette &palette) const;
+
+    //* «Show borders»: 1 px edge in the text colour just inside a control; draws nothing when the setting is off
+    void renderAccessibilityBorder(QPainter *, const QRectF &rect, qreal radius, const QColor &textColor, qreal alpha) const;
+
     //* toolbutton frame
     void renderToolBoxFrame(QPainter *, const QRect &, int tabWidth, const QColor &color) const;
 
@@ -288,6 +294,7 @@ public:
                         const QRect &,
                         const QColor &background,
                         const QColor &outline,
+                        const QPalette &palette,
                         const bool hasFocus,
                         const bool mouseOver,
                         const bool enabled,

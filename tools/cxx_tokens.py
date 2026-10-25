@@ -51,6 +51,20 @@ def _shadow_size(tokens: dict, option: str) -> list[tuple]:
     ]
 
 
+def _borders(borders: dict) -> list[tuple]:
+    """«Show borders» values read by the effect, the decoration and the app style (0..1)."""
+    return [
+        ("AccessibilityBordersEdgeShade", float(borders["edge_shade"]), "edge shade of the glass effect"),
+        ("AccessibilityBordersWindowOutlineContrast", float(borders["window_outline_contrast"]),
+         "window outline: frame colour mixed towards the text colour"),
+        ("AccessibilityBordersWindowShadowOutlineAlpha", float(borders["window_shadow_outline_alpha"]),
+         "window outline in the shadow (× the strength)"),
+        ("AccessibilityBordersControlAlpha", float(borders["control_alpha"]), "edge of buttons, fields and Finder capsules"),
+        ("AccessibilityBordersToolbarButtonAlpha", float(borders["toolbar_button_alpha"]),
+         "shape of the toolbar buttons without hover"),
+    ]
+
+
 def _camel(key: str) -> str:
     """search_handle_end → SearchHandleEnd."""
     return "".join(word.title() for word in key.split("_"))
@@ -133,6 +147,10 @@ def header(tokens: dict) -> str:
          "tope de la zona curvada (fracción del lado menor)"),
         ("RefractionRimWidth", float(tokens["glass"]["refraction"]["rim_width"]), "ancho del filo (fracción de edge)"),
         ("RefractionRimBottom", float(tokens["glass"]["refraction"]["rim_bottom"]), "brillo del filo abajo"),
+        ("RefractionRimOpaqueFactor", float(tokens["glass"]["refraction"]["rim_opaque_factor"]),
+         "rim and edge shade with the most opaque glass (fraction)"),
+        ("RefractionEdgeShade", float(tokens["glass"]["refraction"]["edge_shade"]), "multiplicative darkening of the outer band"),
+        ("RefractionEdgeShadeWidth", float(tokens["glass"]["refraction"]["edge_shade_width"]), "width of that band"),
         ("Dock (valores de fábrica del módulo «Dock»)", None, None),
         ("DockIconSize", int(tokens["plasma"]["dock_icon_size"]), "tamaño de los iconos (px)"),
         ("DockMagnification", bool(tokens["dock"]["magnification"]), "ampliación bajo el cursor"),
@@ -151,6 +169,7 @@ def header(tokens: dict) -> str:
         ("AccessibilityReduceMotion", bool(tokens["accessibility"]["reduce_motion"]), "ReduceMotion: «Reducir movimiento»"),
         ("AccessibilityReduceTransparencyAlpha", float(tokens["accessibility"]["reduce_transparency_alpha"]),
          "opacidad del vidrio con «Reducir transparencia» (0..1)"),
+        *_borders(tokens["accessibility"]["borders"]),
         ("Finder (Dolphin con la barra de título integrada; px lógicos, ms)", None, None),
         ("IntegratedTitleBarApps", ",".join(finder["apps"]), "app_id separados por comas"),
         ("FinderToolBarHeight", int(finder["toolbar_height"]), "primera fila: semáforos + toolbar"),

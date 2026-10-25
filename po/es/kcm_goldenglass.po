@@ -113,3 +113,31 @@ msgstr "Reducir movimiento"
 msgctxt "@info"
 msgid "Windows, the dock and panels fade in and out instead of zooming, sliding or bouncing."
 msgstr "Las ventanas, el dock y los paneles aparecen y desaparecen con un fundido en lugar de ampliarse, deslizarse o rebotar."
+
+msgctxt "@info:status"
+msgid "Reduce transparency could not be changed: %1"
+msgstr "No se pudo cambiar «Reducir transparencia»: %1"
+
+msgctxt "@option:check"
+msgid "Reduce transparency"
+msgstr "Reducir transparencia"
+
+msgctxt "@info"
+msgid "The menu bar, the dock, popups, title bars, toolbars, sidebars and menus become opaque, without blur or refraction. The glass level is kept for when you turn it off."
+msgstr "La barra de menús, el dock, los popups, las barras de título, las barras de herramientas, las barras laterales y los menús se vuelven opacos, sin difuminado ni refracción. El nivel de vidrio se conserva para cuando lo desactives."
+
+msgctxt "@info"
+msgid "Turned off by Reduce transparency"
+msgstr "Desactivado por Reducir transparencia"
+
+msgctxt "@info:status"
+msgid "Show borders could not be changed: %1"
+msgstr "No se pudo cambiar «Mostrar bordes»: %1"
+
+msgctxt "@option:check"
+msgid "Show borders"
+msgstr "Mostrar bordes"
+
+msgctxt "@info"
+msgid "Buttons, text fields, toolbar buttons, windows and the glass of the menu bar, the dock and popups get a thin border that sets them apart from what is behind."
+msgstr "Los botones, los campos de texto, los botones de las barras de herramientas, las ventanas y el vidrio de la barra de menús, el dock y los popups llevan un borde fino que los separa de lo que hay detrás."

@@ -60,6 +60,7 @@ TEXT = "ColorScheme-Text"
 HIGHLIGHT = "ColorScheme-Highlight"
 NEUTRAL = "ColorScheme-NeutralText"
 BLACK = Paint(None, 1.0, "#000000")
+WHITE = "#FFFFFF"
 
 
 class Svg:
@@ -106,10 +107,12 @@ class Svg:
 
 def frame(svg: Svg, prefix: str, radius: float, fill: Paint,
           border: Paint | None = None, margins: tuple[float, float, float, float] | None = None,
-          edge: float = 8, stretch: bool = False, border_width: float = 1) -> None:
+          edge: float = 8, stretch: bool = False, border_width: float = 1,
+          inner_border: Paint | None = None) -> None:
     """Marco de 9 teselas con esquinas redondeadas.
 
     `margins` = (top, right, bottom, left) → `hint-*-margin`.
+    `inner_border` is a second line of the same width just inside `border`.
     """
     c = max(radius, 1.0)
     x0, y0 = svg.reserve(2 * c + edge, 2 * c + edge)
@@ -127,6 +130,9 @@ def frame(svg: Svg, prefix: str, radius: float, fill: Paint,
             parts = [_tile_fill(name, x, y, w, h, c, radius, fill)]
             if border is not None and name != "center":
                 parts.append(_tile_border(name, x, y, w, h, c, radius, border, border_width))
+            if inner_border is not None and name != "center":
+                parts.append(_tile_border(name, x, y, w, h, c, radius, inner_border, border_width,
+                                          inset=border_width))
             svg.body.append(f'<g id="{prefix}{name}">{"".join(parts)}</g>')
 
     if margins is not None:
@@ -146,26 +152,27 @@ def _tile_fill(name: str, x, y, w, h, c, radius, paint: Paint) -> str:
     return f'<rect x="{_f(x)}" y="{_f(y)}" width="{_f(w)}" height="{_f(h)}"{paint.attrs()}/>'
 
 
-def _tile_border(name: str, x, y, w, h, c, radius, paint: Paint, width: float = 1) -> str:
-    """Filo de `width` px en el lado exterior de la tesela."""
+def _tile_border(name: str, x, y, w, h, c, radius, paint: Paint, width: float = 1, inset: float = 0) -> str:
+    """Filo de `width` px en el lado exterior de la tesela, `inset` px hacia dentro."""
     if name in _CORNER_ARCS and radius > 0:
         # Anillo relleno (no trazo): QtSvg suma medio ancho de trazo a los
         # límites del elemento, lo que encoge la tesela y abre rendijas.
         cx, cy = _corner_center(name, x, y, c)
         (sx, sy), (ex, ey) = _CORNER_ARCS[name]
-        ri = max(c - width, 0)
-        return (f'<path d="M {_f(cx + sx * c)},{_f(cy + sy * c)} A {_f(c)},{_f(c)} 0 0 1 '
-                f'{_f(cx + ex * c)},{_f(cy + ey * c)} L {_f(cx + ex * ri)},{_f(cy + ey * ri)} '
+        ro = max(c - inset, 0)
+        ri = max(ro - width, 0)
+        return (f'<path d="M {_f(cx + sx * ro)},{_f(cy + sy * ro)} A {_f(ro)},{_f(ro)} 0 0 1 '
+                f'{_f(cx + ex * ro)},{_f(cy + ey * ro)} L {_f(cx + ex * ri)},{_f(cy + ey * ri)} '
                 f'A {_f(ri)},{_f(ri)} 0 0 0 {_f(cx + sx * ri)},{_f(cy + sy * ri)} Z"{paint.attrs()}/>')
     lines = []
     if name.startswith("top"):
-        lines.append((x, y, w, width))
+        lines.append((x, y + inset, w, width))
     if name.startswith("bottom"):
-        lines.append((x, y + h - width, w, width))
+        lines.append((x, y + h - inset - width, w, width))
     if name.endswith("left"):
-        lines.append((x, y, width, h))
+        lines.append((x + inset, y, width, h))
     if name.endswith("right"):
-        lines.append((x + w - width, y, width, h))
+        lines.append((x + w - inset - width, y, width, h))
     return "".join(f'<rect x="{_f(lx)}" y="{_f(ly)}" width="{_f(lw)}" height="{_f(lh)}"{paint.attrs()}/>'
                    for lx, ly, lw, lh in lines)
 
@@ -241,12 +248,29 @@ def glass_alpha(tokens: dict, level: float | None = None) -> float:
     return notches[-1]["alpha"]
 
 
+def glass_edge(tokens: dict, borders: bool = False) -> tuple[Paint, Paint]:
+    """Outer and inner line of the glass edge.
+
+    By default a dark outer line and a light one just inside (macOS 27's
+    improved contrast); fixed colours with alpha read on light and dark glass.
+    «Show borders» turns the outer line into the text colour, which contrasts
+    with the glass in either colour scheme.
+    """
+    border = tokens["glass"]["border"]
+    if borders:
+        outer = Paint(TEXT, tokens["accessibility"]["borders"]["surface_alpha"])
+    else:
+        outer = Paint(None, border["shade_alpha"], BLACK.color)
+    return outer, Paint(None, border["highlight_alpha"], WHITE)
+
+
 def glass_surface(tokens: dict, radius: float, margin: float, shadow_size: float,
-                  shadow_alpha: float, alpha: float) -> str:
-    """Superficie de vidrio completa: marco + máscara de blur + sombra."""
-    border = Paint(TEXT, tokens["glass"]["border"]["alpha"])
+                  shadow_alpha: float, alpha: float, borders: bool = False) -> str:
+    """Whole glass surface: frame, blur mask and shadow."""
+    outer, inner = glass_edge(tokens, borders)
     svg = Svg()
-    frame(svg, "", radius, Paint(BG, alpha), border, margins=(margin,) * 4)
+    frame(svg, "", radius, Paint(BG, alpha), outer, margins=(margin,) * 4,
+          border_width=tokens["glass"]["border"]["width"], inner_border=inner)
     frame(svg, "mask-", radius, BLACK)
     shadow(svg, radius, shadow_size, shadow_alpha)
     return svg.render()
@@ -331,18 +355,20 @@ def viewitem_svg(tokens: dict) -> str:
     return svg.render()
 
 
-def lineedit_svg(tokens: dict) -> str:
-    """Campo de texto de vidrio (KRunner/Spotlight, contraseña de bloqueo).
+def lineedit_svg(tokens: dict, borders: bool = False) -> str:
+    """Glass text field (KRunner/Spotlight, lock screen password).
 
-    Relleno y filo derivan del color de texto, así funciona igual sobre el
-    vidrio claro, el oscuro y el fondo de la pantalla de bloqueo.
+    Fill and edge come from the text colour, so the field reads the same on
+    light and dark glass and on the lock screen wallpaper. «Show borders»
+    makes the edge stronger.
     """
     p = tokens["plasma"]
     r = tokens["radius"]["field"]
     margins = (p["field_padding_v"], p["field_padding_h"]) * 2
     clear = Paint(None, 0.0, "#000000")
+    edge_alpha = tokens["accessibility"]["borders"]["field_alpha"] if borders else p["field_border_alpha"]
     svg = Svg()
-    frame(svg, "base-", r, Paint(TEXT, p["field_alpha"]), Paint(TEXT, p["field_border_alpha"]), margins=margins)
+    frame(svg, "base-", r, Paint(TEXT, p["field_alpha"]), Paint(TEXT, edge_alpha), margins=margins)
     # Plasma agranda hover/focus hacia fuera según sus márgenes: cada anillo
     # cubre el filo de 1 px de base y sobresale solo lo que le queda de ancho.
     frame(svg, "hover-", r + 1, clear, Paint(TEXT, p["field_hover_alpha"]), margins=(1, 1, 1, 1), border_width=2)
@@ -391,8 +417,16 @@ def plasmoidheading_svg(tokens: dict) -> str:
 
 # --- paquete ------------------------------------------------------------------
 
-def build(tokens: dict, out: Path, level: float | None = None) -> list[Path]:
-    """Escribe el Plasma Style en `out/plasma/desktoptheme/GoldenGlass`."""
+def build(tokens: dict, out: Path, level: float | None = None, *, reduce_transparency: bool = False,
+          borders: bool = False) -> list[Path]:
+    """Writes the Plasma Style to `out/plasma/desktoptheme/GoldenGlass`.
+
+    With `reduce_transparency` the glass is opaque (accessibility
+    reduce_transparency_alpha) and the theme asks for neither blur nor
+    contrast behind it. With `borders` («Show borders») the glass and the
+    fields get a text-coloured edge (accessibility.borders); it composes with
+    any level and with `reduce_transparency`.
+    """
     root = out / "plasma" / "desktoptheme" / THEME_ID
     p = tokens["plasma"]
     rad = tokens["radius"]
@@ -403,32 +437,33 @@ def build(tokens: dict, out: Path, level: float | None = None) -> list[Path]:
         raise SystemExit(f"radius.dock ({rad['dock']}) debe ser ≤ plasma.menubar_height / 2 "
                          f"({p['menubar_height'] / 2:g}): Plasma no deja bajar la barra de menús "
                          f"de {2 * rad['dock']} px")
-    alpha = glass_alpha(tokens, level)
+    alpha = tokens["accessibility"]["reduce_transparency_alpha"] if reduce_transparency else glass_alpha(tokens, level)
+    behind_effects = "false" if reduce_transparency else "true"
     files: dict[str, str] = {}
 
     variants = {"translucent/": alpha, "": 1.0, "opaque/": 1.0, "solid/": 1.0}
     for prefix, a in variants.items():
         files[f"{prefix}dialogs/background.svg"] = glass_surface(
-            tokens, rad["popup"], p["popup_margin"], p["popup_shadow"], p["popup_shadow_alpha"], a)
+            tokens, rad["popup"], p["popup_margin"], p["popup_shadow"], p["popup_shadow_alpha"], a, borders)
         files[f"{prefix}widgets/panel-background.svg"] = glass_surface(
-            tokens, rad["dock"], p["dock_padding"], p["popup_shadow"], p["popup_shadow_alpha"], a)
+            tokens, rad["dock"], p["dock_padding"], p["popup_shadow"], p["popup_shadow_alpha"], a, borders)
         files[f"{prefix}widgets/tooltip.svg"] = glass_surface(
-            tokens, rad["tooltip"], p["tooltip_margin"], p["tooltip_shadow"], p["tooltip_shadow_alpha"], a)
+            tokens, rad["tooltip"], p["tooltip_margin"], p["tooltip_shadow"], p["tooltip_shadow_alpha"], a, borders)
         files[f"{prefix}widgets/background.svg"] = glass_surface(
-            tokens, rad["popup"], p["popup_margin"], p["popup_shadow"], p["popup_shadow_alpha"], a)
+            tokens, rad["popup"], p["popup_margin"], p["popup_shadow"], p["popup_shadow_alpha"], a, borders)
 
     files["widgets/tasks.svg"] = tasks_svg(tokens)
     files["widgets/viewitem.svg"] = viewitem_svg(tokens)
     files["widgets/menubaritem.svg"] = menubaritem_svg(tokens)
-    files["widgets/lineedit.svg"] = lineedit_svg(tokens)
+    files["widgets/lineedit.svg"] = lineedit_svg(tokens, borders)
     files["widgets/plasmoidheading.svg"] = plasmoidheading_svg(tokens)
 
     vib = tokens["glass"]["vibrancy"]
     files["plasmarc"] = "\n".join([
         "# Generado por tools/gen_tokens.py — NO EDITAR",
-        "[ContrastEffect]", "enabled=true",
+        "[ContrastEffect]", f"enabled={behind_effects}",
         f"contrast={vib['contrast']}", f"intensity={vib['intensity']}", f"saturation={vib['saturation']}",
-        "", "[BlurBehindEffect]", "enabled=true",
+        "", "[BlurBehindEffect]", f"enabled={behind_effects}",
         "", "[AdaptiveTransparency]", "enabled=false",
         # Fondo por defecto (escritorios nuevos y pantalla de bloqueo).
         "", "[Wallpaper]", "defaultWallpaperTheme=GoldenGlass", "defaultFileSuffix=.jpg",

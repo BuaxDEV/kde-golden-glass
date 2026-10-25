@@ -5,8 +5,11 @@ install.sh van a GOLDENGLASS_BIN_DIR, dentro del sandbox."""
 
 from __future__ import annotations
 
+import getpass
 import re
 import subprocess
+import sys
+import uuid
 
 from conftest import ROOT
 
@@ -42,3 +45,28 @@ def test_uninstall_touches_only_bin_dir(tmp_path) -> None:
                    env=env, check=False, capture_output=True, timeout=120)
     assert not (bin_dir / "goldenglass-system").exists()
     assert (real_bin / "goldenglass-system").exists()
+
+
+def _reap_script(sandbox_id: str) -> str:
+    text = (ROOT / "tools" / "sandbox.sh").read_text()
+    functions = text[text.index("sandbox_socket() {"):text.index("# --- Proceso externo")]
+    return f'{functions}\nreap "{sandbox_id}"\n'
+
+
+def test_reap_closes_processes_known_only_by_their_kwin_socket() -> None:
+    """kwin_wayland has file capabilities, so its environ cannot be read: the
+    socket name on its command line identifies it instead."""
+    sandbox_id = f"goldenglass-test-{uuid.uuid4().hex}"
+    socket = f"gg-sandbox-{sandbox_id}"
+    env = {"PATH": "/usr/bin:/bin", "USER": getpass.getuser()}
+    sleeper = [sys.executable, "-c", "import time; time.sleep(300)", "--socket"]
+    ours = subprocess.Popen([*sleeper, socket], env=env)
+    other = subprocess.Popen([*sleeper, f"{socket}-other"], env=env)
+    try:
+        subprocess.run(["bash", "-c", _reap_script(sandbox_id)], env=env, check=True, timeout=30)
+        assert ours.wait(timeout=5) is not None
+        assert other.poll() is None, "a process of another sandbox was closed"
+    finally:
+        for process in (ours, other):
+            process.kill()
+            process.wait()
