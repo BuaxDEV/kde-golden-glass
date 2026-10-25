@@ -272,7 +272,7 @@ def main() -> int:
         for name, img in rendered.items():
             (out / f"{name}.svg").write_text(wrap(img, dark), encoding="utf-8")
         # Mismo recorte de nombres que con las apps dibujadas (ver icons.py)
-        inherits = icons.THEMES[theme][1]
+        inherits = icons.THEMES[theme].inherits
         icons._guards(args.icons_dir / theme, inherits, set(rendered), own | set(rendered), folder="wrapped")
     stamp.parent.mkdir(parents=True, exist_ok=True)
     stamp.write_text(digest.hexdigest())

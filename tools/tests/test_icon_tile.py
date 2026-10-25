@@ -132,7 +132,7 @@ def test_build_writes_the_json(tokens, tmp_path, monkeypatch):
     monkeypatch.setattr(icons, "_family", lambda tokens: "Inter")
     monkeypatch.setattr(icons, "ICONS", [])
     monkeypatch.setattr(icons, "_guards", lambda *args, **kwargs: None)
-    monkeypatch.setattr(icons_apps, "files", lambda tokens=None, style=Style.DEFAULT: [])
+    monkeypatch.setattr(icons_apps, "files", lambda *args, **kwargs: [])
     monkeypatch.setattr(icons_mime, "files", lambda family: [])
     written = icons.build(tokens, tmp_path)
     path = tmp_path / "icons" / icons_apps.TILE_JSON

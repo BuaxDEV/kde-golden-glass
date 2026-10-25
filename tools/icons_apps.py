@@ -419,15 +419,11 @@ APPS: tuple[App, ...] = (
 )
 
 
-def files(tokens: dict | None = None, style: Style = Style.DEFAULT) -> list[tuple[str, str, str, tuple[str, ...]]]:
-    """(tema, ruta relativa, cuerpo SVG en lienzo 64, alias); `tokens` por defecto, los de goldenglass.toml."""
+def files(tokens: dict | None = None, style: Style = Style.DEFAULT,
+          dark: bool = False) -> list[tuple[str, str, tuple[str, ...]]]:
+    """(relative path, SVG body on the 64 canvas, aliases) of every app; `tokens` defaults to goldenglass.toml."""
     tt = tile_tokens(tokens)
-    out = []
-    for app in APPS:
-        main, aliases = app.names[0], app.names[1:]
-        out.append(("GoldenGlass", f"apps/scalable/{main}.svg", app.svg(False, style, tt), aliases))
-        out.append(("GoldenGlass-Dark", f"apps/scalable/{main}.svg", app.svg(True, style, tt), aliases))
-    return out
+    return [(f"apps/scalable/{app.names[0]}.svg", app.svg(dark, style, tt), app.names[1:]) for app in APPS]
 
 
 def preview(path, cols: int = 8) -> None:
