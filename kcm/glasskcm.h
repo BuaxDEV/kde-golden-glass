@@ -37,6 +37,8 @@ class GlassKcm : public KQuickConfigModule
     Q_PROPERTY(bool reduceMotion READ reduceMotion WRITE setReduceMotion NOTIFY reduceMotionChanged)
     //* «Reduce transparency»: opaque glass without blur or refraction, through goldenglass-glass
     Q_PROPERTY(bool reduceTransparency READ reduceTransparency WRITE setReduceTransparency NOTIFY reduceTransparencyChanged)
+    //* «Show borders»: text-coloured edge on the glass, windows and app controls, through goldenglass-glass
+    Q_PROPERTY(bool showBorders READ showBorders WRITE setShowBorders NOTIFY showBordersChanged)
 
 public:
     GlassKcm(QObject *parent, const KPluginMetaData &data);
@@ -57,6 +59,8 @@ public:
     void setReduceMotion(bool value);
     bool reduceTransparency() const;
     void setReduceTransparency(bool value);
+    bool showBorders() const;
+    void setShowBorders(bool value);
 
     //* aplica un nivel (0 = más transparente, 1 = más opaco); si ya hay uno
     //* aplicándose, se aplica el último pedido al terminar
@@ -73,6 +77,7 @@ Q_SIGNALS:
     void menubarBackgroundChanged();
     void reduceMotionChanged();
     void reduceTransparencyChanged();
+    void showBordersChanged();
 
 private:
     // What goldenglass-glass is asked to change. One process runs at a time;
@@ -80,11 +85,15 @@ private:
     enum class GlassRequest {
         Level,
         ReduceTransparency,
+        Borders,
     };
     void requestGlass(GlassRequest kind, const QStringList &arguments);
     void startGlass(GlassRequest kind, const QStringList &arguments);
     void glassRequestFailed(GlassRequest kind, const QString &output);
+    void reloadAfterGlass(GlassRequest kind);
+    void loadGlassAccessibility();
     void loadReduceTransparency();
+    void loadShowBorders();
     void loadRefraction();
     void startReduceMotion(bool value);
     void loadReduceMotion();
@@ -106,4 +115,5 @@ private:
     bool m_reduceMotion;
     std::optional<bool> m_pendingReduceMotion;
     bool m_reduceTransparency;
+    bool m_showBorders;
 };

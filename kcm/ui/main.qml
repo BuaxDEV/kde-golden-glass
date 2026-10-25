@@ -222,6 +222,19 @@ KCM.SimpleKCM {
             }
 
             QQC2.Switch {
+                text: i18nc("@option:check", "Show borders")
+                checked: kcm.showBorders
+                onToggled: kcm.showBorders = checked
+            }
+            QQC2.Label {
+                Layout.maximumWidth: Kirigami.Units.gridUnit * 20
+                wrapMode: Text.WordWrap
+                font: Kirigami.Theme.smallFont
+                color: Kirigami.Theme.disabledTextColor
+                text: i18nc("@info", "Buttons, text fields, toolbar buttons, windows and the glass of the menu bar, the dock and popups get a thin border that sets them apart from what is behind.")
+            }
+
+            QQC2.Switch {
                 text: i18nc("@option:check", "Reduce motion")
                 checked: kcm.reduceMotion
                 onToggled: kcm.reduceMotion = checked

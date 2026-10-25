@@ -129,3 +129,15 @@ msgstr "La barra de menús, el dock, los popups, las barras de título, las barr
 msgctxt "@info"
 msgid "Turned off by Reduce transparency"
 msgstr "Desactivado por Reducir transparencia"
+
+msgctxt "@info:status"
+msgid "Show borders could not be changed: %1"
+msgstr "No se pudo cambiar «Mostrar bordes»: %1"
+
+msgctxt "@option:check"
+msgid "Show borders"
+msgstr "Mostrar bordes"
+
+msgctxt "@info"
+msgid "Buttons, text fields, toolbar buttons, windows and the glass of the menu bar, the dock and popups get a thin border that sets them apart from what is behind."
+msgstr "Los botones, los campos de texto, los botones de las barras de herramientas, las ventanas y el vidrio de la barra de menús, el dock y los popups llevan un borde fino que los separa de lo que hay detrás."

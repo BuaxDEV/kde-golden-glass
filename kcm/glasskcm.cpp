@@ -36,6 +36,7 @@ GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
     , m_reduceMotionProcess(new QProcess(this))
     , m_reduceMotion(GoldenGlass::Tokens::AccessibilityReduceMotion)
     , m_reduceTransparency(GoldenGlass::Tokens::AccessibilityReduceTransparency)
+    , m_showBorders(GoldenGlass::Tokens::AccessibilityShowBorders)
 {
     // Los cambios se aplican en vivo al soltar el control: no hay «Aplicar».
     setButtons(KAbstractConfigModule::Default);
@@ -44,9 +45,8 @@ GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
     connect(m_process, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus status) {
         if (status != QProcess::NormalExit || exitCode != 0) {
             glassRequestFailed(m_runningGlass, QString::fromLocal8Bit(m_process->readAll()).trimmed());
-        } else if (m_runningGlass == GlassRequest::ReduceTransparency && !m_pendingGlass.contains(GlassRequest::ReduceTransparency)) {
-            loadReduceTransparency();
         }
+        reloadAfterGlass(m_runningGlass);
         if (!m_pendingGlass.empty()) {
             auto next = m_pendingGlass.extract(m_pendingGlass.begin());
             startGlass(next.key(), next.mapped());
@@ -76,7 +76,7 @@ GlassKcm::GlassKcm(QObject *parent, const KPluginMetaData &data)
         }
         setErrorText(i18nc("@info:status", "goldenglass-glass could not be started: %1", m_process->errorString()));
         m_pendingGlass.clear();
-        loadReduceTransparency();
+        loadGlassAccessibility();
         Q_EMIT busyChanged();
     });
 
@@ -245,6 +245,41 @@ void GlassKcm::loadReduceTransparency()
     updateRepresentsDefaults();
 }
 
+bool GlassKcm::showBorders() const
+{
+    return m_showBorders;
+}
+
+void GlassKcm::setShowBorders(bool value)
+{
+    if (m_showBorders == value) {
+        return;
+    }
+    m_showBorders = value;
+    Q_EMIT showBordersChanged();
+    updateRepresentsDefaults();
+    setErrorText(QString());
+    requestGlass(GlassRequest::Borders, {QStringLiteral("--show-borders"), onOff(value)});
+}
+
+void GlassKcm::loadShowBorders()
+{
+    // a fresh KConfig: goldenglass-glass has just written the file
+    const KConfig config(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig);
+    const bool value = config.group(QStringLiteral("Accessibility")).readEntry("ShowBorders", GoldenGlass::Tokens::AccessibilityShowBorders);
+    if (m_showBorders != value) {
+        m_showBorders = value;
+        Q_EMIT showBordersChanged();
+    }
+    updateRepresentsDefaults();
+}
+
+void GlassKcm::loadGlassAccessibility()
+{
+    loadReduceTransparency();
+    loadShowBorders();
+}
+
 void GlassKcm::loadReduceMotion()
 {
     // a fresh KConfig: goldenglass-windows has just written the file
@@ -287,7 +322,7 @@ void GlassKcm::load()
     }
     setLevel(config->group(QStringLiteral("Glass")).readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel));
     loadReduceMotion();
-    loadReduceTransparency();
+    loadGlassAccessibility();
 }
 
 void GlassKcm::defaults()
@@ -296,6 +331,7 @@ void GlassKcm::defaults()
     setMenubarBackground(GoldenGlass::Tokens::MenubarBackground);
     setReduceMotion(GoldenGlass::Tokens::AccessibilityReduceMotion);
     setReduceTransparency(GoldenGlass::Tokens::AccessibilityReduceTransparency);
+    setShowBorders(GoldenGlass::Tokens::AccessibilityShowBorders);
 }
 
 void GlassKcm::applyLevel(double level)
@@ -321,7 +357,7 @@ void GlassKcm::startGlass(GlassRequest kind, const QStringList &arguments)
     if (program.isEmpty()) {
         setErrorText(i18nc("@info:status", "goldenglass-glass was not found. Is the goldenglass-kstyle package installed?"));
         m_pendingGlass.clear();
-        loadReduceTransparency();
+        loadGlassAccessibility();
         Q_EMIT busyChanged();
         return;
     }
@@ -338,9 +374,27 @@ void GlassKcm::glassRequestFailed(GlassRequest kind, const QString &output)
         break;
     case GlassRequest::ReduceTransparency:
         setErrorText(i18nc("@info:status", "Reduce transparency could not be changed: %1", output));
-        if (!m_pendingGlass.contains(GlassRequest::ReduceTransparency)) {
-            loadReduceTransparency();
-        }
+        break;
+    case GlassRequest::Borders:
+        setErrorText(i18nc("@info:status", "Show borders could not be changed: %1", output));
+        break;
+    }
+}
+
+void GlassKcm::reloadAfterGlass(GlassRequest kind)
+{
+    // a switch flipped again meanwhile keeps its value: its request runs next
+    if (m_pendingGlass.contains(kind)) {
+        return;
+    }
+    switch (kind) {
+    case GlassRequest::Level:
+        break;
+    case GlassRequest::ReduceTransparency:
+        loadReduceTransparency();
+        break;
+    case GlassRequest::Borders:
+        loadShowBorders();
         break;
     }
 }
@@ -359,7 +413,8 @@ void GlassKcm::updateRepresentsDefaults()
     setRepresentsDefaults(qAbs(m_level - GoldenGlass::Tokens::GlassDefaultLevel) < kSameLevel
                           && m_menubarBackground == GoldenGlass::Tokens::MenubarBackground
                           && m_reduceMotion == GoldenGlass::Tokens::AccessibilityReduceMotion
-                          && m_reduceTransparency == GoldenGlass::Tokens::AccessibilityReduceTransparency);
+                          && m_reduceTransparency == GoldenGlass::Tokens::AccessibilityReduceTransparency
+                          && m_showBorders == GoldenGlass::Tokens::AccessibilityShowBorders);
 }
 
 void GlassKcm::setErrorText(const QString &text)
