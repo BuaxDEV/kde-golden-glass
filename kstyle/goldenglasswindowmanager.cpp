@@ -62,7 +62,6 @@
 #include <QMenuBar>
 #include <QMouseEvent>
 #include <QProgressBar>
-#include <QScreen>
 #include <QScrollBar>
 #include <QStatusBar>
 #include <QStyle>
@@ -82,22 +81,6 @@
 // needed to enable dragging from QQuickWindows
 #include <QQuickRenderControl>
 #include <QQuickWindow>
-#endif
-
-#if GOLDENGLASS_HAVE_X11
-#include <QX11Info>
-#include <xcb/xcb.h>
-
-#include <NETWM>
-
-#endif
-
-#if GOLDENGLASS_HAVE_KWAYLAND
-#include <KWayland/Client/connection_thread.h>
-#include <KWayland/Client/pointer.h>
-#include <KWayland/Client/registry.h>
-#include <KWayland/Client/seat.h>
-#include <KWayland/Client/shell.h>
 #endif
 
 namespace Util
@@ -128,7 +111,7 @@ public:
     }
 
     //* event filter
-    bool eventFilter(QObject *object, QEvent *event) override
+    bool eventFilter(QObject *, QEvent *event) override
     {
         if (event->type() == QEvent::MouseButtonRelease) {
             // stop drag timer
@@ -141,35 +124,6 @@ public:
                 _parent->setLocked(false);
             }
         }
-
-        if (!_parent->enabled())
-            return false;
-
-        /*
-        if a drag is in progress, the widget will not receive any event
-        we trigger on the first MouseMove or MousePress events that are received
-        by any widget in the application to detect that the drag is finished
-        */
-        if (_parent->useWMMoveResize() && _parent->_dragInProgress && _parent->_target
-            && (event->type() == QEvent::MouseMove || event->type() == QEvent::MouseButtonPress)) {
-            return appMouseEvent(object, event);
-        }
-
-        return false;
-    }
-
-protected:
-    //* application-wise event.
-    /** needed to catch end of XMoveResize events */
-    bool appMouseEvent(QObject *, QEvent *event)
-    {
-        Q_UNUSED(event);
-
-        /*
-        post some mouseRelease event to the target, in order to counter balance
-        the mouse press that triggered the drag. Note that it triggers a resetDrag
-        */
-        QMouseEvent mouseEvent(QEvent::MouseButtonRelease, _parent->_dragPoint, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
 
         return false;
     }
@@ -193,64 +147,12 @@ void WindowManager::initialize()
 {
     setEnabled(StyleConfigData::windowDragMode() != StyleConfigData::WD_NONE);
     setDragMode(StyleConfigData::windowDragMode());
-    setUseWMMoveResize(StyleConfigData::useWMMoveResize());
 
     setDragDistance(QApplication::startDragDistance());
     setDragDelay(QApplication::startDragTime());
 
     initializeWhiteList();
     initializeBlackList();
-    initializeWayland();
-}
-
-//_______________________________________________________
-void WindowManager::initializeWayland()
-{
-#if GOLDENGLASS_HAVE_KWAYLAND
-    if (!Helper::isWayland())
-        return;
-    if (_seat)
-        return;
-
-    using namespace KWayland::Client;
-    auto connection = ConnectionThread::fromApplication(this);
-    if (!connection)
-        return;
-
-    auto registry = new Registry(this);
-    registry->create(connection);
-    connect(registry, &Registry::interfacesAnnounced, this, [registry, this] {
-        const auto interface = registry->interface(Registry::Interface::Seat);
-        if (interface.name != 0) {
-            _seat = registry->createSeat(interface.name, interface.version, this);
-            connect(_seat, &Seat::hasPointerChanged, this, &WindowManager::waylandHasPointerChanged);
-        }
-    });
-
-    registry->setup();
-    connection->roundtrip();
-#endif
-}
-
-//_______________________________________________________
-void WindowManager::waylandHasPointerChanged(bool hasPointer)
-{
-#if GOLDENGLASS_HAVE_KWAYLAND
-    Q_ASSERT(_seat);
-    if (hasPointer) {
-        if (!_pointer) {
-            _pointer = _seat->createPointer(this);
-            connect(_pointer, &KWayland::Client::Pointer::buttonStateChanged, this, [this](quint32 serial) {
-                _waylandSerial = serial;
-            });
-        }
-    } else {
-        delete _pointer;
-        _pointer = nullptr;
-    }
-#else
-    Q_UNUSED(hasPointer);
-#endif
 }
 
 //_____________________________________________________________
@@ -492,33 +394,22 @@ bool WindowManager::mouseMoveEvent(QObject *object, QEvent *event)
     auto eventPos =
         mouseEvent->globalPosition().toPoint();
 
-    if (!_dragInProgress) {
-        if (_dragAboutToStart) {
-            if (mouseEvent->pos() == _dragPoint) {
-                // start timer,
-                _dragAboutToStart = false;
-                if (_dragTimer.isActive())
-                    _dragTimer.stop();
-                _dragTimer.start(_dragDelay, this);
+    if (_dragAboutToStart) {
+        if (mouseEvent->pos() == _dragPoint) {
+            // start timer,
+            _dragAboutToStart = false;
+            if (_dragTimer.isActive())
+                _dragTimer.stop();
+            _dragTimer.start(_dragDelay, this);
 
-            } else
-                resetDrag();
+        } else
+            resetDrag();
 
-        } else if (QPoint(eventPos - _globalDragPoint).manhattanLength() >= _dragDistance) {
-            _dragTimer.start(0, this);
-        }
+    } else if (QPoint(eventPos - _globalDragPoint).manhattanLength() >= _dragDistance) {
+        _dragTimer.start(0, this);
+    }
 
-        return true;
-
-    } else if (!useWMMoveResize() && _target) {
-        // use QWidget::move for the grabbing
-        /* this works only if the sending object and the target are identical */
-        auto window(_target.data()->window());
-        window->move(window->pos() + mouseEvent->pos() - _dragPoint);
-        return true;
-
-    } else
-        return false;
+    return true;
 }
 
 //_____________________________________________________________
@@ -813,11 +704,6 @@ bool WindowManager::canDrag(QWidget *widget, QWidget *child, const QPoint &posit
 //____________________________________________________________
 void WindowManager::resetDrag()
 {
-    if ((!useWMMoveResize()) && _target && _cursorOverride) {
-        qApp->restoreOverrideCursor();
-        _cursorOverride = false;
-    }
-
     _target.clear();
 #if GOLDENGLASS_HAVE_QTQUICK
     _quickTarget.clear();
@@ -827,7 +713,6 @@ void WindowManager::resetDrag()
     _dragPoint = QPoint();
     _globalDragPoint = QPoint();
     _dragAboutToStart = false;
-    _dragInProgress = false;
 }
 
 //____________________________________________________________
@@ -840,80 +725,22 @@ void WindowManager::startDrag(QWindow *window)
         return;
     }
 
+    // el compositor mueve la ventana (en Wayland es la única forma)
 #if GOLDENGLASS_HAVE_QTQUICK
     if (_quickTarget) {
         if (QQuickWindow *qw = qobject_cast<QQuickWindow *>(window)) {
             QWindow *renderWindow = QQuickRenderControl::renderWindowFor(qw);
             if (renderWindow) {
-                _dragInProgress = renderWindow->startSystemMove();
+                renderWindow->startSystemMove();
             } else {
-                _dragInProgress = window->startSystemMove();
+                window->startSystemMove();
             }
         }
     } else
 #endif
     {
-        _dragInProgress = window->startSystemMove();
+        window->startSystemMove();
     }
-}
-
-//_______________________________________________________
-void WindowManager::startDragX11(QWindow *window, const QPoint &position)
-{
-#if GOLDENGLASS_HAVE_X11
-    // connection
-    auto connection(QX11Info::connection());
-
-    auto net_connection = connection;
-    const qreal dpiRatio = window->devicePixelRatio();
-    const QPoint origin = window->screen()->geometry().topLeft();
-    const QPoint native = (position - origin) * dpiRatio + origin;
-
-    xcb_ungrab_pointer(connection, XCB_TIME_CURRENT_TIME);
-    NETRootInfo(net_connection, NET::WMMoveResize).moveResizeRequest(window->winId(), native.x(), native.y(), NET::Move);
-
-#else
-
-    Q_UNUSED(window);
-    Q_UNUSED(position);
-
-#endif
-}
-
-//_______________________________________________________
-void WindowManager::startDragWayland(QWindow *window, const QPoint &)
-{
-#if GOLDENGLASS_HAVE_KWAYLAND
-    if (!_seat) {
-        return;
-    }
-
-    auto shellSurface = KWayland::Client::ShellSurface::fromWindow(window);
-    if (!shellSurface) {
-        // TODO: also check for xdg-shell in future
-        return;
-    }
-
-    shellSurface->requestMove(_seat, _waylandSerial);
-#else
-    Q_UNUSED(window);
-#endif
-}
-
-//____________________________________________________________
-bool WindowManager::supportWMMoveResize() const
-{
-#if GOLDENGLASS_HAVE_KWAYLAND
-    if (Helper::isWayland()) {
-        return true;
-    }
-#endif
-
-#if GOLDENGLASS_HAVE_X11
-    return Helper::isX11();
-#else
-    return false;
-#endif
 }
 
 //____________________________________________________________

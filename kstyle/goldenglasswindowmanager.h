@@ -37,17 +37,6 @@
 #include <QQuickItem>
 #endif
 
-#if GOLDENGLASS_HAVE_KWAYLAND
-namespace KWayland
-{
-namespace Client
-{
-class Pointer;
-class Seat;
-}
-}
-#endif
-
 namespace GoldenGlass
 {
 
@@ -106,18 +95,6 @@ protected:
         _enabled = value;
     }
 
-    //* returns true if window manager is used for moving
-    bool useWMMoveResize() const
-    {
-        return supportWMMoveResize() && _useWMMoveResize;
-    }
-
-    //* use window manager for moving, when available
-    void setUseWMMoveResize(bool value)
-    {
-        _useWMMoveResize = value;
-    }
-
     //* drag mode
     int dragMode() const
     {
@@ -156,12 +133,6 @@ protected:
     */
     void initializeBlackList();
 
-    //* initializes the Wayland specific parts
-    void initializeWayland();
-
-    //* The Wayland Seat's hasPointer property changed
-    void waylandHasPointerChanged(bool hasPointer);
-
     //@}
 
     //* returns true if widget is dragable
@@ -185,16 +156,6 @@ protected:
 
     //* start drag
     void startDrag(QWindow *);
-
-    //* X11 specific implementation for startDrag
-    void startDragX11(QWindow *, const QPoint &);
-
-    //* Wayland specific implementation for startDrag
-    void startDragWayland(QWindow *, const QPoint &);
-
-    //* returns true if window manager is used for moving
-    /** right now this is true only for X11 */
-    bool supportWMMoveResize() const;
 
     //* utility function
     bool isDockWidgetTitle(const QWidget *) const;
@@ -222,9 +183,6 @@ protected:
 private:
     //* enability
     bool _enabled = true;
-
-    //* use WM moveResize
-    bool _useWMMoveResize = true;
 
     //* drag mode
     int _dragMode = StyleConfigData::WD_FULL;
@@ -311,9 +269,6 @@ private:
     //* true if drag is about to start
     bool _dragAboutToStart = false;
 
-    //* true if drag is in progress
-    bool _dragInProgress = false;
-
     //* true if drag is locked
     bool _locked = false;
 
@@ -324,24 +279,8 @@ private:
      **/
     bool _eventInQQuickWidget = false;
 
-    //* cursor override
-    /** used to keep track of application cursor being overridden when dragging in non-WM mode */
-    bool _cursorOverride = false;
-
     //* application event filter
     QObject *_appEventFilter = nullptr;
-
-#if GOLDENGLASS_HAVE_KWAYLAND
-
-    //* The Wayland seat object which needs to be passed to move requests.
-    KWayland::Client::Seat *_seat = nullptr;
-
-    //* The Wayland pointer object where we get pointer events on.
-    KWayland::Client::Pointer *_pointer = nullptr;
-
-    //* latest serial which needs to be passed to the move requests.
-    quint32 _waylandSerial = 0;
-#endif
 
     //* allow access of all private members to the app event filter
     friend class AppEventFilter;
