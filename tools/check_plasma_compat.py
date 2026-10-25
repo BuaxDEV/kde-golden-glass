@@ -16,6 +16,9 @@
     manifiesto no lista también es un error.
   - Los contratos del sistema que esperan Spotlight y Notificaciones (sección
     [system] del manifiesto): interfaz D-Bus y .desktop de KRunner, etc.
+  - Los objetos D-Bus de plasmashell que GoldenGlass sustituye en ejecución
+    ([[system.dbus_object]]: el OSD que toma el HUD), por sus nombres en el
+    binario.
 
 Con --qmldirs solo lista las rutas (qmldir de esos módulos y archivos del
 sistema del manifiesto) para pacman -F, que dice qué paquetes instalar antes
@@ -427,6 +430,39 @@ def unlisted_private(manifest: dict, imports: dict[str, list[str]]) -> list[str]
             for module, files in sorted(imports.items()) if PRIVATE.match(module) and module not in listed]
 
 
+def _bin_dirs() -> list[Path]:
+    dirs = os.environ.get("PATH") or "/usr/bin"
+    return [Path(d) for d in dirs.split(":") if d]
+
+
+def binary_paths(manifest: dict) -> list[Path]:
+    """Where the binaries of [[system.dbus_object]] live once installed, for pacman -F."""
+    return [Path("/usr/bin") / entry["binary"] for entry in manifest.get("system", {}).get("dbus_object", [])]
+
+
+def check_dbus_objects(manifest: dict, bin_dirs: list[Path]) -> tuple[list[str], int]:
+    """D-Bus objects of a Plasma process that GoldenGlass swaps for its own at run time.
+
+    No XML describes them: their interface is the moc data of the binary, so
+    the names (interface, path, methods and signals) are looked up as strings
+    in it. A renamed or removed member shows up; a change of argument types
+    does not, and the guard at run time (OsdInterceptor) leaves Plasma alone.
+    """
+    errors: list[str] = []
+    checked = 0
+    for entry in manifest.get("system", {}).get("dbus_object", []):
+        checked += 1
+        used = f"; used by: {entry['used_by']}" if entry.get("used_by") else ""
+        binary = next((d / entry["binary"] for d in bin_dirs if (d / entry["binary"]).is_file()), None)
+        if binary is None:
+            errors.append(f"system: {entry['binary']} not found in PATH{used}")
+            continue
+        names = [entry["interface"], entry["path"], *entry.get("methods", []), *entry.get("signals", [])]
+        errors += [f"system: {binary} no longer has {name} ({entry['interface']} at {entry['path']}){used}"
+                   for name in names if not has_string([binary], name)]
+    return errors, checked
+
+
 def _data_dirs() -> list[Path]:
     dirs = os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share"
     return [Path(d) for d in dirs.split(":") if d]
@@ -504,7 +540,8 @@ def main() -> int:
     qmldirs = {m: qml / m.replace(".", "/") / "qmldir" for m in imports}
     if "--qmldirs" in sys.argv[1:]:
         # pacman -F solo conoce /usr: los archivos del sistema, en /usr/share
-        for path in sorted(set(qmldirs.values()) | set(system_paths(manifest, [Path("/usr/share")]))):
+        system = set(system_paths(manifest, [Path("/usr/share")])) | set(binary_paths(manifest))
+        for path in sorted(set(qmldirs.values()) | system):
             print(str(path).lstrip("/"))
         return 0
 
@@ -520,6 +557,9 @@ def main() -> int:
     errors += api_errors
     system_errors, system_checked = check_system(manifest, _data_dirs())
     errors += system_errors
+    object_errors, objects_checked = check_dbus_objects(manifest, _bin_dirs())
+    errors += object_errors
+    system_checked += objects_checked
 
     ported = json.loads((SHELL / "metadata.json").read_text(encoding="utf-8")).get("X-GoldenGlass-PlasmaVersion")
     plasma = _plasma_version()

@@ -10,7 +10,7 @@ contents/ui/tokens.js con los tokens (en QML: import "tokens.js" as T).
 
 Además:
   - SHARED: archivos de un plasmoid que otro usa tal cual (el dock lleva el
-    panel de Apps y la Papelera); se copian y sus traducciones se unen a las
+    panel de Apps y la Papelera; el Centro de control, el vidrio de GlassOverlay); se copian y sus traducciones se unen a las
     del que los usa. Motion.qml (duraciones que siguen la velocidad de
     animación global) va con su qmldir, que lo declara singleton; si el
     plasmoid ya tiene un qmldir, se le añaden las líneas que le falten.
@@ -37,7 +37,7 @@ MOTION = ["Motion.qml", "Accessibility.qml", "AccessibilityReader.qml", "qmldir"
 
 # plasmoid que usa → {plasmoid de origen: [archivos de contents/ui/]}
 SHARED = {
-    "org.goldenglass.controlcenter": {"org.goldenglass.launchpad": ["GlassBlur.qml", *MOTION]},
+    "org.goldenglass.controlcenter": {"org.goldenglass.launchpad": ["GlassBlur.qml", "GlassOverlay.qml", *MOTION]},
     "org.goldenglass.dock": {
         "org.goldenglass.launchpad": ["AppsLauncher.qml", "AppsPanel.qml", "GlassBlur.qml", "GlassScrollView.qml",
                                       "categories.js", *MOTION],

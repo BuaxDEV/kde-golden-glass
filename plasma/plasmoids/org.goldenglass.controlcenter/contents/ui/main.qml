@@ -2,14 +2,14 @@
     SPDX-FileCopyrightText: 2026 GoldenGlass contributors
     SPDX-License-Identifier: GPL-3.0-or-later
 
-    Centro de control, como el de macOS 26: cuadrícula de 4 columnas con
-    píldoras (Wi‑Fi, Bluetooth, KDE Connect, Enfoque), Reproducción, botones
-    redondos (duplicar pantalla, captura, modo oscuro, luz nocturna) y, a lo
-    ancho, Pantalla, Sonido y Vidrio. Como en macOS, las tarjetas van sueltas
-    sobre el escritorio, cada una de vidrio (FloatingPanel), sin popup de
-    Plasma: el icono de la barra es la representación «completa». Toda la lógica es la de los módulos de
-    Plasma (networkmanagement, bluezqt, brightnesscontrolplugin, volume,
-    notificationmanager, mpris, kdeconnect) y de KWin (luz nocturna).
+    Control Center, as in macOS 26: a 4-column grid with pills (Wi‑Fi,
+    Bluetooth, KDE Connect, Focus), Now Playing, round buttons (screen
+    mirroring, screenshot, dark mode, night light) and, full width, Display,
+    Sound and Glass. As in macOS, the tiles lie loose on the desktop, each one
+    of glass (GlassOverlay), without a Plasma popup: the menu bar icon is the
+    "full" representation. All the logic is that of the Plasma modules
+    (networkmanagement, bluezqt, brightnesscontrolplugin, volume,
+    notificationmanager, mpris, kdeconnect) and of KWin (night light).
 */
 
 import QtQuick
@@ -18,7 +18,6 @@ import QtQuick.Layouts
 import org.kde.bluezqt as BluezQt
 import org.kde.kcmutils as KCMUtils
 import org.kde.kirigami as Kirigami
-import org.kde.notificationmanager as NotificationManager
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.networkmanagement as PlasmaNM
 import org.kde.plasma.plasma5support as P5Support
@@ -74,8 +73,9 @@ PlasmoidItem {
     Component.onCompleted: executable.exec(glassCheck)
 
     // --- Abrir y cerrar -------------------------------------------------------
-    FloatingPanel {
+    GlassOverlay {
         id: panel
+        tokens: root.cc
         content: panelContent
         anchorItem: root.fullRepresentationItem
         onOpened: root.refreshGlassLevel()
@@ -87,6 +87,27 @@ PlasmoidItem {
 
     function close() {
         panel.close();
+    }
+
+    // --- Volume and brightness HUD ----------------------------------------------
+    // Under the menu bar of this screen, in place of Plasma's OSD. Hud.qml needs
+    // the org.goldenglass.glass module: without it only that file fails and
+    // Plasma's OSD stays.
+    Loader {
+        id: hud
+        source: "Hud.qml"
+    }
+    Binding {
+        target: hud.item
+        when: hud.item !== null
+        property: "menuBarHeight"
+        value: panel.menuBarHeight
+    }
+    Binding {
+        target: hud.item
+        when: hud.item !== null
+        property: "controlCenterOpen"
+        value: panel.visible
     }
 
     // atajo de teclado del plasmoide
@@ -142,33 +163,9 @@ PlasmoidItem {
         });
     }
 
-    // --- No molestar ----------------------------------------------------------
-    NotificationManager.Settings {
-        id: notificationSettings
-    }
-    readonly property bool doNotDisturb: {
-        const until = notificationSettings.notificationsInhibitedUntil;
-        return (until !== undefined && !isNaN(until.getTime()) && until.getTime() > Date.now())
-            || notificationSettings.notificationsInhibitedByApplication;
-    }
-    function setDoNotDisturb(enable) {
-        if (enable) {
-            const until = new Date();
-            until.setFullYear(until.getFullYear() + 1);
-            setDoNotDisturbUntil(until);
-        } else {
-            setDoNotDisturbUntil(null);
-        }
-    }
-    // hasta una fecha (Date) o, con null, desactivado
-    function setDoNotDisturbUntil(until) {
-        if (until) {
-            notificationSettings.notificationsInhibitedUntil = until;
-        } else {
-            notificationSettings.notificationsInhibitedUntil = undefined;
-            notificationSettings.revokeApplicationInhibitions();
-        }
-        notificationSettings.save();
+    // --- Do Not Disturb -------------------------------------------------------
+    DoNotDisturb {
+        id: doNotDisturbState
     }
 
     // --- Luz nocturna (KWin) --------------------------------------------------
@@ -226,7 +223,7 @@ PlasmoidItem {
         KCMUtils.KCMLauncher.openSystemSettings(module);
     }
 
-    // Icono de la barra; abierto, con el resaltado de los menús de macOS
+    // Menu bar icon; while open, with the highlight of the macOS menus
     fullRepresentation: MouseArea {
         id: icon
         hoverEnabled: true
@@ -237,7 +234,8 @@ PlasmoidItem {
         Rectangle {
             anchors.centerIn: parent
             width: parent.width + 2 * root.cc.icon_highlight_padding
-            height: Math.min(parent.height, T.tokens.plasma.menubar_height - 2 * root.cc.icon_highlight_inset)
+            // inset from the bar the icon is in (its panel window), whatever its height
+            height: Math.min(parent.height, Window.height - 2 * root.cc.icon_highlight_inset)
             radius: root.cc.icon_highlight_radius
             color: Qt.alpha(Kirigami.Theme.textColor, root.cc.icon_highlight_alpha)
             visible: panel.visible
@@ -253,8 +251,8 @@ PlasmoidItem {
         }
     }
 
-    // Contenido de FloatingPanel: la cuadrícula o, al pulsar un módulo, su
-    // vista de detalle (como macOS 26)
+    // Content of the GlassOverlay: the grid or, after clicking a module, its
+    // detail view (as in macOS 26)
     Component {
         id: panelContent
 
@@ -266,6 +264,20 @@ PlasmoidItem {
 
             implicitWidth: detail !== "" ? detailView.implicitWidth : gridView.implicitWidth
             implicitHeight: detail !== "" ? detailView.implicitHeight : gridView.implicitHeight
+
+            // every opening starts at the grid
+            function resetContent() {
+                detail = "";
+            }
+
+            // Esc goes back from a detail view to the grid before closing
+            function goBack() {
+                if (detail === "") {
+                    return false;
+                }
+                detail = "";
+                return true;
+            }
 
             // la vista que entra (detalle o cuadrícula) brota con el mismo
             // resorte que el Centro de control al abrirse; con la ventana
@@ -447,9 +459,9 @@ PlasmoidItem {
                         iconName: "weather-clear-night-symbolic"
                         title: i18n("Focus")
                         subtitle: checked ? i18n("Do Not Disturb") : ""
-                        checked: root.doNotDisturb
+                        checked: doNotDisturbState.active
                         hasDetail: true
-                        onToggled: root.setDoNotDisturb(!root.doNotDisturb)
+                        onToggled: doNotDisturbState.setActive(!doNotDisturbState.active)
                         onDetailRequested: contentRoot.detail = "focus"
                     }
                 }
@@ -587,8 +599,8 @@ PlasmoidItem {
     Component {
         id: focusDetail
         FocusDetail {
-            doNotDisturb: root.doNotDisturb
-            onUntilRequested: until => root.setDoNotDisturbUntil(until)
+            doNotDisturb: doNotDisturbState.active
+            onUntilRequested: until => doNotDisturbState.setActiveUntil(until)
             onSettingsRequested: root.openSettings("kcm_notifications")
         }
     }

@@ -7,7 +7,7 @@
       [acciones de la app (las del .desktop)]
       Nueva ventana · Abrir
       Mantener en el Dock
-      Salir
+      Salir · Detener ejecución en segundo plano
 
     Las acciones salen de Kicker (SimpleFavoritesModel, como el menú de
     Plasma) y se leen solo al abrir el menú: Kicker consulta la contención
@@ -32,11 +32,15 @@ Item {
     // «tasksModel: tasksModel» resolvería a esta misma propiedad (undefined)
     // y no al id de DockView.
     required property var tasks
-    required property var modelIndex
-    required property var model
+    // null for a background app the Dock adds after its tasks: it has no row in tasks
+    property var modelIndex: null
+    property var model: null
     required property string desktopId
     required property bool pinned
     required property bool running
+    property bool background: false
+
+    signal stopRequested()
 
     property var actions: []
     readonly property bool opened: menu.status !== PlasmaExtras.Menu.Closed
@@ -49,6 +53,14 @@ Item {
         keepItem.checked = pinned;
         menu.visualParent = parent;
         menu.open(x, y);
+    }
+
+    function launch(): void {
+        if (model !== null) {
+            tasks.requestNewInstance(modelIndex);
+        } else {
+            favorites.trigger(0, "", null);
+        }
     }
 
     Kicker.SimpleFavoritesModel {
@@ -91,14 +103,14 @@ Item {
         PlasmaExtras.MenuItem {
             text: i18n("New Window")
             icon: "window-new"
-            visible: root.running && root.model.CanLaunchNewInstance === true
-            onClicked: root.tasks.requestNewInstance(root.modelIndex)
+            visible: root.running && root.model !== null && root.model.CanLaunchNewInstance === true
+            onClicked: root.launch()
         }
         PlasmaExtras.MenuItem {
             text: i18n("Open")
             icon: "media-playback-start"
             visible: !root.running
-            onClicked: root.tasks.requestNewInstance(root.modelIndex)
+            onClicked: root.launch()
         }
 
         PlasmaExtras.MenuItem {
@@ -113,20 +125,26 @@ Item {
                 if (root.pinned) {
                     root.tasks.requestRemoveLauncher(root.model.LauncherUrlWithoutIcon);
                 } else {
-                    root.tasks.requestAddLauncher(root.model.LauncherUrl);
+                    root.tasks.requestAddLauncher(root.model ? root.model.LauncherUrl : "applications:" + root.desktopId);
                 }
             }
         }
 
         PlasmaExtras.MenuItem {
             separator: true
-            visible: root.running
+            visible: root.running || root.background
         }
         PlasmaExtras.MenuItem {
             text: i18n("Quit")
             icon: "application-exit"
             visible: root.running
             onClicked: root.tasks.requestClose(root.modelIndex)
+        }
+        PlasmaExtras.MenuItem {
+            text: i18n("Stop Running in the Background")
+            icon: "process-stop"
+            visible: root.background && !root.running
+            onClicked: root.stopRequested()
         }
     }
 }

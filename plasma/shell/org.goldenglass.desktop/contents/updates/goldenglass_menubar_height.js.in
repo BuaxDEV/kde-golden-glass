@@ -1,0 +1,22 @@
+// SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// Menu bars made before the menu bar shrank take its current height, once
+// (plasmashell runs each script of contents/updates/ a single time and lists
+// it in plasmashellrc [Updates]). Only a top panel with the logo menu at
+// exactly the old height changes: a height the user chose stays.
+//
+// Template: tools/shell.py fills in the tokens between at signs.
+
+const OLD_MENUBAR_HEIGHT = 28;
+const MENUBAR_HEIGHT = @plasma.menubar_height@;
+
+function isMenuBar(panel) {
+    return panel.location === "top" && panel.widgets("org.goldenglass.systemmenu").length > 0;
+}
+
+for (const panel of panels()) {
+    if (isMenuBar(panel) && panel.height === OLD_MENUBAR_HEIGHT) {
+        panel.height = MENUBAR_HEIGHT;
+    }
+}

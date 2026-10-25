@@ -22,6 +22,10 @@
       <max>@dock.magnification_size_max@</max>
     </entry>
     <entry name="showRecent" type="Bool"><default>@dock.show_recent@</default></entry>
+    <!-- apps whose unit is alive in systemd but have no window (AppUnits) -->
+    <entry name="showBackground" type="Bool"><default>@dock.show_background@</default></entry>
+    <!-- desktop file ids (without .desktop) never shown as background apps -->
+    <entry name="backgroundIgnore" type="StringList"><default></default></entry>
     <!-- panel Apps (AppsPanel.qml): grid | list -->
     <entry name="viewMode" type="String"><default>grid</default></entry>
   </group>

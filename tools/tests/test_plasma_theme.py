@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Glass surfaces of the Plasma Style (tools/plasma_theme.py): the edge is a
 dark outer line and a light inner one with the alphas of [glass.border]; with
-«Show borders» the outer line takes the text colour."""
+«Show borders» the outer line takes the text colour. The menu bar has its own
+panel frame (north-), bound to its own radius instead of the dock's."""
 
 from __future__ import annotations
 
@@ -18,6 +19,8 @@ SURFACES = ("dialogs/background.svg", "widgets/panel-background.svg", "widgets/t
             "widgets/background.svg")
 SIDES = ("top", "bottom", "left", "right")
 CORNERS = ("topleft", "topright", "bottomleft", "bottomright")
+TILES = (*CORNERS, *SIDES, "center")
+VARIANTS = ("", "translucent/", "opaque/", "solid/")
 
 
 def _tiles(svg: str) -> dict[str, ET.Element]:
@@ -117,3 +120,68 @@ def test_built_theme_composes_show_borders_with_level_and_reduce_transparency(
         assert _paint(fill) == ("currentColor", pytest.approx(alpha)), rel
     field = _field_edge((root / "widgets" / "lineedit.svg").read_text(encoding="utf-8"))
     assert field == (plasma_theme.TEXT, "currentColor", tokens["accessibility"]["borders"]["field_alpha"])
+
+
+def _build(tokens: dict, out: Path) -> Path:
+    plasma_theme.build({**tokens, "meta": {**tokens["meta"], "version": "0"}}, out)
+    return out / "plasma" / "desktoptheme" / plasma_theme.THEME_ID
+
+
+def _hint_size(svg: str, name: str) -> tuple[float, float]:
+    rect = next(r for r in ET.fromstring(svg).iter(f"{SVG}rect") if r.get("id") == name)
+    return float(rect.get("width")), float(rect.get("height"))
+
+
+def _corner_radius(tile: ET.Element) -> float:
+    fill = next(child for child in tile if child.get("class") == plasma_theme.BG)
+    return float(re.search(r"A ([\d.]+),", fill.get("d")).group(1))
+
+
+@pytest.mark.parametrize("variant", VARIANTS)
+def test_every_panel_variant_has_the_menubar_frame_and_mask(tokens: dict, tmp_path: Path, variant: str) -> None:
+    svg = (_build(tokens, tmp_path) / variant / "widgets" / "panel-background.svg").read_text(encoding="utf-8")
+    tiles = _tiles(svg)
+    for prefix in ("", "mask-", "north-", "mask-north-"):
+        assert all(f"{prefix}{name}" in tiles for name in TILES), prefix
+    padding = tokens["plasma"]["menubar_padding_v"]
+    assert _hint_size(svg, "north-hint-top-margin")[1] == padding
+    assert _hint_size(svg, "north-hint-bottom-margin")[1] == padding
+
+
+def test_the_menubar_and_the_dock_have_their_own_radius(tokens: dict) -> None:
+    tokens["radius"].update(menubar=5, dock=20)
+    tiles = _tiles(plasma_theme.panel_background(tokens, alpha=0.65))
+    assert _corner_radius(tiles["north-topleft"]) == 5
+    assert _corner_radius(tiles["topleft"]) == 20
+
+
+def test_the_menubar_radius_bounds_its_height(tokens: dict, tmp_path: Path) -> None:
+    tokens["radius"]["menubar"] = tokens["plasma"]["menubar_height"] / 2 + 1
+    with pytest.raises(SystemExit, match="radius.menubar"):
+        _build(tokens, tmp_path)
+
+
+def test_the_dock_radius_no_longer_bounds_the_menubar(tokens: dict, tmp_path: Path) -> None:
+    tokens["radius"]["dock"] = tokens["plasma"]["menubar_height"]
+    assert (_build(tokens, tmp_path) / "widgets" / "panel-background.svg").is_file()
+
+
+def test_square_menubar_tiles_hold_both_edge_lines(tokens: dict) -> None:
+    tokens["radius"]["menubar"] = 0
+    tiles = _tiles(plasma_theme.panel_background(tokens, alpha=0.65))
+    for name in ("bottom", "bottomleft"):
+        tile = tiles[f"north-{name}"]
+        fill = next(child for child in tile if child.get("class") == plasma_theme.BG)
+        top, bottom = float(fill.get("y")), float(fill.get("y")) + float(fill.get("height"))
+        for line in _edges(tile):
+            y = float(line.get("y"))
+            assert top <= y and y + float(line.get("height")) <= bottom, name
+
+
+def test_menubar_item_margins_follow_the_tokens(tokens: dict) -> None:
+    svg = plasma_theme.menubaritem_svg(tokens)
+    inset, padding = tokens["plasma"]["menubar_item_inset"], tokens["plasma"]["menubar_item_padding"]
+    for state in ("normal-", "hover-", "pressed-"):
+        assert _hint_size(svg, f"{state}hint-top-margin")[1] == inset
+        assert _hint_size(svg, f"{state}hint-bottom-margin")[1] == inset
+        assert _hint_size(svg, f"{state}hint-left-margin")[0] == padding

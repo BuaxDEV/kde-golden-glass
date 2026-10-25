@@ -25,8 +25,9 @@ control_small = 4    # checkboxes, controles compactos
 field = 10           # campos de texto de Plasma (Spotlight, contraseña)
 menu = 10            # menús emergentes
 popup = 14           # diálogos de Plasma, notificaciones, Centro de control
-dock = 14            # ≤ plasma.menubar_height / 2: Plasma limita la altura de
-                     # todo panel a la suma de sus esquinas (ver plasma_theme)
+dock = 14
+menubar = 0          # barra de menús con fondo: recta, como macOS. ≤ plasma.menubar_height / 2:
+                     # Plasma limita la altura de todo panel a la suma de sus esquinas (ver plasma_theme)
 tooltip = 6
 
 # Anillo de foco de los campos de texto, como en macOS: color de acento
@@ -100,8 +101,8 @@ edge_shade_width = 1.5   # ancho de esa banda (px lógicos) — calibrar
 # Escritorio Plasma (px lógicos)
 # ---------------------------------------------------------------------------
 [plasma]
-menubar_height = 28
-menubar_padding = 6      # margen inferior del contenido de la barra
+menubar_height = 24      # como macOS; las barras de 28 px pasan a 24 al actualizar (updates/ del shell)
+menubar_padding_v = 2    # margen del fondo de la barra (prefijo north- del panel)
 # Barra de menús sin fondo, como macOS 26/27 (el texto va sobre el fondo de
 # pantalla). true = franja de vidrio translúcido, la opción «Mostrar fondo de la
 # barra de menús» de macOS 27 (módulo Vidrio, goldenglass-glass).
@@ -110,6 +111,7 @@ menubar_background = false
 # ventana activa (macOS la atenúa)
 menubar_inactive_opacity = 0.5
 menubar_item_padding = 11   # margen a cada lado del nombre de la app y de cada menú
+menubar_item_inset = 3      # margen arriba y abajo del resaltado de cada menú (> 0)
 menubar_tray_spacing = 16   # separación entre iconos de estado (múltiplo de 4)
 dock_icon_size = 48
 dock_padding = 6         # margen entre el borde del dock y los iconos
@@ -571,6 +573,12 @@ label_delay_ms = 400     # espera antes del nombre de la app al pasar el ratón
 icon_size_min = 32
 icon_size_max = 80
 magnification_size_max = 128
+# Apps en segundo plano (macOS 27): una app sin ventanas cuya unit de systemd
+# sigue viva lleva un punto más tenue. Fijadas siempre; no fijadas, si en la
+# sesión tuvieron ventana o las lanzó el usuario (no las de inicio automático).
+show_background = true        # de fábrica activado (ajuste showBackground)
+background_dot_alpha = 0.35   # punto de app en segundo plano (color de texto); calibrar
+background_delay_ms = 1500    # sin ventanas tanto tiempo antes de pasar a segundo plano
 
 # ---------------------------------------------------------------------------
 # Texto e iconos secundarios de los plasmoids: opacidad sobre el color de texto
@@ -619,7 +627,7 @@ press_glow_radius = 72   # px del brillo alrededor del punto de contacto
 icon_highlight_alpha = 0.18  # resaltado del icono de la barra mientras está abierto
 icon_highlight_radius = 5
 icon_highlight_padding = 4   # px a cada lado del icono
-icon_highlight_inset = 3     # px por arriba y por abajo dentro de la barra
+icon_highlight_inset = 2     # px por arriba y por abajo dentro de la barra
 cell = 64                # px del lado de una celda (botón redondo)
 gap = 12                 # px entre celdas
 tile_radius = 24         # tarjetas rectangulares (sliders, Reproducción)
@@ -969,3 +977,28 @@ finder_hover = "#FFFFFF0F"
 finder_selected = "#FFFFFF19"
 finder_stripe = "#FFFFFF0C"
 finder_sidebar_selected = "#FFFFFF22"
+
+# ---------------------------------------------------------------------------
+# HUD de volumen y brillo (macOS 27): una píldora de vidrio bajo la barra de
+# menús, pegada al borde derecho, con el icono y una barra segmentada, sin
+# porcentaje. La muestra el Centro de control (OsdHost de org.goldenglass.glass)
+# en lugar del OSD de Plasma. Ver «HUD de volumen y brillo» en
+# docs/ARCHITECTURE.md. Valores de macOS sin cifra pública: calibrar.
+# ---------------------------------------------------------------------------
+[osd]
+width = 200              # px de la píldora
+height = 36
+margin_top = 6           # px bajo el borde real de la barra de menús
+screen_margin = 8        # px hasta el borde derecho de la pantalla
+icon = 18                # px del icono; el margen interior es (height − icon) / 2
+segments = 16            # segmentos de la barra
+segment_gap = 2          # px entre segmentos
+bar_height = 6
+track_alpha = 0.20       # segmento vacío (color de texto)
+fill_alpha = 0.90        # segmento lleno (color de texto)
+alpha = 0.30             # fondo de vidrio, como las tarjetas del Centro de control
+timeout_ms = 1500        # visible tras el último cambio (espera, no se escala)
+open_ms = 260            # resorte breve al aparecer
+close_ms = 220           # fundido al irse
+open_scale = 0.9         # aparece desde esta escala
+open_overshoot = 1.2     # «overshoot» de Easing.OutBack al asentarse

@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 import dock
+import gen_tokens
 from ggcommon import fill_template
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -56,3 +57,17 @@ def test_without_plasmoid_no_limits(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "a"))
     monkeypatch.setenv("XDG_DATA_DIRS", str(tmp_path / "b"))
     assert dock.limits() == {}
+
+
+def test_background_switch_is_written(installed):
+    assert dock.main(["--background", "off"]) == 0
+    assert "w.writeConfig('showBackground', false);" in installed[0]
+
+
+def test_background_tokens_are_validated(tokens):
+    gen_tokens.validate(tokens)
+    for key, value in (("show_background", 1), ("background_dot_alpha", 1.5), ("background_dot_alpha", True),
+                       ("background_delay_ms", -1), ("background_delay_ms", 1.5)):
+        broken = {**tokens, "dock": {**tokens["dock"], key: value}}
+        with pytest.raises(SystemExit, match=rf"\[dock\]\.{key}"):
+            gen_tokens.validate(broken)

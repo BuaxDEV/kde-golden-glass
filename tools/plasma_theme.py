@@ -114,7 +114,9 @@ def frame(svg: Svg, prefix: str, radius: float, fill: Paint,
     `margins` = (top, right, bottom, left) → `hint-*-margin`.
     `inner_border` is a second line of the same width just inside `border`.
     """
-    c = max(radius, 1.0)
+    # square corners still hold every edge line inside their tile
+    edge_lines = sum(paint is not None for paint in (border, inner_border)) * border_width
+    c = max(radius, 1.0, edge_lines)
     x0, y0 = svg.reserve(2 * c + edge, 2 * c + edge)
     xs = (x0, x0 + c, x0 + c + edge)
     ys = (y0, y0 + c, y0 + c + edge)
@@ -264,15 +266,45 @@ def glass_edge(tokens: dict, borders: bool = False) -> tuple[Paint, Paint]:
     return outer, Paint(None, border["highlight_alpha"], WHITE)
 
 
+def glass_frame(svg: Svg, tokens: dict, prefix: str, radius: float, margin: float, alpha: float,
+                borders: bool = False) -> None:
+    """Glass frame with its blur mask (`mask-<prefix>`), which KSvg looks up by prefix."""
+    outer, inner = glass_edge(tokens, borders)
+    frame(svg, prefix, radius, Paint(BG, alpha), outer, margins=(margin,) * 4,
+          border_width=tokens["glass"]["border"]["width"], inner_border=inner)
+    frame(svg, f"mask-{prefix}", radius, BLACK)
+
+
+def _glass_svg(tokens: dict, radius: float, margin: float, shadow_size: float,
+               shadow_alpha: float, alpha: float, borders: bool) -> Svg:
+    svg = Svg()
+    glass_frame(svg, tokens, "", radius, margin, alpha, borders)
+    shadow(svg, radius, shadow_size, shadow_alpha)
+    return svg
+
+
 def glass_surface(tokens: dict, radius: float, margin: float, shadow_size: float,
                   shadow_alpha: float, alpha: float, borders: bool = False) -> str:
     """Whole glass surface: frame, blur mask and shadow."""
-    outer, inner = glass_edge(tokens, borders)
-    svg = Svg()
-    frame(svg, "", radius, Paint(BG, alpha), outer, margins=(margin,) * 4,
-          border_width=tokens["glass"]["border"]["width"], inner_border=inner)
-    frame(svg, "mask-", radius, BLACK)
-    shadow(svg, radius, shadow_size, shadow_alpha)
+    return _glass_svg(tokens, radius, margin, shadow_size, shadow_alpha, alpha, borders).render()
+
+
+# Panel.qml asks for the frame of the panel's edge first and falls back to the
+# unprefixed one: the menu bar (top edge) gets its own, the dock keeps "".
+MENUBAR_PREFIX = "north-"
+
+
+def panel_background(tokens: dict, alpha: float, borders: bool = False) -> str:
+    """Panels: the dock's glass, and the menu bar's under its own prefix.
+
+    Plasma never lets a panel be thinner than the corners of its frame
+    (minPanelHeight in Panel.qml), so the menu bar has its own radius and
+    padding instead of being bound to the dock's.
+    """
+    p = tokens["plasma"]
+    svg = _glass_svg(tokens, tokens["radius"]["dock"], p["dock_padding"], p["popup_shadow"],
+                     p["popup_shadow_alpha"], alpha, borders)
+    glass_frame(svg, tokens, MENUBAR_PREFIX, tokens["radius"]["menubar"], p["menubar_padding_v"], alpha, borders)
     return svg.render()
 
 
@@ -391,8 +423,9 @@ def menubaritem_svg(tokens: dict) -> str:
     """
     r = tokens["radius"]["control"]
     pad = tokens["plasma"]["menubar_item_padding"]
-    # arriba y abajo, un margen real: KSvg no lee una marca de 0 px y usaría la esquina
-    margins = (4, pad, 4, pad)
+    # a real top and bottom margin: KSvg ignores a 0 px hint and uses the corner
+    inset = tokens["plasma"]["menubar_item_inset"]
+    margins = (inset, pad, inset, pad)
     svg = Svg()
     frame(svg, "normal-", r, Paint(None, 0.0, "#000000"), margins=margins)
     frame(svg, "hover-", r, Paint(HIGHLIGHT, 1.0), margins=margins)
@@ -417,6 +450,17 @@ def plasmoidheading_svg(tokens: dict) -> str:
 
 # --- paquete ------------------------------------------------------------------
 
+def validate_menubar(tokens: dict) -> None:
+    """Plasma never lets a panel be thinner than the top plus bottom corner of
+    its frame (all borders count while a panel is created), so the menu bar's
+    radius bounds its height."""
+    radius = tokens["radius"]["menubar"]
+    height = tokens["plasma"]["menubar_height"]
+    if 2 * radius > height:
+        raise SystemExit(f"radius.menubar ({radius}) must be ≤ plasma.menubar_height / 2 ({height / 2:g}): "
+                         f"Plasma would not let the menu bar be thinner than {2 * radius} px")
+
+
 def build(tokens: dict, out: Path, level: float | None = None, *, reduce_transparency: bool = False,
           borders: bool = False) -> list[Path]:
     """Writes the Plasma Style to `out/plasma/desktoptheme/GoldenGlass`.
@@ -430,13 +474,7 @@ def build(tokens: dict, out: Path, level: float | None = None, *, reduce_transpa
     root = out / "plasma" / "desktoptheme" / THEME_ID
     p = tokens["plasma"]
     rad = tokens["radius"]
-    # Barra de menús y dock comparten panel-background. Al crear un panel,
-    # Plasma limita su altura a esquina superior + inferior del fondo (todos
-    # los bordes activos), así que el radio del dock acota la barra de menús.
-    if 2 * rad["dock"] > p["menubar_height"]:
-        raise SystemExit(f"radius.dock ({rad['dock']}) debe ser ≤ plasma.menubar_height / 2 "
-                         f"({p['menubar_height'] / 2:g}): Plasma no deja bajar la barra de menús "
-                         f"de {2 * rad['dock']} px")
+    validate_menubar(tokens)
     alpha = tokens["accessibility"]["reduce_transparency_alpha"] if reduce_transparency else glass_alpha(tokens, level)
     behind_effects = "false" if reduce_transparency else "true"
     files: dict[str, str] = {}
@@ -445,8 +483,7 @@ def build(tokens: dict, out: Path, level: float | None = None, *, reduce_transpa
     for prefix, a in variants.items():
         files[f"{prefix}dialogs/background.svg"] = glass_surface(
             tokens, rad["popup"], p["popup_margin"], p["popup_shadow"], p["popup_shadow_alpha"], a, borders)
-        files[f"{prefix}widgets/panel-background.svg"] = glass_surface(
-            tokens, rad["dock"], p["dock_padding"], p["popup_shadow"], p["popup_shadow_alpha"], a, borders)
+        files[f"{prefix}widgets/panel-background.svg"] = panel_background(tokens, a, borders)
         files[f"{prefix}widgets/tooltip.svg"] = glass_surface(
             tokens, rad["tooltip"], p["tooltip_margin"], p["tooltip_shadow"], p["tooltip_shadow_alpha"], a, borders)
         files[f"{prefix}widgets/background.svg"] = glass_surface(

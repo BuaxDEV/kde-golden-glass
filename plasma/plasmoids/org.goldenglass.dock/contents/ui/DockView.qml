@@ -47,11 +47,12 @@ Item {
     readonly property real spread: T.tokens.dock.spread
     readonly property real separatorWidth: gap + 1
 
-    // Contenido: Apps, tareas, [separador, recientes], separador, Papelera
+    // Content: Apps, tasks, background apps, [separator, recent apps], separator, Trash
     readonly property int taskCount: tasksRepeater.count
+    readonly property int backgroundCount: backgroundRepeater.count
     readonly property int recentCount: Plasmoid.configuration.showRecent ? recents.length : 0
     readonly property int separatorCount: recentCount > 0 ? 2 : 1
-    readonly property int iconCount: 2 + taskCount + recentCount
+    readonly property int iconCount: 2 + taskCount + backgroundCount + recentCount
     readonly property real baseWidth: iconCount * iconSize + separatorCount * separatorWidth
         + (iconCount + separatorCount - 1) * gap
 
@@ -142,6 +143,165 @@ Item {
     function isPinned(model) {
         return model.IsLauncher === true || model.HasLauncher === true;
     }
+
+    // --- background apps -------------------------------------------------------------
+    // An app runs in the background when its unit is alive in systemd (AppUnits),
+    // it has no window anywhere (any desktop, activity or screen: everyWindow) and
+    // it is not starting, all of it for background_delay_ms. A pinned app shows it
+    // on its launcher; any other gets an icon after the tasks only if it had a
+    // window in this session or the user launched it (not XDG autostart). That
+    // icon comes as soon as the last window closes, so it does not blink out
+    // during the delay; only its dot waits.
+    Loader {
+        id: appUnitsLoader
+        active: Plasmoid.configuration.showBackground
+        source: "AppUnitsSource.qml"
+    }
+    readonly property var appUnits: appUnitsLoader.item && appUnitsLoader.item.available ? appUnitsLoader.item : null
+    Binding {
+        target: appUnitsLoader.item
+        when: appUnitsLoader.item !== null
+        property: "ignored"
+        value: Plasmoid.configuration.backgroundIgnore
+    }
+    onAppUnitsChanged: scheduleBackgroundUpdate()
+    Connections {
+        target: dock.appUnits
+        function onAppsChanged(): void {
+            dock.scheduleBackgroundUpdate();
+        }
+    }
+
+    TaskManager.TasksModel {
+        id: everyWindow
+        groupMode: TaskManager.TasksModel.GroupDisabled
+        filterByVirtualDesktop: false
+        filterByScreen: false
+        filterByActivity: false
+        filterHidden: false
+        filterMinimized: false
+    }
+    Instantiator {
+        id: windowReader
+        model: dock.appUnits !== null ? everyWindow : null
+        delegate: QtObject {
+            required property var model
+            readonly property string key: String(model.AppId || "").replace(/\.desktop$/, "")
+            readonly property bool hasWindow: model.IsWindow === true
+            readonly property bool starting: model.IsStartup === true
+            onKeyChanged: dock.scheduleBackgroundUpdate()
+            onHasWindowChanged: dock.scheduleBackgroundUpdate()
+            onStartingChanged: dock.scheduleBackgroundUpdate()
+        }
+        onObjectAdded: dock.scheduleBackgroundUpdate()
+        onObjectRemoved: dock.scheduleBackgroundUpdate()
+    }
+
+    property var backgroundApps: ({})       // key → {key, name, icon, agent}
+    property var unpinnedBackground: []     // after the tasks, also during the delay
+    property var backgroundSince: ({})      // key → ms since it has no window
+    property var seenWithWindow: ({})       // key → true, for this session
+
+    function isBackground(key) {
+        return key !== "" && backgroundApps[key] !== undefined;
+    }
+
+    function stopBackground(key) {
+        if (appUnits) {
+            appUnits.stop(key);
+        }
+    }
+
+    function scheduleBackgroundUpdate() {
+        Qt.callLater(updateBackground);
+    }
+
+    Timer {
+        id: backgroundTimer
+        onTriggered: dock.updateBackground()
+    }
+
+    function sameKeys(a, b) {
+        return Object.keys(a).sort().join("\n") === Object.keys(b).sort().join("\n");
+    }
+
+    // {withWindow, starting}: key → true, over every window of the session
+    function windowState() {
+        const state = { withWindow: {}, starting: {} };
+        for (let i = 0; i < windowReader.count; ++i) {
+            const entry = windowReader.objectAt(i);
+            if (entry && entry.key) {
+                if (entry.hasWindow) {
+                    state.withWindow[entry.key] = true;
+                }
+                if (entry.starting) {
+                    state.starting[entry.key] = true;
+                }
+            }
+        }
+        return state;
+    }
+
+    function rememberWindows(withWindow) {
+        const seen = Object.assign({}, seenWithWindow, withWindow);
+        if (!sameKeys(seen, seenWithWindow)) {
+            seenWithWindow = seen;
+        }
+    }
+
+    // pinned or open apps (their launcher and window keys)
+    function keysInDock() {
+        const keys = new Set();
+        for (let i = 0; i < tasksRepeater.count; ++i) {
+            const item = tasksRepeater.itemAt(i);
+            if (item) {
+                keys.add(item.appKey);
+                keys.add(item.launcherKey);
+            }
+        }
+        return keys;
+    }
+
+    function updateBackground() {
+        const state = windowState();
+        rememberWindows(state.withWindow);
+
+        const now = Date.now();
+        const since = {};
+        const background = {};
+        const windowless = [];
+        let wait = -1;
+        for (const app of (appUnits ? appUnits.apps : [])) {
+            if (state.withWindow[app.key] || state.starting[app.key]) {
+                continue;
+            }
+            windowless.push(app);
+            since[app.key] = backgroundSince[app.key] !== undefined ? backgroundSince[app.key] : now;
+            const left = since[app.key] + T.tokens.dock.background_delay_ms - now;
+            if (left <= 0) {
+                background[app.key] = app;
+            } else {
+                wait = wait < 0 ? left : Math.min(wait, left);
+            }
+        }
+        backgroundSince = since;
+        if (!sameKeys(background, backgroundApps)) {
+            backgroundApps = background;
+        }
+        if (wait >= 0) {
+            backgroundTimer.interval = Math.max(1, wait);
+            backgroundTimer.restart();
+        }
+
+        const inDock = keysInDock();
+        const unpinned = windowless
+            .filter(app => !inDock.has(app.key) && (seenWithWindow[app.key] === true || !app.agent))
+            .sort((a, b) => a.name.localeCompare(b.name));
+        if (unpinned.map(app => app.key).join("\n") !== unpinnedBackground.map(app => app.key).join("\n")) {
+            unpinnedBackground = unpinned;
+        }
+    }
+    onUnpinnedBackgroundChanged: rebuildRecents.restart()
 
     // --- añadir apps -----------------------------------------------------------------
     // Arrastrar desde Apps (o un .desktop) y soltar en el dock: las apps se
@@ -342,14 +502,8 @@ Item {
         id: rebuildRecents
         interval: 100
         onTriggered: {
-            const inDock = new Set();
-            for (let i = 0; i < tasksRepeater.count; ++i) {
-                const item = tasksRepeater.itemAt(i);
-                if (item) {
-                    inDock.add(item.appKey);
-                    inDock.add(item.launcherKey);
-                }
-            }
+            const inDock = dock.keysInDock();
+            dock.unpinnedBackground.forEach(app => inDock.add(app.key));
             const out = [];
             for (let i = 0; i < recentReader.count && out.length < T.tokens.dock.recent_count; ++i) {
                 const item = recentReader.objectAt(i);
@@ -365,6 +519,7 @@ Item {
         target: tasksModel
         function onCountChanged() {
             rebuildRecents.restart();
+            dock.scheduleBackgroundUpdate();
         }
     }
 
@@ -416,6 +571,7 @@ Item {
                 readonly property var modelIndex: tasksModel.makeModelIndex(index)
                 readonly property string appKey: String(model.AppId || "").replace(/\.desktop$/, "")
                 readonly property string launcherKey: dock.desktopId(model.LauncherUrlWithoutIcon).replace(/\.desktop$/, "")
+                readonly property string backgroundKey: dock.isBackground(launcherKey) ? launcherKey : dock.isBackground(appKey) ? appKey : ""
 
                 size: dock.sizeAt(dock.centerOf(1 + index, 0))
                 y: row.height - height
@@ -426,6 +582,7 @@ Item {
                 trailingSpace: dock.dropIndex === index + 1 ? dock.dropSpace : 0
                 Behavior on trailingSpace { NumberAnimation { duration: Motion.moveMs(T.tokens.dock.magnification_ms); easing.type: Easing.OutCubic } }
                 running: model.IsWindow === true || model.IsGroupParent === true
+                background: model.IsLauncher === true && backgroundKey !== ""
                 launching: model.IsStartup === true
                 demandsAttention: model.IsDemandingAttention === true
                 hovered: taskArea.containsMouse
@@ -523,6 +680,8 @@ Item {
                     desktopId: dock.desktopId(task.model.LauncherUrlWithoutIcon)
                     pinned: dock.isPinned(task.model)
                     running: task.running
+                    background: task.background
+                    onStopRequested: dock.stopBackground(task.backgroundKey)
                 }
 
                 // para la animación de minimizar (la «lámpara» de KWin)
@@ -548,6 +707,51 @@ Item {
             }
         }
 
+        // Background apps that are not pinned
+        Repeater {
+            id: backgroundRepeater
+            model: dock.unpinnedBackground
+            delegate: DockIcon {
+                id: backgroundTask
+                required property int index
+                required property var modelData
+                size: dock.sizeAt(dock.centerOf(1 + dock.taskCount + index, 0))
+                y: row.height - height
+                padding: dock.pad
+                maxSize: dock.maxSize
+                iconSource: modelData.icon
+                label: modelData.name
+                background: dock.isBackground(modelData.key)
+                hovered: backgroundArea.containsMouse
+                pressed: backgroundArea.pressed && !dock.dragging
+                tooltipEnabled: !dock.dragging && !backgroundMenu.opened
+
+                MouseArea {
+                    id: backgroundArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: mouse => {
+                        if (mouse.button === Qt.RightButton) {
+                            backgroundMenu.open(mouse.x, mouse.y);
+                        } else {
+                            backgroundMenu.launch();
+                        }
+                    }
+                }
+
+                TaskMenu {
+                    id: backgroundMenu
+                    tasks: tasksModel
+                    desktopId: backgroundTask.modelData.key + ".desktop"
+                    pinned: false
+                    running: false
+                    background: backgroundTask.background
+                    onStopRequested: dock.stopBackground(backgroundTask.modelData.key)
+                }
+            }
+        }
+
         // Recientes
         DockSeparator {
             visible: dock.recentCount > 0
@@ -561,7 +765,7 @@ Item {
                 id: recent
                 required property int index
                 required property var modelData
-                size: dock.sizeAt(dock.centerOf(1 + dock.taskCount + index, 1))
+                size: dock.sizeAt(dock.centerOf(1 + dock.taskCount + dock.backgroundCount + index, 1))
                 y: row.height - height
                 padding: dock.pad
                 maxSize: dock.maxSize
@@ -586,7 +790,7 @@ Item {
         }
         DockIcon {
             id: trashIcon
-            size: dock.sizeAt(dock.centerOf(1 + dock.taskCount + dock.recentCount, dock.separatorCount))
+            size: dock.sizeAt(dock.centerOf(1 + dock.taskCount + dock.backgroundCount + dock.recentCount, dock.separatorCount))
             y: row.height - height
             padding: dock.pad
             maxSize: dock.maxSize

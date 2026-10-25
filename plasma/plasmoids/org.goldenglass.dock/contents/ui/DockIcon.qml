@@ -28,6 +28,8 @@ Item {
     property string fallback: "application-x-executable"
     property string label
     property bool running: false
+    // a live unit in systemd and no window: a fainter dot and its own tooltip line
+    property bool background: false
     property bool launching: false          // IsStartup
     property bool demandsAttention: false
     property bool hovered: false
@@ -121,14 +123,14 @@ Item {
     Rectangle {
         id: dot
         readonly property real dotSize: T.tokens.plasma.task_dot_size
-        visible: tile.running
+        visible: tile.running || tile.background
         width: dotSize
         height: dotSize
         radius: dotSize / 2
         x: (tile.size - dotSize) / 2
         y: tile.height + Math.max(0, (tile.padding - dotSize) / 2)
         color: Kirigami.Theme.textColor
-        opacity: T.tokens.dock.dot_alpha
+        opacity: tile.background && !tile.running ? T.tokens.dock.background_dot_alpha : T.tokens.dock.dot_alpha
     }
 
     Item {
@@ -270,11 +272,21 @@ Item {
 
     Component {
         id: labelComponent
-        PlasmaComponents3.Label {
-            text: tile.label
-            textFormat: Text.PlainText
-            leftPadding: Kirigami.Units.smallSpacing
-            rightPadding: Kirigami.Units.smallSpacing
+        Column {
+            PlasmaComponents3.Label {
+                text: tile.label
+                textFormat: Text.PlainText
+                leftPadding: Kirigami.Units.smallSpacing
+                rightPadding: Kirigami.Units.smallSpacing
+            }
+            PlasmaComponents3.Label {
+                visible: tile.background && !tile.running
+                text: i18n("Running in the background")
+                textFormat: Text.PlainText
+                leftPadding: Kirigami.Units.smallSpacing
+                rightPadding: Kirigami.Units.smallSpacing
+                opacity: T.tokens.text.secondary_alpha
+            }
         }
     }
 }

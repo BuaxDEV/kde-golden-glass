@@ -14,20 +14,23 @@
 class QQuickWindow;
 
 /*
-    GlassRegion: pide a KWin blur solo detrás de las piezas de vidrio de su
-    ventana, con sus esquinas redondeadas. Recorre el árbol de «source» (por
-    defecto, su padre) y toma cada elemento visible con la propiedad
-    goldenGlassTile a true; el radio sale de su propiedad «radius» y sigue
-    las escalas (también distintas a lo ancho y a lo alto). El efecto
-    goldenglass_glass dibuja la refracción de cada pieza por separado.
+    GlassRegion: asks KWin for blur only behind the glass pieces of its
+    window, with their rounded corners. It walks the tree of «source» (its
+    parent by default) and takes every visible item whose goldenGlassTile
+    property is true; the radius comes from its «radius» property and follows
+    its scale (also when width and height scale differently). Ancestors with
+    clip: true cut each piece as Qt Quick cuts their pixels, so a scrolled
+    list asks for no blur outside its view. The goldenglass_glass effect draws
+    the refraction of each piece on its own.
 
-    Pensado para un PlasmaCore.Dialog sin fondo (NoBackground), que no pide blur.
+    Meant for a PlasmaCore.Dialog without background (NoBackground), which
+    asks for no blur.
 
         GlassRegion { anchors.fill: parent }
 
-    active: false quita el blur (p. ej. al desvanecerse la ventana).
-    updateInterval: ms mínimos entre dos envíos a KWin mientras la región
-    cambia (animaciones); el último cambio siempre llega.
+    active: false removes the blur (e.g. while the window fades out).
+    updateInterval: minimum ms between two updates sent to KWin while the
+    region changes (animations); the last change always arrives.
 */
 class GlassRegion : public QQuickItem
 {
@@ -51,6 +54,9 @@ public:
     int updateInterval() const;
     void setUpdateInterval(int interval);
 
+    // Region of the glass pieces under «source», in scene coordinates
+    QRegion collectRegion() const;
+
 Q_SIGNALS:
     void sourceChanged();
     void activeChanged();
@@ -63,7 +69,7 @@ private:
     void setWindow(QQuickWindow *window);
     void requestUpdate();
     void sync();
-    void collect(QQuickItem *item, QRegion &region) const;
+    void collect(QQuickItem *item, const QRect &clip, QRegion &region) const;
 
     QPointer<QQuickItem> m_source;
     QPointer<QQuickWindow> m_window;

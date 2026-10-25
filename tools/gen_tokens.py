@@ -162,7 +162,7 @@ def build_colors(tokens: dict, variant: str) -> str:
 REQUIRED_SECTIONS = (
     "meta", "radius", "focus_ring", "glass", "plasma", "shadow", "decoration", "menu", "finder",
     "font", "apps", "icon_tile", "scroll", "traffic_lights", "dock", "control_center", "motion", "boot", "login",
-    "sounds", "accessibility", "kwin", "light", "dark",
+    "sounds", "accessibility", "kwin", "light", "dark", "osd",
 )
 
 # [accessibility]: valores de fábrica de goldenglassrc [Accessibility] y la
@@ -205,6 +205,53 @@ def validate_glass_edge(glass: dict) -> None:
         value = glass.get(section, {}).get(key)
         if not _is_number(value) or not low <= value <= high:
             raise SystemExit(f"[glass.{section}].{key} must be a number in [{low:g}, {high:g}], not {value!r}")
+
+
+def validate_dock_background(dock: dict) -> None:
+    """[dock] background apps: a switch, a dot opacity and a delay in ms."""
+    if not isinstance(dock.get("show_background"), bool):
+        raise SystemExit(f"[dock].show_background must be true or false, not {dock.get('show_background')!r}")
+    alpha = dock.get("background_dot_alpha")
+    if not _is_number(alpha) or not 0 <= alpha <= 1:
+        raise SystemExit(f"[dock].background_dot_alpha must be a number in [0, 1], not {alpha!r}")
+    delay = dock.get("background_delay_ms")
+    if not isinstance(delay, int) or isinstance(delay, bool) or delay < 0:
+        raise SystemExit(f"[dock].background_delay_ms must be a whole number of ms >= 0, not {delay!r}")
+
+
+# [osd]: the volume and brightness HUD (docs/MACOS27-PLAN.md §4.10): key → (kind, minimum, maximum)
+OSD_KEYS = {
+    "width": ("px", 1, None), "height": ("px", 1, None), "margin_top": ("px", 0, None),
+    "screen_margin": ("px", 0, None), "icon": ("px", 1, None), "segments": ("count", 1, None),
+    "segment_gap": ("px", 0, None), "bar_height": ("px", 1, None),
+    "track_alpha": ("number", 0, 1), "fill_alpha": ("number", 0, 1), "alpha": ("number", 0, 1),
+    "timeout_ms": ("ms", 1, None), "open_ms": ("ms", 0, None), "close_ms": ("ms", 0, None),
+    "open_scale": ("number", 0, 1), "open_overshoot": ("number", 0, None),
+}
+
+
+def validate_osd(osd: dict) -> None:
+    """[osd]: whole px, ms and counts, opacities in [0, 1], and a pill that holds its icon and bar."""
+    if set(osd) != set(OSD_KEYS):
+        raise SystemExit(f"[osd]: missing {sorted(set(OSD_KEYS) - set(osd))} or unknown {sorted(set(osd) - set(OSD_KEYS))}")
+    for key, (kind, low, high) in OSD_KEYS.items():
+        value = osd[key]
+        whole = kind != "number"
+        valid = (isinstance(value, int) and not isinstance(value, bool)) if whole else _is_number(value)
+        if not valid or value < low or (high is not None and value > high):
+            limit = f">= {low}" if high is None else f"in [{low}, {high}]"
+            what = {"px": "a whole number of px", "ms": "a whole number of ms", "count": "a whole number",
+                    "number": "a number"}[kind]
+            raise SystemExit(f"[osd].{key} must be {what} {limit}, not {value!r}")
+    if osd["open_scale"] == 0:
+        raise SystemExit("[osd].open_scale must be greater than 0")
+    if osd["icon"] > osd["height"] or osd["bar_height"] > osd["height"]:
+        raise SystemExit("[osd]: icon and bar_height must fit in height")
+    padding = (osd["height"] - osd["icon"]) / 2
+    bar = osd["width"] - osd["icon"] - 3 * padding
+    if bar < osd["segments"] + (osd["segments"] - 1) * osd["segment_gap"]:
+        raise SystemExit(f"[osd]: {osd['segments']} segments with a gap of {osd['segment_gap']} px "
+                         f"do not fit in the {bar:g} px of the bar")
 
 
 def validate_kwin(kwin: dict) -> None:
@@ -276,6 +323,8 @@ def validate(tokens: dict) -> None:
     validate_motion(tokens["motion"])
     validate_kwin(tokens["kwin"])
     validate_glass_edge(tokens["glass"])
+    validate_dock_background(tokens["dock"])
+    validate_osd(tokens["osd"])
 
     validate_icon_tile(tokens["icon_tile"])
 

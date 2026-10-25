@@ -432,6 +432,62 @@ def test_data_dirs_are_searched_in_order(tree: Tree, manifest: dict, tmp_path: P
     assert tree.share / "dbus-1/interfaces/org.kde.krunner.App.xml" in paths
 
 
+# --- objetos D-Bus de plasmashell -------------------------------------------------------------------
+
+OSD_OBJECT = {
+    "binary": "plasmashell",
+    "interface": "org.kde.osdService",
+    "path": "/org/kde/osdService",
+    "methods": ["volumeChanged", "hide"],
+    "signals": ["osdProgress"],
+    "used_by": "HUD",
+}
+
+
+def fake_plasmashell(directory: Path, *, without: str = "") -> Path:
+    """A binary with the names as moc and u""_s leave them: NUL-separated Latin-1, the path in UTF-16."""
+    names = [n for n in ("org.kde.osdService", "volumeChanged", "hide", "osdProgress") if n != without]
+    data = b"\x7fELF\0" + b"\0".join(n.encode() for n in names) + b"\0\0"
+    if without != "/org/kde/osdService":
+        data += "/org/kde/osdService".encode("utf-16-le") + b"\0\0"
+    directory.mkdir(parents=True, exist_ok=True)
+    binary = directory / "plasmashell"
+    binary.write_bytes(data)
+    cpc._lib_bytes.cache_clear()
+    return binary
+
+
+def test_dbus_object_names_are_found_in_the_binary(tmp_path: Path):
+    manifest = {"system": {"dbus_object": [OSD_OBJECT]}}
+    fake_plasmashell(tmp_path / "bin")
+    assert cpc.check_dbus_objects(manifest, [tmp_path / "empty", tmp_path / "bin"]) == ([], 1)
+
+
+@pytest.mark.parametrize("missing", ["hide", "osdProgress", "/org/kde/osdService", "org.kde.osdService"])
+def test_a_renamed_member_of_the_dbus_object_is_an_error(tmp_path: Path, missing: str):
+    manifest = {"system": {"dbus_object": [OSD_OBJECT]}}
+    binary = fake_plasmashell(tmp_path / "bin", without=missing)
+    errors, _ = cpc.check_dbus_objects(manifest, [tmp_path / "bin"])
+    assert errors == [f"system: {binary} no longer has {missing} (org.kde.osdService at /org/kde/osdService); used by: HUD"]
+
+
+def test_a_missing_binary_is_an_error(tmp_path: Path):
+    manifest = {"system": {"dbus_object": [OSD_OBJECT]}}
+    errors, checked = cpc.check_dbus_objects(manifest, [tmp_path])
+    assert checked == 1
+    assert errors == ["system: plasmashell not found in PATH; used by: HUD"]
+    assert cpc.binary_paths(manifest) == [Path("/usr/bin/plasmashell")]
+
+
+def test_real_manifest_guards_the_whole_osd_service(real_manifest: dict):
+    """The same slots and signals that qmlplugin/osdservice.h copies from Plasma."""
+    header = (ROOT / "qmlplugin/osdservice.h").read_text()
+    exported = set(re.findall(r"^\s+void (\w+)\(", header, re.M))
+    (osd,) = real_manifest["system"]["dbus_object"]
+    assert (osd["interface"], osd["path"]) == ("org.kde.osdService", "/org/kde/osdService")
+    assert set(osd["methods"]) | set(osd["signals"]) == exported
+
+
 # --- main() ---------------------------------------------------------------------------------------
 
 
@@ -442,6 +498,7 @@ def run_main(tree: Tree, manifest: dict, monkeypatch: pytest.MonkeyPatch, capsys
     monkeypatch.setattr(cpc, "_imports", lambda *a: imports)
     monkeypatch.setattr(cpc, "load_manifest", lambda *a: manifest)
     monkeypatch.setattr(cpc, "_data_dirs", lambda: [tree.share])
+    monkeypatch.setattr(cpc, "_bin_dirs", lambda: [tmp_path / "bin"])
     monkeypatch.setattr(cpc, "_plasma_version", lambda: None)
     monkeypatch.setattr(cpc.sys, "argv", ["check_plasma_compat.py"])
 

@@ -69,9 +69,17 @@ copy is commit `2fc7611`; GoldenGlass changes are on top of it
 (`git log -- plasma/shell/org.goldenglass.desktop/contents/views/Panel.qml`):
 the dock slab (`goldenglassDockSlab`: background, blur mask and shadow follow
 the glass slab of `org.goldenglass.dock`; the containment keeps its normal
-place), `goldenglassSetThickness()` and the menu bar (no background unless
-enabled, dimmed on the screen without focus). Every other panel behaves as
-upstream.
+place), `goldenglassSetThickness()`, the menu bar (no background unless
+enabled, dimmed on the screen without focus) and a guard on `minPanelHeight`
+(0 until the containment arrives). Every other panel behaves as upstream.
+
+The guard is needed because `minPanelHeight` is the only lower bound of a
+panel's thickness in Plasma 6.8.1 (PanelView has none of its own) and PanelView
+saves the clipped value. Before the containment arrives, `adjustPrefix()` has
+not run: the frame has no edge prefix and every border is on, so the bound is
+the dock's corners (`radius.dock`), not the menu bar's `north-` frame. Without
+the guard a menu bar thinner than `2 × radius.dock` is clipped on every start
+and the clipped height is saved.
 
 Ported since the copy: **plasma-desktop 6.8.1** (`org.kde.plasma.shell.panel`
 merged into `org.kde.plasma.shell`, `ContainmentItem`, the virtual keyboard
@@ -107,6 +115,28 @@ plasma-plasmashell`, no `Panel.qml` errors in `journalctl --user`) and the lock
 screen loads (`QT_QPA_PLATFORM=offscreen timeout 8 /usr/lib/kscreenlocker_greet
 --testing --shell org.goldenglass.desktop`, no `Failed to load lockscreen QML`
 in the journal). Update the merge bases above and `X-GoldenGlass-PlasmaVersion`.
+
+## Plasma OSD service (`qmlplugin/osdservice.h`)
+
+`OsdService` copies the D-Bus interface of Plasma's `Osd` object
+(`shell/osd.h` of **plasma-workspace 6.8.1**): the same public slots and
+signals, in the same order and with the same argument names, so that its
+introspection is identical. No code is copied. At run time `OsdInterceptor`
+only takes `/org/kde/osdService` over when Plasma's object exports exactly
+these signatures; otherwise Plasma's OSD stays. On a new Plasma version:
+
+```sh
+curl -sL https://invent.kde.org/plasma/plasma-workspace/-/raw/v<new>/shell/osd.h \
+  | diff <(curl -sL https://invent.kde.org/plasma/plasma-workspace/-/raw/v6.8.1/shell/osd.h) -
+```
+
+Port any change of the slots or signals to `osdservice.h`, the fake Plasma
+`Osd` of `qmlplugin/tests/osdinterceptor_test.cpp` and the
+`[[system.dbus_object]]` entry of `tools/plasma_api.toml`, and read
+`shell/osd.cpp` for new icons, thresholds or texts (the HUD and the lock
+screen signals follow them). `tools/check_plasma_compat.py` already fails
+when a name disappears from the installed `plasmashell`. Update the version
+above.
 
 ## KWin glass effect (`kwin-effect/`)
 

@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: plasma_applet_org.goldenglass.dock\n"
-"PO-Revision-Date: 2026-10-12 18:00+0000\n"
+"PO-Revision-Date: 2026-10-25 12:00+0000\n"
 "Last-Translator: GoldenGlass contributors\n"
 "Language-Team: Spanish\n"
 "Language: es\n"
@@ -32,3 +32,10 @@ msgstr "Papelera"
 
 msgid "Open"
 msgstr "Abrir"
+
+# apps en segundo plano: el tooltip y el menú, como en macOS
+msgid "Running in the background"
+msgstr "Ejecutándose en segundo plano"
+
+msgid "Stop Running in the Background"
+msgstr "Detener ejecución en segundo plano"

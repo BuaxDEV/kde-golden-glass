@@ -1,15 +1,16 @@
 # SPDX-FileCopyrightText: 2026 GoldenGlass contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Módulo QML org.goldenglass.glass: le pasa a KWin la región de blur de las
-# piezas de vidrio de una ventana (p. ej. las tarjetas sueltas del Centro de
-# control), que Plasma no deja hacer desde QML, y da al shell los ajustes de
-# la barra de menús (MenuBarSettings) y a Plasma los de accesibilidad
-# (AccessibilitySettings).
+# QML module org.goldenglass.glass: hands KWin the blur region of the glass
+# pieces of a window (e.g. the Control Center's loose cards), which Plasma does
+# not allow from QML; gives the shell the menu bar settings (MenuBarSettings),
+# Plasma the accessibility ones (AccessibilitySettings), the Dock the apps
+# that systemd runs (AppUnits) and the Control Center the volume and
+# brightness OSDs of plasmashell (OsdHost).
 include(ECMQmlModule)
 
-# Fuentes y bibliotecas del módulo, una por línea (cada PR añade las suyas):
-# las usan el plugin y la biblioteca estática de las pruebas (tests/).
+# Sources and libraries of the module, one per line (each PR appends its own):
+# the plugin and the static library of the tests (tests/) use them.
 set(GOLDENGLASS_QMLPLUGIN_SOURCES
     glassregion.cpp
     glassregion.h
@@ -17,11 +18,25 @@ set(GOLDENGLASS_QMLPLUGIN_SOURCES
     menubarsettings.h
     accessibilitysettings.cpp
     accessibilitysettings.h
+    unitname.cpp
+    unitname.h
+    appunitsbackend.cpp
+    appunitsbackend.h
+    appunits.cpp
+    appunits.h
+    osdservice.cpp
+    osdservice.h
+    osdinterceptor.cpp
+    osdinterceptor.h
+    osdhost.cpp
+    osdhost.h
 )
 set(GOLDENGLASS_QMLPLUGIN_LIBS
     Qt6::Quick
     KF6::WindowSystem
     KF6::ConfigCore
+    Qt6::DBus
+    KF6::I18n
 )
 
 ecm_add_qml_module(goldenglassglassplugin

@@ -83,6 +83,38 @@
 - **El vidrio de Plasma ya no se vuelve opaco al activar la refracción:**
   activarla en vivo (también el primer inicio de sesión tras instalar)
   dejaba a Plasma sin blur hasta reiniciar KWin.
+- **Barra de menús de 24 px**, como macOS (antes 28). El texto y los iconos
+  de la bandeja conservan su tamaño. Las barras
+  de 28 px de una instalación anterior pasan a 24 una sola vez: con el
+  paquete, la primera vez que se inicia Plasma tras actualizar; con
+  `tools/install.sh`, al iniciar la siguiente sesión. Si elegiste otra
+  altura, se respeta. Con «Mostrar fondo de la barra de menús» la franja de
+  vidrio es recta, sin esquinas redondeadas, y la barra ya no queda atada al
+  radio del dock.
+- **Apps en segundo plano en el Dock**, como macOS 27: una app sin ventanas
+  que sigue en marcha (en la bandeja, sincronizando…) lleva un punto gris
+  claro bajo su icono, y el tooltip dice «Ejecutándose en segundo plano». Un
+  clic la vuelve a abrir y su menú ofrece «Detener ejecución en segundo plano»
+  en lugar de «Salir». Las apps fijadas lo muestran siempre; las demás
+  aparecen tras las abiertas solo si en la sesión tuvieron ventana o las
+  abriste tú (no las de inicio automático). El dock lo sabe por las units de
+  systemd en las que Plasma lanza cada app, así que no ve las apps lanzadas
+  desde una terminal. Se desactiva con `goldenglass-dock --background off`, y
+  `backgroundIgnore` en la configuración del dock oculta apps concretas.
+- **HUD de volumen y brillo bajo la barra de menús**, como macOS 27: al
+  cambiar el volumen, el micrófono, el volumen de un reproductor, el brillo de
+  la pantalla o el del teclado aparece una píldora de vidrio pequeña arriba a
+  la derecha, con el icono y una barra segmentada, en lugar del OSD de Plasma
+  en el centro de la pantalla. Sale en la pantalla de la ventana activa (el
+  brillo de una pantalla, en esa pantalla), también sobre las apps a pantalla
+  completa, nunca con el Centro de control abierto, y respeta «Reducir
+  movimiento» y «Reducir transparencia». Los avisos de texto (distribución de
+  teclado, Wi‑Fi, táctil, perfil de energía…) siguen siendo los de Plasma, y
+  la pantalla de bloqueo sigue mostrando su OSD. Si se desactivan los OSD de
+  Plasma (`plasmarc [OSD] Enabled=false`), tampoco hay HUD.
+- **El Centro de control se abre justo debajo de la barra de menús real**, no
+  de la altura de fábrica: sigue bien colocado si cambias la altura de la
+  barra, y el resaltado de su icono se ajusta a ella.
 
 ### Proyecto
 
@@ -101,6 +133,27 @@
   4K y con escalas fraccionarias.
 - `tools/preview_style.py --show-borders` muestra el estilo de apps con
   «Mostrar bordes», y la vista previa incluye una toolbar.
+- El Centro de control usa `GlassOverlay.qml`, una ventana de vidrio
+  compartida por `SHARED` (lista para el Centro de notificaciones), y No
+  molestar pasa a `DoNotDisturb.qml`; sin cambio visible. `GlassRegion`
+  recorta cada pieza de vidrio por los elementos con `clip: true` que la
+  contienen, así que una lista desplazada no pide blur fuera de su vista.
+- El Plasma Style tiene un marco propio para la barra de menús (`north-`,
+  tokens `radius.menubar` y `plasma.menubar_padding_v`); desaparece el token
+  sin uso `plasma.menubar_padding`. `tools/sandbox.sh` admite
+  `GG_SANDBOX_OUTPUTS` para probar con varias pantallas.
+- El módulo QML `org.goldenglass.glass` gana `AppUnits`, que lista las apps
+  con una unit viva en `systemd --user` con su propia conexión D-Bus y sin
+  polling, y enlaza Qt DBus. `tools/sandbox.sh` admite `GG_SANDBOX_SYSTEMD=1`:
+  un `systemd --user` propio en el bus privado, para que las apps se lancen
+  en units como en una sesión real.
+- El módulo QML `org.goldenglass.glass` gana `OsdInterceptor` y `OsdHost`,
+  que dentro de plasmashell sustituyen el objeto `/org/kde/osdService` de
+  Plasma por uno con la misma interfaz, solo si sus firmas coinciden
+  exactamente, y lo devuelven al irse el último Centro de control; enlaza
+  KI18n. `tools/plasma_api.toml` gana `[[system.dbus_object]]`:
+  `check_plasma_compat.py` comprueba en el binario `plasmashell` la interfaz
+  `org.kde.osdService` que copia el HUD.
 - Los plasmoids leen la accesibilidad con un único singleton,
   `Accessibility.qml` (`MotionReduce.qml` pasa a ser
   `AccessibilityReader.qml`); `goldenglass-glass` aplica todo con `apply()`,

@@ -530,10 +530,11 @@ dentro de «Vidrio».
     - **Tarjetas sueltas de vidrio, como macOS 26** (único modo): el popup
       de Plasma (`AppletPopup`) no deja quitar su fondo, así que el icono de la
       barra es la representación «completa» (como Apps: Plasma no abre popup)
-      y abre su propia ventana (`FloatingPanel.qml`): un `PlasmaCore.Dialog`
+      y abre su propia ventana (`GlassOverlay.qml`, compartido; ver «Barra de
+      menús a 24 px y vidrio compartido»): un `PlasmaCore.Dialog`
       sin fondo que cubre la pantalla, transparente, con las tarjetas pegadas
-      al borde derecho bajo la barra y el icono resaltado mientras está
-      abierta. Un clic fuera de las tarjetas la cierra, también en la barra de
+      al borde derecho bajo la barra real (no la del token) y el icono
+      resaltado mientras está abierta. Un clic fuera de las tarjetas la cierra, también en la barra de
       menús (que no toma el foco: perderlo no bastaría); y también Esc, el
       atajo del plasmoide o el foco en otra pantalla. Sin fondo, Dialog no pide
       blur: lo pide `GlassRegion`, del módulo QML `org.goldenglass.glass`
@@ -824,6 +825,422 @@ para capturar fotogramas a mitad de animación; minimizado con
   cambios en el vidrio del dock en los fotogramas capturados (unos 3 por
   segundo a velocidad ×10); un parpadeo de un solo fotograma a velocidad
   normal no se puede descartar con este método.
+
+#### Barra de menús a 24 px y vidrio compartido (F14)
+
+Primera parte de F14 (plan de macOS 27 §3.5 y §4.8).
+
+**Vidrio compartido.**
+
+- `GlassOverlay.qml` (en `org.goldenglass.launchpad/contents/ui/`, copiado
+  por `SHARED` al Centro de control con `GlassBlur.qml` y `Motion.qml`) es la
+  antigua ventana del Centro de control, generalizada sin cambiar su
+  comportamiento: `PlasmaCore.Dialog` sin fondo a pantalla completa, piezas
+  pegadas al borde derecho bajo la barra, resorte al abrir y cierre animado.
+  - `tokens` (obligatorio) es la sección de tokens con sus tiempos, escalas y
+    márgenes: el Centro de control pasa `[control_center]`.
+  - `origin: "icon"` (el resorte nace del icono, `anchorItem`) o `"edge"`
+    (del borde derecho, para el Centro de notificaciones).
+  - El contenido puede definir `resetContent()` (vuelve a su primera vista;
+    se llama en cada apertura) y `goBack()` (Esc retrocede dentro del
+    contenido y devuelve `true`; si no, Esc cierra).
+  - `menuBarHeight` es la altura real de la barra de menús en esa pantalla:
+    `Plasmoid.containment.availableScreenRect.y`, lo que ocupan los paneles
+    del borde superior. Con una barra que se oculta sola vale 0 y las piezas
+    quedan a `floating_margin` del borde. El HUD de volumen y brillo debe
+    tomar de aquí el borde de la barra.
+- El resaltado del icono del Centro de control se mide contra la ventana de
+  su panel (`Window.height`), no contra `plasma.menubar_height`.
+- `DoNotDisturb.qml` (en el Centro de control) reúne la lógica de No
+  molestar (`notificationmanager`): `active`, `setActive()` y
+  `setActiveUntil()`. El plasmoide de notificaciones lo tomará por `SHARED`.
+- `GlassRegion` recorta cada pieza de vidrio por los ancestros con
+  `clip: true`, como Qt Quick recorta sus píxeles: una lista desplazada no
+  pide blur fuera de su vista (prueba `qmlplugin/tests/glassregion_test.cpp`).
+
+**Barra de 24 px.**
+
+- **Marco propio.** `Panel.qml` pide el marco del borde del panel (`north-`,
+  `south-`…) y, si no existe, el que no tiene prefijo. El Plasma Style trae
+  `north-` y `mask-north-` en las cuatro variantes de `panel-background.svg`,
+  con `radius.menubar` (0: franja recta) y `plasma.menubar_padding_v` (2); el
+  dock sigue con el marco sin prefijo y `radius.dock`. La validación es
+  `2 × radius.menubar ≤ plasma.menubar_height`, así que `radius.dock` ya no
+  limita la barra. Las teselas de un marco recto tienen al menos el ancho de
+  las dos líneas del filo.
+- **Guarda en `Panel.qml`:** `minPanelHeight` vale 0 hasta que llega la
+  contención (ver `UPSTREAM.md`). Antes, el marco aún no tiene prefijo y
+  todos los bordes están activos, así que Plasma recortaba la barra a las
+  esquinas del dock y guardaba esa altura.
+- **Tokens:** `plasma.menubar_height = 24`, `menubar_padding_v = 2`,
+  `menubar_item_inset = 3` (margen de los menús de la app, antes 4 px fijos),
+  `control_center.icon_highlight_inset = 2`; desaparece
+  `plasma.menubar_padding`, que no se usaba. Los applets de la barra siguen
+  midiendo 22 px de alto (24 − 2 del margen inferior; antes 28 − 6), así que
+  texto e iconos no cambian de tamaño; solo suben 2 px.
+- **Actualización:** `contents/updates/goldenglass_menubar_height.js` del
+  shell (plantilla `.js.in`) pasa a la altura del token los paneles
+  superiores con `org.goldenglass.systemmenu` y exactamente 28 px; cualquier
+  otra altura se respeta. plasmashell lo ejecuta una vez por usuario y lo
+  anota en `plasmashellrc [Updates] performed`. plasmashell **no lo ejecuta
+  si el shell está en `XDG_DATA_HOME`** (salta los scripts locales del
+  usuario). Para esa instalación, `tools/install.sh` deja el autostart
+  `goldenglass-shell-updates` (fase 2, con el escritorio ya cargado):
+  `tools/run_shell_updates.py` espera a plasmashell, ejecuta con
+  `evaluateScript` los scripts que aún no estén en esa lista (por nombre, así
+  que no repite lo que ya hizo el paquete) y los añade a ella. Solo los anota
+  si había paneles: si plasmashell responde antes de cargarlos, reintenta.
+  `tools/tests/test_shell_updates.py` ejecuta el script en un `QJSEngine` con
+  un `panels()` falso, y `test_run_shell_updates.py` prueba el lanzador.
+
+**Spike SP-07 — go.** Sandbox (`tools/sandbox.sh`, KWin 6.8.1 virtual de
+1600×1000, plasmashell 6.8.1, layout de `org.goldenglass.light.desktop`),
+alturas leídas con `panels()` y de `plasmashellrc` tras cada paso: primer
+arranque, dos reinicios de plasmashell, fondo de la barra activado (en vivo y
+tras reiniciar) y desactivado (ídem).
+
+| Matriz | Barra en vivo y guardada | Applets | `menuBarHeight` |
+|---|---|---|---|
+| 1 salida, escala 1 | 24 en todos los pasos | 22 px | 24 |
+| 2 salidas, escala 1 | 24 en las dos barras, todos los pasos | 22 px | 24 |
+| 1 salida, escala 1,5 | 24 en todos los pasos | 22 px | 24 |
+| 1 salida, escala 2 | 24 en todos los pasos | 22 px | 24 |
+| Sin la guarda de `Panel.qml` (escala 1) | 28 desde el primer arranque | — | — |
+
+- **`updates/` se ejecuta en un shell con `X-Plasma-FallbackPackage`:** con
+  el shell en un directorio del sistema (`XDG_DATA_DIRS`) y las barras
+  guardadas a 28, el primer arranque las dejó a 24 (también las dos barras
+  con dos salidas), el script quedó en `[Updates] performed` y un reinicio
+  más no cambió nada. Con la altura de fábrica (28) el mismo script no hace
+  nada.
+- **Iconos de la bandeja:** caben y conservan el tamaño que tenían con 28 px
+  (en las capturas ocupan las mismas filas de píxeles, 2 px más arriba),
+  también a escala 1,5 y 2; el Centro de control se abre a 24 + 6 px y su
+  resaltado mide 20 px.
+- No hizo falta el plan B (barra de 26 o 28 px conservando el desacople).
+- **Instalación de desarrollo:** en el sandbox, con el shell en
+  `XDG_DATA_HOME` y la barra guardada a 28, un reinicio de plasmashell la deja
+  en 28; `tools/run_shell_updates.py` la pasa a 24 y la anota, una segunda
+  ejecución no hace nada y tras otro reinicio sigue en 24.
+- Sin probar: pantallas físicas.
+
+#### Apps en segundo plano en el Dock (F14)
+
+Segunda parte de F14 (plan de macOS 27 §4.9). Como en macOS 27, una app sin
+ventanas que sigue en marcha (en la bandeja, sincronizando…) se ve en el dock
+con un punto gris claro, el tooltip «Ejecutándose en segundo plano» y, en su
+menú, «Detener ejecución en segundo plano» en lugar de «Salir».
+
+**`AppUnits`** (`qmlplugin/appunits*.{h,cpp}`, módulo `org.goldenglass.glass`).
+libtaskmanager solo conoce ventanas, y el módulo QML de D-Bus no puede
+suscribirse a señales: el dock sabe qué apps corren por las units de
+`systemd --user` en las que Plasma lanza cada app.
+
+- **Conexión:** una conexión D-Bus privada, `goldenglass-units`, compartida por
+  todos los docks del proceso (`AppUnitsBackend`). Es privada porque
+  `Subscribe()` hace que systemd mande todas sus señales de units y trabajos a
+  quien se suscribe: en la conexión de plasmashell las pagarían sus demás
+  clientes. Ninguna llamada arranca systemd por activación D-Bus
+  (`setAutoStartService(false)`).
+- **Listado:** `ListUnitsByPatterns` de `app-*.service`, `app-*.scope` y
+  `dbus-*.service`, 250 ms después de la última `UnitNew`, `UnitRemoved` o
+  `JobRemoved`, o de un `PropertiesChanged` de la interfaz `Unit` de una unit
+  ya listada. Sin polling. Cuenta como viva una unit `active`, `activating` o
+  `reloading`.
+- **Nombres:** `parseUnitName()` (`unitname.{h,cpp}`) es una función pura que
+  sigue systemd.io/DESKTOP_ENVIRONMENTS: `app[-<lanzador>]-<id>[@<instancia>].service`
+  y `app[-<lanzador>]-<id>-<instancia>.scope`, deshace los escapes `\xNN` y
+  reconoce las units `dbus-<broker>-<nombre de bus>@<n>.service` de
+  dbus-broker (el nombre de bus de una app `DBusActivatable` es su id de
+  escritorio). Si el id no tiene `.desktop` en `applications/`, se usa el de
+  `SourcePath`; y un scope de Chromium (`app-org.chromium.Chromium-<pid>.scope`)
+  se une al servicio cuyo `MainPID` es ese pid: el navegador saca su proceso
+  principal de la unit en que lo lanzó Plasma.
+- **Filtro:** solo apps con un `.desktop` `Type=Application`, sin `NoDisplay`
+  (ni `OnlyShowIn`/`NotShowIn` que lo oculten), sin `Hidden`, que no sean
+  `TerminalEmulator` (la unit de una terminal contiene lo que se lanzó desde
+  ella) y fuera de `ignored`.
+- **API:** `available` (hay systemd y el listado funciona), `apps`
+  (`{key, name, icon, agent}`; `key` es el id de escritorio sin `.desktop`,
+  como el `AppId` de `TasksModel`), `units(key)`, `stop(key)` (`StopUnit` de
+  cada unit, en modo `replace`: systemd manda SIGTERM a todo el cgroup) e
+  `isAgent(key)` (todas sus units son `@autostart`).
+
+**Regla en `DockView.qml`.**
+
+- `AppUnits` llega por un `Loader` de `AppUnitsSource.qml`, activo solo con
+  `showBackground`. Sin el módulo C++ falla solo ese archivo; sin systemd en el
+  bus, `available` es falso. En los dos casos el dock queda como antes.
+- Un segundo `TasksModel` sin filtros (todos los escritorios, actividades y
+  pantallas, sin agrupar) dice si una app tiene alguna ventana o está
+  arrancando (`IsStartup`).
+- Una app está en segundo plano si su unit sigue viva, no tiene ventanas en
+  ningún sitio y no está arrancando, y todo eso se mantiene
+  `dock.background_delay_ms`.
+- **Fijadas:** el lanzador de siempre lleva el punto tenue. **No fijadas**
+  (decisión del usuario): un `Repeater` tras las tareas, solo para apps que en
+  esta sesión tuvieron ventana o que lanzó el usuario (alguna unit que no es
+  `@autostart`). Su icono aparece en cuanto se cierra la última ventana, para
+  que no desaparezca y vuelva durante la espera; solo el punto espera. «La
+  sesión» es la vida del dock: si plasmashell se reinicia, las apps de
+  inicio automático vuelven a ocultarse hasta que se vea una ventana suya.
+- **Aspecto y menú:** punto con `dock.background_dot_alpha` (en vez de
+  `dot_alpha`); el tooltip añade «Ejecutándose en segundo plano». Un clic
+  relanza la app (`requestNewInstance` si está fijada, o
+  `SimpleFavoritesModel.trigger`): una app de instancia única muestra su
+  ventana. El menú cambia «Salir» por «Detener ejecución en segundo plano»
+  (`AppUnits.stop`) y conserva «Abrir» y «Mantener en el Dock».
+- **Tokens y ajustes:** `[dock] show_background = true`,
+  `background_dot_alpha = 0.35` (por calibrar) y `background_delay_ms = 1500`,
+  validados en `gen_tokens.py`. El plasmoide tiene `showBackground` (de los
+  tokens) y `backgroundIgnore` (ids que no se muestran nunca);
+  `goldenglass-dock --background on|off` escribe el primero. El módulo «Dock»
+  todavía no tiene el interruptor.
+
+**Pruebas.**
+
+- `unitname_test`: `parseUnitName()` con los nombres reales de esta máquina y
+  del sandbox, y los que no siguen la especificación.
+- `appunits_test` (bajo `dbus-run-session`): `AppUnits` contra un systemd1
+  falso (`QDBusVirtualObject`) con `.desktop` de prueba. Cubre el filtro, la
+  lista de ignorados, los agentes, que varias señales seguidas den un solo
+  listado, el cambio de estado sin trabajo, `StopUnit`, `SourcePath`, el scope
+  de Chromium y que systemd se vaya y vuelva del bus.
+- **Sandbox** con `GG_SANDBOX_SYSTEMD=1`: `tools/sandbox.sh` arranca un
+  `systemd --user` propio en el bus privado. No carga los servicios del
+  usuario y corre en un scope delegado del gestor real,
+  `gg-sandbox-<id>.scope`, que se para al salir. Así KIO lanza las apps en
+  units como en una sesión real.
+  - Una app de bandeja de prueba (PyQt6, `quitOnLastWindowClosed` a falso)
+    lanzada como desde el dock, con su ventana cerrada por un script de KWin,
+    queda en el dock sin punto durante la espera y luego con el punto tenue,
+    sin fijar y fijada.
+  - `AppUnits.stop()`, lo que llama el menú, la detiene: SIGTERM, cierre
+    limpio y el icono desaparece (o el lanzador fijado se queda sin punto).
+  - Sin `GG_SANDBOX_SYSTEMD`, el dock no da errores QML y no intenta activar
+    systemd.
+  - El KWin virtual no tiene entrada: el clic, el menú y el tooltip se prueban
+    en una sesión real.
+
+**Spike SP-08 — go.** Las units se leyeron de la sesión real solo con
+`systemctl --user` y `busctl --user` (sin lanzar ni parar nada). En el sandbox
+se lanzó cada caso por el mismo código que usa cada lanzador, con un harness
+QML, y se paró con `systemctl --user stop` sobre el gestor del sandbox.
+
+| Lanzador | Unit | `parseUnitName` → app |
+|---|---|---|
+| Dock (`TasksModel.requestNewInstance`) | `app-<id>@<uuid>.service` | ✓ |
+| Apps y Kickoff (`SimpleFavoritesModel.trigger`) | `app-<id>@<uuid>.service` | ✓ |
+| KRunner y búsqueda de Apps (runner `krunner_services`) | `app-<id>@<uuid>.service` | ✓ |
+| Dolphin (`OpenUrlJob`, con `kioclient exec`) | `app-<id>@<uuid>.service` | ✓ |
+| Inicio automático (`systemd-xdg-autostart-generator`) | `app-<id>@autostart.service` | ✓ (agente) |
+| `DBusActivatable` con dbus-broker (sesión real) | `dbus-:1.2-<id>@0.service` | ✓ |
+| `DBusActivatable` con `SystemdService=` (Ghostty) | `app-com.mitchellh.ghostty.service` | ✓ (terminal: filtrada) |
+| Flatpak lanzado desde Plasma (PCSX2) | `app-net.pcsx2.PCSX2@<uuid>.service` | ✓ |
+| `flatpak run` fuera de una unit (cadena de flatpak) | `app-flatpak-<id>-<pid>.scope` | ✓ |
+| Chromium/Brave (sesión real) | `app-brave\x2dbrowser@<uuid>.service` y `app-org.chromium.Chromium-<pid>.scope` | ✓ (por `MainPID`) |
+| Terminal | la unit de la terminal (`app-ghostty-surface-transient-<n>.scope`) | ✗, límite aceptado |
+
+- **Mapeo:** 10 de 11 lanzadores (91 %). En la sesión real, de las 17 units
+  que casan con los patrones, `AppUnits` (en un proceso aparte, solo leyendo)
+  listó una app, `brave-browser`, con su servicio y el scope de Chromium; las
+  demás se descartaron con razón: inicio automático con `NoDisplay` o
+  inactivo, la terminal, `dbus-broker.service` y servicios sin `.desktop`
+  (`kwalletd6`, `kmtpd5`, KDE Connect, el registro de AT-SPI).
+- **Apps de bandeja:** conservan su unit al cerrar la última ventana (el
+  proceso sigue en `app-<id>@<uuid>.service`). Una app normal (KWrite) pierde
+  la suya al cerrar su ventana.
+- **`StopUnit`:** cierre limpio en todos los casos: SIGTERM, la app sale por
+  su camino normal (`aboutToQuit`) en 0,03–0,11 s y la unit acaba `inactive`
+  con resultado `success`.
+- No se probó en el sandbox la activación D-Bus de dbus-broker (el bus del
+  sandbox es `dbus-daemon`, que lanza los servicios él mismo): su formato sale
+  de las units de la sesión real y del registro de AT-SPI del sandbox, que sí
+  usa dbus-broker. No hizo falta el plan B (solo fijadas o
+  StatusNotifierItem).
+
+#### HUD de volumen y brillo (F14)
+
+Tercera parte de F14 (plan de macOS 27 §4.10). Como en macOS 27, al cambiar el
+volumen o el brillo aparece una píldora de vidrio pequeña bajo la barra de
+menús, pegada al borde derecho, con el icono y una barra segmentada, sin
+porcentaje; los OSD de texto (distribución de teclado, Wi‑Fi, perfil de
+energía…) siguen siendo los de Plasma.
+
+**Por qué se intercepta `osdService`.** En Plasma 6.8 el OSD sale del módulo QML
+`org.kde.plasma.workspace.osd`, que plasmashell carga desde su objeto `Osd` de
+`/org/kde/osdService` (un `osd/Osd.qml` en el shell no tendría efecto), y
+`[OSD] Enabled=false` (en `plasmarc`) apaga también las señales `osdProgress`
+y `osdText` con las que la pantalla de bloqueo muestra su propio OSD.
+
+**`OsdInterceptor`** (`qmlplugin/osdinterceptor.*`, `osdservice.*`, módulo
+`org.goldenglass.glass`), un solo objeto por proceso dentro de plasmashell:
+
+1. Toma el objeto de `QDBusConnection::sessionBus().objectRegisteredAt("/org/kde/osdService")`
+   y compara sus slots y señales públicos (nombre, tipos de los argumentos y
+   tipo de retorno) y su `D-Bus Interface` con los de `OsdService`, que copia
+   `shell/osd.h` de Plasma en el mismo orden y con los mismos nombres de
+   argumento. **Si no coinciden exactamente, no hace nada** y queda el OSD de
+   Plasma (con otro Plasma, un aviso en el registro `org.goldenglass.osd`).
+2. Desregistra el objeto de Plasma y registra `OsdService` en la misma ruta y
+   con las mismas opciones (`ExportAllSlots | ExportAllSignals`): la
+   introspección es idéntica y plasma-pa, powerdevil, KWin y la pantalla de
+   bloqueo no notan el cambio.
+3. **Lo que muestra el HUD:** `volumeChanged` (con y sin máximo),
+   `microphoneVolumeChanged`, `mediaPlayerVolumeChanged`, `brightnessChanged`,
+   `screenBrightnessChanged` y `keyboardBrightnessChanged`. Cada uno va a un
+   `OsdHost` como `progressRequested(icon, value, maximum)`, con los iconos y
+   los umbrales de Plasma y el valor acotado a `[0, máximo]` (150 con «Subir el
+   volumen máximo»), y a la pantalla de bloqueo como el mismo `osdProgress` que
+   emitiría Plasma. Un silencio (valor 0) se ve en el HUD como la barra vacía
+   con el icono tachado, y la pantalla de bloqueo recibe el `osdText` de
+   Plasma («Audio silenciado», «Micrófono silenciado», «%1 silenciado»), con
+   la traducción del catálogo `plasmashell`. Con varias pantallas, la pantalla
+   de bloqueo, que solo tiene un OSD, recibe el nombre de la pantalla cuyo
+   brillo cambió.
+4. **El resto se reenvía** al objeto de Plasma (llamada directa al slot):
+   `kbdLayoutChanged`, `virtualDesktopChanged`, `showText`, `hide` y los
+   interruptores (táctil, Wi‑Fi, Bluetooth, WWAN, teclado virtual, inhibición,
+   perfil de energía). Sus `osdProgress` y `osdText` se reenvían al bus desde
+   `OsdService`, porque al desregistrarlo dejan de llegar solos.
+5. Respeta `[OSD] Enabled=false`: ni HUD ni señales, como Plasma.
+6. Vive mientras haya algún `OsdHost`: al destruirse el último vuelve a
+   registrar el objeto de Plasma tal como estaba.
+
+**`OsdHost`** (uno por Centro de control): `screenRect` (la pantalla de su
+barra), `activeScreen` (la ventana activa está en esa pantalla), `suppressed`
+(el Centro de control está abierto) e `intercepting` (constante: falso si el
+OSD sigue siendo el de Plasma). Elección del host:
+
+- brillo de una pantalla: el host cuyo `screenRect` es el rectángulo que llega;
+  powerdevil manda un rectángulo vacío, así que después se busca la pantalla
+  (`QScreen::name()`) que se llama como el id de la pantalla;
+- todo lo demás, y si no hay coincidencia: el host con la ventana activa, si
+  no el de la pantalla principal, si no el primero;
+- un host suprimido no muestra nada y ningún otro lo hace por él; la pantalla
+  de bloqueo recibe la señal igualmente.
+
+**`Hud.qml`** (en el Centro de control, cargado con un `Loader`; sin el módulo
+C++ solo falla ese archivo y queda el OSD de Plasma):
+
+- `activeScreen` sale de un `TasksModel` con `filterByScreen` sobre la
+  pantalla del plasmoide: su `activeTask` solo es válido si la ventana activa
+  está en ella.
+- `PlasmaCore.Dialog` sin fondo, `Qt.WindowDoesNotAcceptFocus |
+  Qt.WindowTransparentForInput` (ni foco ni clics) y tipo
+  **`CriticalNotification`**, no `OnScreenDisplay` (ver SP-09). Sin
+  `WindowStaysOnTopHint`: con él `Dialog` convierte cualquier tipo en un panel
+  (`Dock`), por debajo de las ventanas a pantalla completa.
+- `x` = borde derecho − `osd.screen_margin` − `osd.width`; `y` = borde real de
+  la barra (`GlassOverlay.menuBarHeight`) + `osd.margin_top`. Con la barra
+  oculta (`menuBarHeight` = 0) se toma `plasma.menubar_height`, para no quedar
+  debajo de la barra cuando aparece.
+- Píldora `goldenGlassTile` (radio = la mitad de la altura, borde de
+  `glass.border.alpha`) con `GlassRegion`; con «Reducir transparencia», fondo
+  de `accessibility.reduce_transparency_alpha`, como las tarjetas. Icono
+  `<icono de Plasma>-symbolic` (o el de Plasma si no hay versión simbólica, p.
+  ej. el de un reproductor) y `osd.segments` segmentos llenos en proporción a
+  `valor / máximo`.
+- Aparece con un resorte breve (`osd.open_scale` → 1 con `OutBack` de
+  `osd.open_overshoot` en `osd.open_ms`, por `Motion`: «Reducir movimiento» lo
+  deja en un fundido) y se va `osd.timeout_ms` después del último cambio con un
+  fundido de `osd.close_ms`; el vidrio se quita a `control_center.close_unblur_at`
+  del fundido, como en `GlassOverlay`. Un cambio con el HUD visible solo
+  actualiza el icono y la barra y reinicia la espera. Al abrir el Centro de
+  control el HUD se va.
+
+**Tokens `[osd]`** (al final de `goldenglass.toml`, por calibrar): `width = 200`,
+`height = 36`, `margin_top = 6`, `screen_margin = 8`, `icon = 18`,
+`segments = 16`, `segment_gap = 2`, `bar_height = 6`, `track_alpha = 0.20`,
+`fill_alpha = 0.90`, `alpha = 0.30`, `timeout_ms = 1500`, `open_ms = 260`,
+`close_ms = 220`, `open_scale = 0.9`, `open_overshoot = 1.2`. El margen
+interior es `(height − icon) / 2`. `gen_tokens.py` valida px, ms y recuentos
+enteros, opacidades en `[0, 1]` y que el icono y los segmentos quepan.
+
+**Contrato con Plasma.** `tools/plasma_api.toml` gana el tipo
+`[[system.dbus_object]]`: `check_plasma_compat.py` busca en el binario
+`plasmashell` la interfaz, la ruta, los 17 métodos y las 2 señales de
+`org.kde.osdService` (como cadenas, donde los deja moc), así que la CI avisa
+antes de que la guarda en ejecución deje el OSD de Plasma.
+
+**Pruebas.**
+
+- `osdinterceptor_test` (bajo `dbus-run-session`, con dos pantallas offscreen
+  con nombre): un `Osd` falso con la interfaz de Plasma 6.8 en la conexión de
+  sesión de la prueba, y plasma-pa y la pantalla de bloqueo en un
+  `FakeService`. Cubre la toma y la devolución con la introspección idéntica,
+  la guarda (un `Osd` con otra firma se queda), `volumeChanged` →
+  `progressRequested` + `osdProgress`, los iconos de cada OSD, los silencios,
+  el reenvío de `kbdLayoutChanged`, `showText`, `hide` y compañía con sus
+  señales, la elección de host, el Centro de control abierto y
+  `[OSD] Enabled=false`.
+- `tools/tests/test_osd_tokens.py` y las pruebas de `[[system.dbus_object]]` en
+  `test_check_plasma_compat.py`.
+- **Sandbox** (`tools/sandbox.sh` con `QT_FORCE_STDERR_LOGGING=1` y un hook): los
+  OSD se piden con `busctl --user call org.kde.plasmashell /org/kde/osdService …`
+  en el bus privado del sandbox, y la geometría de cada ventana la imprime un
+  script de KWin. Capturas del HUD de volumen (normal, 150 %, silencio),
+  micrófono, reproductor, brillo, brillo de cada pantalla y teclado, en claro,
+  oscuro y con «Reducir transparencia»; sin HUD con el Centro de control
+  abierto; encima de una ventana a pantalla completa. Con un
+  `org.goldenglass.glass` vacío en `QML_IMPORT_PATH` (como sin el módulo, o
+  con uno anterior sin `OsdHost`) solo falla `Hud.qml` («OsdHost is not a
+  type», igual que `AccessibilityReader.qml` y `AppUnitsSource.qml`) y sale el
+  OSD de Plasma.
+
+**Spike SP-09 — go con plan A** (interceptar `osdService`), con un cambio en la
+ventana. Plasma 6.8.1, KWin 6.8.1 virtual, Qt 6.12.
+
+1. **Registro, introspección y restauración: sí.** Dentro de plasmashell,
+   `objectRegisteredAt` devuelve el `Osd` de Plasma; desregistrarlo y
+   registrar `OsdService` funciona, y la introspección de
+   `/org/kde/osdService` es idéntica byte a byte a la de Plasma (comparada con
+   la de la sesión real, solo leyendo, y con la del mismo sandbox tras
+   devolver el objeto). Al quitar el último Centro de control vuelve el
+   objeto de Plasma (su OSD aparece de nuevo) y al añadir otro el HUD lo toma
+   otra vez; igual en las seis ejecuciones de la matriz.
+2. **Quién llama a qué** (fuentes 6.8.1): plasma-pa (módulo de kded
+   `audioshortcutsservice`, `mutedmicrophonereminder`) llama a
+   `volumeChanged(ii)` con máximo 100 o 150, `microphoneVolumeChanged(i)`,
+   `showText(ss)` (cambio de dispositivo, «Hablar…» del pulsar para hablar,
+   micrófono silenciado) y `hide()`. powerdevil llama a
+   `screenBrightnessChanged(issi(iiii))` con el **rectángulo vacío** (por eso
+   se busca la pantalla por su nombre), `brightnessChanged(i)` y
+   `keyboardBrightnessChanged(i)` (`BrightnessOSDWidget`) y
+   `powerProfileChanged(s)`. Nadie de los dos llama a
+   `mediaPlayerVolumeChanged`, que se cubre igualmente.
+3. **Pantalla de bloqueo: sigue funcionando.** `kscreenlocker_greet` se
+   suscribe a `osdProgress` y `osdText` de `org.kde.plasmashell` en
+   `/org/kde/osdService`. Con `kscreenlocker_greet --testing` en el sandbox,
+   el volumen al 60 % sale en su OSD como barra, el silencio como «Audio
+   silenciado» y un `kbdLayoutChanged` reenviado como texto. No se probó con
+   la sesión bloqueada de verdad (el sandbox arranca KWin con
+   `--no-lockscreen` y la sesión real no se bloquea).
+4. **Posición de un `OnScreenDisplay`: no.** libplasma (`Dialog`) no manda a
+   KWin la posición de una ventana `OnScreenDisplay` (ni al mostrarla ni al
+   moverla), así que KWin la centra abajo, como el OSD de Plasma, a cualquier
+   escala; un ancla `visualParent` tampoco llegaría. Además,
+   `WindowStaysOnTopHint` convierte cualquier tipo en `Dock`. **Plan para el
+   punto 4:** tipo `CriticalNotification`, sin `WindowStaysOnTopHint`: KWin
+   respeta su `x`/`y` y la pone en la capa de avisos críticos, encima de las
+   ventanas a pantalla completa (`Notification` quedaría debajo de ellas).
+
+| Matriz | Barra | HUD (lógico, según KWin) | Esperado |
+|---|---|---|---|
+| 1 salida 1600×1000, escala 1, claro y oscuro | 24 | 1392,30 200×36 | 1600 − 8 − 200, 24 + 6 |
+| 1 salida, escala 1,5 (1067×667) | 24 | 859,30 200×36 | ✓ |
+| 1 salida, escala 2 (800×500) | 24 | 592,30 200×36 | ✓ |
+| 2 salidas, escala 1 | 24 y 24 | 1392,30 (volumen y brillo de la 1.ª), 2992,30 (brillo de la 2.ª) | ✓ |
+| 2 salidas, escala 2, oscuro | 24 y 24 | 592,30 y 2192,30 | ✓ |
+
+- Sin ventanas, el volumen sale en la pantalla principal; el brillo de cada
+  pantalla, en la suya.
+- No hizo falta el plan B (`[OSD] Enabled=false` y fuentes propias de
+  PulseAudio y brillo), que habría perdido los OSD de texto.
+- Sin probar: pantallas físicas, el teclado multimedia real (los OSD se
+  pidieron por D-Bus con los mismos argumentos que plasma-pa y powerdevil),
+  la pantalla de bloqueo real y la elección por ventana activa en el sandbox
+  (cubierta por la prueba de C++).
 
 ### 4.6 Tipografía — `fontconfig/`
 - SF Pro **no se redistribuye** (licencia de Apple).
@@ -1182,7 +1599,8 @@ para capturar fotogramas a mitad de animación; minimizado con
   (`TaskMenu.qml`): acciones de la app (las del `.desktop`, de Kicker
   `SimpleFavoritesModel`, leídas al abrir el menú; solo
   `_kicker_jumpListAction`, sin recientes ni Editar/Desinstalar), Nueva ventana / Abrir,
-  Mantener en el Dock, Salir. Arrastrar una app fijada la reordena; soltar
+  Mantener en el Dock, Salir (o «Detener ejecución en segundo plano», ver
+  «Apps en segundo plano en el Dock»). Arrastrar una app fijada la reordena; soltar
   archivos sobre una app los abre con ella. Publica la geometría de cada icono
   para la animación de minimizar de KWin.
 - **Añadir apps:** arrastrar una app desde Apps (o un `.desktop` desde Dolphin)
@@ -1204,7 +1622,7 @@ para capturar fotogramas a mitad de animación; minimizado con
   recientes que no están ya en el dock, tras un separador (como macOS).
 - **Ajustes:** `goldenglass-dock` (`tools/dock.py`) escribe la configuración
   del plasmoid con el script de plasmashell (`iconSize`, `magnification`,
-  `magnificationSize`, `showRecent`); el dock la aplica al momento y ajusta el
+  `magnificationSize`, `showRecent`, `showBackground`); el dock la aplica al momento y ajusta el
   grosor. Valores de fábrica en `[dock]` y `[plasma]` de los tokens (el
   `main.xml` del plasmoid es una plantilla). El módulo «Dock» lo llama. Un solo
   rango de tamaños (`[dock] icon_size_min/max`, `magnification_size_max`; la
@@ -1400,7 +1818,7 @@ para capturar fotogramas a mitad de animación; minimizado con
 | F11 | Efecto de KWin `goldenglass_glass` (fork de Blur) con refracción; interruptor en Vidrio | ✅ |
 | F12 | Material y accesibilidad: filo del vidrio, sombra inactiva, semáforos grises, Reducir transparencia, Mostrar bordes | 🚧 |
 | F13 | Ventanas y movimiento: efectos de KWin, atajos de tiling, velocidad de animación global, Reducir movimiento | 🚧 |
-| F14 | Barra de menús y Dock: barra a 24 px, HUD de volumen y brillo, apps en segundo plano | 📋 |
+| F14 | Barra de menús y Dock: barra a 24 px, HUD de volumen y brillo, apps en segundo plano | ✅ |
 | F15 | Estilos de icono Tintado y Transparente; módulo Estilo de iconos | 📋 |
 | F16 | Spotlight propio (sustituye a KRunner) con vistas, portapapeles y teclas rápidas | 📋 |
 | F17 | Centro de notificaciones y avisos de vidrio | 📋 |
@@ -1426,7 +1844,7 @@ Refracción en las ventanas de las apps.
 | Alias de fuente no resuelto por Qt | Plan B descrito en 4.6 |
 | libadwaita ignora temas | Solo colores; documentado |
 | Los plasmoids usan módulos QML privados de Plasma (sin API estable) | Mínimo Plasma 6.8; `tools/plasma_api.toml` lista los tipos, propiedades, métodos, señales, enums y roles privados que usa el QML y `tools/check_plasma_compat.py` los comprueba contra los `.qmltypes` instalados (los roles, contra las cadenas del plugin) en la CI y en la semanal con `[kde-unstable]`, indicando el archivo QML afectado; un módulo privado sin listar falla; probar en el sandbox tras cada actualización de Plasma |
-| Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` (barra y dock comparten SVG) | `radius.dock ≤ menubar_height / 2` (14 px); el generador lo valida |
+| Plasma limita la altura de cada panel a la suma de las esquinas de `panel-background` | La barra tiene su propio marco (`north-`, `radius.menubar`) y el generador valida `2 × radius.menubar ≤ menubar_height`; `Panel.qml` no pone mínimo hasta que llega la contención (sin eso se recortaba a las esquinas del dock y se guardaba); SP-07 en F14 |
 | Plasma Login Manager no admite temas: el diseño propio solo se ve con SDDM | En PLM se aplica fondo y sincronización (el módulo lo explica); si KDE añade temas, se porta el QML de SDDM |
 | Copiar ajustes de un usuario al home de `plasmalogin` como root | Lectura como el usuario y escritura como `plasmalogin` en procesos hijo sin privilegios; probado con un enlace a `/etc/shadow` |
 | La especificación de sonidos recurre a `freedesktop` para lo que falta | Los nombres no cubiertos llevan un `<nombre>.disabled` |
@@ -1434,6 +1852,8 @@ Refracción en las ventanas de las apps.
 | La fuente del tema entra en cada initramfs | Inter Variable (0,9 MB) en vez de `Inter.ttc` (13 MB) |
 | El dock depende de `views/Panel.qml` copiado de Plasma; si no carga, plasmashell se cae (pasó con Plasma 6.8) | Cambio mínimo y documentado en `UPSTREAM.md` (merge a tres vías por versión); `X-GoldenGlass-PlasmaVersion` + hook de pacman que quita `views/` y `lockscreen/` con otro Plasma; la CI comprueba módulos QML y versión (`tools/check_plasma_compat.py`) |
 | PanelView fija la región de entrada desde el borde superior de la placa | Aceptado: la ampliación se recoge al salir de la placa (4.13) |
+| El HUD sustituye un objeto interno de plasmashell (`/org/kde/osdService`) | Solo si exporta exactamente las firmas que copia `OsdService` (si no, queda el OSD de Plasma); los OSD de texto y las señales de la pantalla de bloqueo siguen siendo los de Plasma; al irse el último Centro de control se devuelve el objeto original; `check_plasma_compat.py` busca la interfaz en el binario `plasmashell` y `UPSTREAM.md` dice cómo revisarla en cada versión de Plasma (SP-09) |
+| Las apps en segundo plano dependen de cómo nombran sus units KIO, dbus-broker, Chromium y Flatpak | `parseUnitName()` sigue la especificación de systemd y tiene una prueba con los nombres reales; si el nombre no basta, `SourcePath` y `MainPID`; lo que no se reconoce no se muestra (`backgroundIgnore` para lo que sobre). Las apps lanzadas desde una terminal no se detectan (SP-08) |
 | El dock unificado pierde funciones de `icontasks` | Mismo `TasksModel`; menú, vistas previas, arrastre y soltar archivos reimplementados (4.13) |
 | La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle` (un hook de pacman lo avisa al actualizar KWin); `goldenglass-glass --check` al iniciar sesión reactiva Blur si el efecto no carga; fork documentado en `UPSTREAM.md` |
 | Valores de fábrica de KWin que pisan los del usuario | `goldenglass-windows` solo escribe claves vacías, una vez por `DefaultsVersion` y solo con un Global Theme GoldenGlass; «Reducir movimiento» guarda y devuelve lo anterior sin pisar lo que el usuario cambió; pruebas de actualización con un `kwinrc` previo |
