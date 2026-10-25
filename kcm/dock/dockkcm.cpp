@@ -72,6 +72,8 @@ void DockKcm::setIconSize(int value)
 {
     if (m_iconSize != value) {
         m_iconSize = value;
+        // la ampliación nunca es menor que el icono
+        m_magnificationSize = qMax(m_magnificationSize, m_iconSize);
         changed();
     }
 }
@@ -96,6 +98,7 @@ int DockKcm::magnificationSize() const
 
 void DockKcm::setMagnificationSize(int value)
 {
+    value = qMax(value, m_iconSize);
     if (m_magnificationSize != value) {
         m_magnificationSize = value;
         changed();
@@ -211,7 +214,7 @@ void DockKcm::apply()
                       QStringLiteral("--magnification"),
                       onOff(m_magnification),
                       QStringLiteral("--magnification-size"),
-                      QString::number(m_magnificationSize),
+                      QString::number(qMax(m_magnificationSize, m_iconSize)),
                       QStringLiteral("--recent"),
                       onOff(m_showRecent)});
     Q_EMIT busyChanged();
