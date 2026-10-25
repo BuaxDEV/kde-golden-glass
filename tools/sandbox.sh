@@ -19,6 +19,9 @@
 #    lo heredan y nunca usan la configuración real.
 #  - Los servicios que saldrían de la máquina (KDE Connect, OBEX) se sustituyen
 #    por /bin/false en el bus privado.
+#  - Los lanzadores que instala tools/install.sh (goldenglass-system, goldenglass-dock)
+#    van a GOLDENGLASS_BIN_DIR, dentro del sandbox, que se añade al PATH: el HOME
+#    real no recibe ningún archivo.
 #  - Cada ejecución marca su entorno con GG_SANDBOX_ID; al terminar se cierran
 #    todos los procesos con esa marca (los servicios activados sobreviven al bus).
 
@@ -60,6 +63,10 @@ if [[ -z ${GG_SANDBOX_INNER:-} ]]; then
   # Como startplasma: los defaults del Global Theme se leen de kdedefaults/.
   export XDG_CONFIG_DIRS="$XDG_CONFIG_HOME/kdedefaults:${XDG_CONFIG_DIRS:-/etc/xdg}"
   # libXcursor busca en ~/.local/share/icons (HOME real), no en XDG_DATA_HOME.
+  # Lanzadores de install.sh dentro del sandbox (no en ~/.local/bin del HOME real).
+  export GOLDENGLASS_BIN_DIR="$HOME_DIR/bin"
+  mkdir -p -- "$GOLDENGLASS_BIN_DIR"
+  export PATH="$GOLDENGLASS_BIN_DIR:$PATH"
   export XCURSOR_PATH="$XDG_DATA_HOME/icons:/usr/share/icons:/usr/share/pixmaps"
   export XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true KDE_SESSION_VERSION=6
   # Directorio de sockets propio (ruta corta: los sockets Unix admiten ~108
