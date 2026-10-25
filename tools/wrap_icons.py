@@ -41,7 +41,6 @@ import icons  # noqa: E402
 import icons_apps  # noqa: E402
 
 THEMES = {"GoldenGlass": False, "GoldenGlass-Dark": True}  # tema → oscuro
-PAPER = ("#FFFFFF", "#E6E8EC")
 RENDER = 256          # resolución del PNG incrustado
 INSET = 0.68          # tamaño del icono dentro del squircle (lado del squircle = 52)
 FULL_BLEED = 0.80     # cobertura opaca a partir de la cual el icono ya es un «tile»
@@ -169,6 +168,7 @@ def wrap(img, dark: bool) -> str:
     """SVG (lienzo 64) con el icono `img` encerrado en el squircle."""
     from PyQt6.QtGui import QImage, QPainter
 
+    tt = icons_apps.tile_tokens()
     if _coverage(img) >= FULL_BLEED:
         # Ya es un «tile»: se recorta a la forma del squircle y ocupa todo.
         clipped = QImage(img.size(), QImage.Format.Format_ARGB32_Premultiplied)
@@ -180,7 +180,7 @@ def wrap(img, dark: bool) -> str:
         p.end()
         glyph = (f'<image x="0" y="0" width="64" height="64" '
                  f'xlink:href="data:image/png;base64,{_png(clipped)}"/>')
-        body = icons_apps.tile(icons_apps.GRAPHITE if dark else PAPER, icons_apps.WHITE, glyph, dark)
+        body = icons_apps.tile(tt.graphite if dark else tt.wrap_paper, tt.white, glyph, dark, tt=tt)
         # sin sombra propia del símbolo: el recorte ya es el tile
         body = body.replace('<g filter="url(#glyphshadow)">', "<g>")
     else:
@@ -188,7 +188,7 @@ def wrap(img, dark: bool) -> str:
         pos = 32 - side / 2
         glyph = (f'<image x="{pos:.2f}" y="{pos:.2f}" width="{side:.2f}" height="{side:.2f}" '
                  f'xlink:href="data:image/png;base64,{_png(img)}"/>')
-        body = icons_apps.tile(icons_apps.GRAPHITE if dark else PAPER, icons_apps.WHITE, glyph, dark)
+        body = icons_apps.tile(tt.graphite if dark else tt.wrap_paper, tt.white, glyph, dark, tt=tt)
     return ('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
             f'width="64" height="64" viewBox="0 0 64 64">{body}</svg>\n')
 
@@ -207,16 +207,16 @@ def _own_names(icons_dir: Path) -> set[str]:
 
 def _generator_files() -> list[Path]:
     """Lo que decide el dibujo: este script, los módulos que carga de su
-    carpeta (icons, icons_apps, icons_mime…) y los tokens, si están (en el
-    repositorio; el paquete instala solo los módulos)."""
+    carpeta (icons, icons_apps, icons_mime…) y los tokens del tile (el TOML en el
+    repositorio, el icon-tile.json en el paquete)."""
     here = Path(__file__).resolve().parent
     files = {Path(__file__).resolve()}
     for module in list(sys.modules.values()):
         origin = getattr(module, "__file__", None)
         if origin and Path(origin).resolve().parent == here:
             files.add(Path(origin).resolve())
-    tokens = here.parent / "tokens" / "goldenglass.toml"
-    if tokens.is_file():
+    tokens = icons_apps.tile_tokens_source()
+    if tokens:
         files.add(tokens)
     return sorted(files)
 

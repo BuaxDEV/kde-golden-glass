@@ -158,13 +158,58 @@ def build_colors(tokens: dict, variant: str) -> str:
 # Secciones que leen los generadores: deben existir y ser tablas
 REQUIRED_SECTIONS = (
     "meta", "radius", "focus_ring", "glass", "plasma", "shadow", "decoration", "menu", "finder",
-    "font", "apps", "scroll", "traffic_lights", "dock", "control_center", "boot", "login",
+    "font", "apps", "icon_tile", "scroll", "traffic_lights", "dock", "control_center", "boot", "login",
     "sounds", "accessibility", "light", "dark",
 )
 
 # [accessibility]: valores de fábrica de goldenglassrc [Accessibility] y la
 # opacidad con «Reducir transparencia» (docs/ARCHITECTURE.md, «Accesibilidad»)
 ACCESSIBILITY_FLAGS = ("show_borders", "reduce_transparency", "reduce_motion")
+
+
+ICON_TILE_PAIRS = ("white", "graphite", "paper", "wrap_paper")
+ICON_TILE_COLORS = ("highlight", "shadow_color")
+ICON_TILE_ALPHAS = ("shadow_alpha", "glyph_shadow_alpha", "sheen_light", "sheen_dark", "rim_top_light",
+                    "rim_top_dark", "rim_mid", "rim_bottom_light", "rim_bottom_dark", "edge_alpha")
+ICON_TILE_LENGTHS = ("shadow_blur", "shadow_dy", "glyph_shadow_blur", "glyph_shadow_dy", "rim_width", "edge_width")
+
+
+def validate_icon_tile(tile: dict) -> None:
+    """[icon_tile]: colores válidos, opacidades en 0..1 y medidas del lienzo de 64 en 0..8."""
+    expected = {*ICON_TILE_PAIRS, *ICON_TILE_COLORS, *ICON_TILE_ALPHAS, *ICON_TILE_LENGTHS}
+    if set(tile) != expected:
+        raise SystemExit(f"[icon_tile]: faltan {sorted(expected - set(tile))} o sobran {sorted(set(tile) - expected)}")
+
+    def number(key: str) -> float:
+        value = tile[key]
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise SystemExit(f"[icon_tile].{key}: debe ser un número")
+        return float(value)
+
+    def color(key: str, value: object) -> None:
+        if not isinstance(value, str):
+            raise SystemExit(f"[icon_tile].{key}: debe ser un color #RRGGBB")
+        try:
+            parsed = Color.parse(value)
+        except ValueError as e:
+            raise SystemExit(f"[icon_tile].{key}: {e}") from None
+        if parsed.a != 1.0 or len(value.lstrip("#")) != 6:
+            raise SystemExit(f"[icon_tile].{key}: debe ser #RRGGBB, sin alfa (la opacidad va en su propia clave)")
+
+    for key in ICON_TILE_PAIRS:
+        pair = tile[key]
+        if not isinstance(pair, list) or len(pair) != 2:
+            raise SystemExit(f"[icon_tile].{key}: debe ser [arriba, abajo]")
+        for value in pair:
+            color(key, value)
+    for key in ICON_TILE_COLORS:
+        color(key, tile[key])
+    for key in ICON_TILE_ALPHAS:
+        if not 0 <= number(key) <= 1:
+            raise SystemExit(f"[icon_tile].{key}: la opacidad debe estar entre 0 y 1")
+    for key in ICON_TILE_LENGTHS:
+        if not 0 <= number(key) <= 8:
+            raise SystemExit(f"[icon_tile].{key}: la medida debe estar entre 0 y 8 (lienzo de 64)")
 
 
 def validate(tokens: dict) -> None:
@@ -174,6 +219,8 @@ def validate(tokens: dict) -> None:
     not_tables = [name for name in REQUIRED_SECTIONS if not isinstance(tokens[name], dict)]
     if not_tables:
         raise SystemExit(f"estas claves de los tokens deben ser secciones: {', '.join(not_tables)}")
+
+    validate_icon_tile(tokens["icon_tile"])
 
     light, dark = set(tokens["light"]), set(tokens["dark"])
     if light != dark:

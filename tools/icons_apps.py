@@ -15,14 +15,127 @@ squircle a partir de su icono instalado.
 
 from __future__ import annotations
 
+import json
 import math
+import os
+import tomllib
 from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
 from typing import Callable
 
 import icons_mime
+from icons_style import Style
 
-WHITE = ("#FFFFFF", "#ECEFF5")
-GRAPHITE = ("#3A3A3E", "#1C1C1F")
+Pair = tuple[str, str]
+
+
+def _alpha(value: float) -> str:
+    """Opacidad SVG con dos decimales y sin el cero inicial: 0.3 → «.30»."""
+    text = f"{value:.2f}"
+    return text[1:] if text.startswith("0.") else text
+
+
+def _length(value: float) -> str:
+    """Medida SVG sin ceros sobrantes ni cero inicial: 1.30 → «1.3», 0.8 → «.8»."""
+    text = f"{value:g}"
+    return text[1:] if text.startswith("0.") else text
+
+
+@dataclass(frozen=True)
+class TileTokens:
+    """La sección [icon_tile] de los tokens: todo lo visual del squircle."""
+
+    white: Pair
+    graphite: Pair
+    paper: Pair
+    wrap_paper: Pair
+    highlight: str
+    shadow_color: str
+    shadow_blur: float
+    shadow_dy: float
+    shadow_alpha: float
+    glyph_shadow_blur: float
+    glyph_shadow_dy: float
+    glyph_shadow_alpha: float
+    sheen_light: float
+    sheen_dark: float
+    rim_width: float
+    rim_top_light: float
+    rim_top_dark: float
+    rim_mid: float
+    rim_bottom_light: float
+    rim_bottom_dark: float
+    edge_alpha: float
+    edge_width: float
+
+    @classmethod
+    def from_tokens(cls, tokens: dict) -> "TileTokens":
+        section = dict(tokens["icon_tile"])
+        for key in ("white", "graphite", "paper", "wrap_paper"):
+            top, bottom = section[key]
+            section[key] = (top, bottom)
+        return cls(**section)
+
+    def filters(self) -> str:
+        """Filtros de sombra del squircle (tileshadow) y del símbolo (glyphshadow)."""
+        def shadow(fid: str, blur: float, dy: float, alpha: float) -> str:
+            return (
+                f'<filter id="{fid}" x="-20%" y="-20%" width="140%" height="140%" '
+                'color-interpolation-filters="sRGB">'
+                f'<feGaussianBlur in="SourceAlpha" stdDeviation="{_length(blur)}"/>'
+                f'<feOffset dy="{_length(dy)}" result="b"/>'
+                f'<feFlood flood-color="{self.shadow_color}" flood-opacity="{_alpha(alpha)}"/>'
+                '<feComposite in2="b" operator="in"/>'
+                '<feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>')
+        return (shadow("tileshadow", self.shadow_blur, self.shadow_dy, self.shadow_alpha)
+                + shadow("glyphshadow", self.glyph_shadow_blur, self.glyph_shadow_dy, self.glyph_shadow_alpha))
+
+
+HERE = Path(__file__).resolve().parent
+REPO_TOKENS = HERE.parent / "tokens" / "goldenglass.toml"   # solo existe en el repositorio
+TILE_JSON = "icon-tile.json"                                  # lo genera icons.build()
+
+
+def _data_dirs() -> list[Path]:
+    home = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
+    return [home, *map(Path, os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":"))]
+
+
+def tile_tokens_source() -> Path | None:
+    """Archivo de donde salen los tokens del tile: el TOML del repositorio (desarrollo), si no el
+    icon-tile.json instalado (XDG_DATA_DIRS/goldenglass/ y junto a tools/), o None."""
+    if REPO_TOKENS.is_file():
+        return REPO_TOKENS
+    for path in (*(d / "goldenglass" / TILE_JSON for d in _data_dirs()), HERE.parent / TILE_JSON):
+        if path.is_file():
+            return path
+    return None
+
+
+@lru_cache(maxsize=1)
+def _default_tile_tokens() -> TileTokens:
+    path = tile_tokens_source()
+    if path is None:
+        raise SystemExit(f"no encuentro los tokens del icono ({TILE_JSON} en $XDG_DATA_DIRS/goldenglass/ "
+                         f"ni tokens/goldenglass.toml): reinstala goldenglass-icons")
+    if path.suffix == ".json":
+        with path.open(encoding="utf-8") as f:
+            return TileTokens.from_tokens(json.load(f))
+    with path.open("rb") as f:
+        return TileTokens.from_tokens(tomllib.load(f))
+
+
+def tile_tokens(tokens: dict | None = None) -> TileTokens:
+    """[icon_tile] de `tokens`, o de la fuente por defecto (ver tile_tokens_source)."""
+    return TileTokens.from_tokens(tokens) if tokens is not None else _default_tile_tokens()
+
+
+def write_tile_json(tokens: dict, path: Path) -> Path:
+    """Escribe [icon_tile] como JSON para las herramientas instaladas (sin TOML ni ggcommon)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"icon_tile": tokens["icon_tile"]}, indent=2) + "\n", encoding="utf-8")
+    return path
 
 
 def _squircle(cx: float = 32, cy: float = 32, r: float = 26, n: float = 5.0, steps: int = 96) -> str:
@@ -38,57 +151,52 @@ def _squircle(cx: float = 32, cy: float = 32, r: float = 26, n: float = 5.0, ste
 
 SQUIRCLE = _squircle()
 
-FILTERS = (
-    '<filter id="tileshadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">'
-    '<feGaussianBlur in="SourceAlpha" stdDeviation="1.3"/><feOffset dy="1.2" result="b"/>'
-    '<feFlood flood-color="#000000" flood-opacity=".30"/><feComposite in2="b" operator="in"/>'
-    '<feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
-    '<filter id="glyphshadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">'
-    '<feGaussianBlur in="SourceAlpha" stdDeviation=".8"/><feOffset dy=".8" result="b"/>'
-    '<feFlood flood-color="#000000" flood-opacity=".22"/><feComposite in2="b" operator="in"/>'
-    '<feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
-)
-
-
 def _grad(gid: str, top: str, bottom: str, y1: float = 6, y2: float = 58) -> str:
     return (f'<linearGradient id="{gid}" x1="0" y1="{y1}" x2="0" y2="{y2}" gradientUnits="userSpaceOnUse">'
             f'<stop offset="0" stop-color="{top}"/><stop offset="1" stop-color="{bottom}"/></linearGradient>')
 
 
-def tile(bg: tuple[str, str], fg: tuple[str, str], glyph: str, dark: bool) -> str:
+def tile(bg: Pair, fg: Pair, glyph: str, dark: bool, style: Style = Style.DEFAULT,
+         tt: TileTokens | None = None) -> str:
     """Squircle con fondo `bg`, el símbolo pintado con url(#fg) encima."""
-    sheen = ".10" if dark else ".28"
+    tt = tt or tile_tokens()
+    hi = tt.highlight
+    sheen = _alpha(tt.sheen_dark if dark else tt.sheen_light)
+    rim_top = _alpha(tt.rim_top_dark if dark else tt.rim_top_light)
+    rim_bottom = _alpha(tt.rim_bottom_dark if dark else tt.rim_bottom_light)
     return (
-        "<defs>" + FILTERS + _grad("bg", *bg) + _grad("fg", *fg, y1=14, y2=50)
+        "<defs>" + tt.filters() + _grad("bg", *bg) + _grad("fg", *fg, y1=14, y2=50)
         + '<linearGradient id="sheen" x1="0" y1="6" x2="0" y2="34" gradientUnits="userSpaceOnUse">'
-        f'<stop offset="0" stop-color="#FFFFFF" stop-opacity="{sheen}"/>'
-        '<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>'
+        f'<stop offset="0" stop-color="{hi}" stop-opacity="{sheen}"/>'
+        f'<stop offset="1" stop-color="{hi}" stop-opacity="0"/></linearGradient>'
         '<linearGradient id="rim" x1="0" y1="6" x2="0" y2="58" gradientUnits="userSpaceOnUse">'
-        f'<stop offset="0" stop-color="#FFFFFF" stop-opacity="{".30" if dark else ".55"}"/>'
-        '<stop offset=".5" stop-color="#FFFFFF" stop-opacity=".06"/>'
-        f'<stop offset="1" stop-color="#FFFFFF" stop-opacity="{".12" if dark else ".22"}"/></linearGradient>'
+        f'<stop offset="0" stop-color="{hi}" stop-opacity="{rim_top}"/>'
+        f'<stop offset=".5" stop-color="{hi}" stop-opacity="{_alpha(tt.rim_mid)}"/>'
+        f'<stop offset="1" stop-color="{hi}" stop-opacity="{rim_bottom}"/></linearGradient>'
         "</defs>"
         f'<path d="{SQUIRCLE}" fill="url(#bg)" filter="url(#tileshadow)"/>'
         f'<path d="{SQUIRCLE}" fill="url(#sheen)"/>'
         f'<g filter="url(#glyphshadow)">{glyph}</g>'
-        f'<path d="{SQUIRCLE}" fill="none" stroke="url(#rim)" stroke-width="1"/>'
-        f'<path d="{SQUIRCLE}" fill="none" stroke="#000000" stroke-opacity=".14" stroke-width=".4"/>'
+        f'<path d="{SQUIRCLE}" fill="none" stroke="url(#rim)" stroke-width="{_length(tt.rim_width)}"/>'
+        f'<path d="{SQUIRCLE}" fill="none" stroke="{tt.shadow_color}" stroke-opacity="{_alpha(tt.edge_alpha)}" '
+        f'stroke-width="{_length(tt.edge_width)}"/>'
     )
 
 
 @dataclass(frozen=True)
 class App:
     names: tuple[str, ...]
-    tint: tuple[str, str]                 # degradado del color de la app (arriba, abajo)
+    tint: Pair | None                     # degradado del color de la app (arriba, abajo); None con custom
     glyph: Callable[[bool], str]          # símbolo; pinta con url(#fg) (o colores propios)
-    custom: Callable[[bool], tuple[tuple[str, str], tuple[str, str]]] | None = None  # (bg, fg) propios
+    custom: Callable[[bool, TileTokens], tuple[Pair, Pair]] | None = None  # (bg, fg) propios
 
-    def svg(self, dark: bool) -> str:
+    def svg(self, dark: bool, style: Style = Style.DEFAULT, tt: TileTokens | None = None) -> str:
+        tt = tt or tile_tokens()
         if self.custom:
-            bg, fg = self.custom(dark)
+            bg, fg = self.custom(dark, tt)
         else:
-            bg, fg = (GRAPHITE, self.tint) if dark else (self.tint, WHITE)
-        return tile(bg, fg, self.glyph(dark), dark)
+            bg, fg = (tt.graphite, self.tint) if dark else (self.tint, tt.white)
+        return tile(bg, fg, self.glyph(dark), dark, style, tt)
 
 
 F = 'fill="url(#fg)"'
@@ -113,7 +221,7 @@ GEAR = (f'<path {F} fill-rule="evenodd" d="' + "".join(
 ) + 'Z M32 25.5 A6.5 6.5 0 1 0 32 38.5 A6.5 6.5 0 1 0 32 25.5 Z"/>')
 
 
-def terminal_custom(dark: bool):
+def terminal_custom(dark: bool, tt: TileTokens):
     return (("#2C2C2E", "#0E0E10") if dark else ("#4A4A4E", "#1C1C1F")), ("#FFFFFF", "#D8D8DC")
 
 
@@ -251,11 +359,11 @@ def fonts(dark: bool) -> str:
 
 
 def _custom_dark(top: str = "#2C2C2E", bottom: str = "#111113"):
-    return lambda dark: ((("#2C2C2E", "#0E0E10") if dark else (top, bottom)), WHITE)
+    return lambda dark, tt: ((("#2C2C2E", "#0E0E10") if dark else (top, bottom)), tt.white)
 
 
-def _custom_paper(dark: bool):
-    return (GRAPHITE if dark else ("#FFFFFF", "#E4E6EB")), WHITE
+def _custom_paper(dark: bool, tt: TileTokens):
+    return (tt.graphite if dark else tt.paper), tt.white
 
 
 def apps_grid(dark: bool) -> str:
@@ -268,9 +376,9 @@ def apps_grid(dark: bool) -> str:
 
 APPS: tuple[App, ...] = (
     App(("org.kde.dolphin", "dolphin", "system-file-manager"), ("#5AC8FA", "#0A6CFF"), _const(FOLDER)),
-    App(("utilities-terminal", "org.kde.konsole", "konsole", "terminal"), WHITE, terminal(), custom=terminal_custom),
+    App(("utilities-terminal", "org.kde.konsole", "konsole", "terminal"), None, terminal(), custom=terminal_custom),
     App(("preferences-system", "systemsettings", "org.kde.systemsettings"), ("#AEAEB2", "#636366"), _const(GEAR)),
-    App(("accessories-calculator", "kcalc", "org.kde.kcalc"), WHITE, calculator,
+    App(("accessories-calculator", "kcalc", "org.kde.kcalc"), None, calculator,
         custom=_custom_dark("#58585C", "#2C2C2E")),
     App(("kate", "org.kde.kate"), ("#8E8CFF", "#4B48C8"), _const(KATE)),
     App(("kwrite", "org.kde.kwrite", "accessories-text-editor"), ("#FFB340", "#FF8A00"), _const(KWRITE)),
@@ -278,31 +386,31 @@ APPS: tuple[App, ...] = (
     App(("gwenview", "org.kde.gwenview"), ("#5BE07A", "#1FA548"), _const(GWENVIEW)),
     App(("ark", "org.kde.ark", "utilities-file-archiver"), ("#D6AE80", "#94704A"), _const(ARK)),
     App(("haruna", "org.kde.haruna"), ("#F06BD2", "#B5179E"), _const(HARUNA)),
-    App(("utilities-system-monitor", "org.kde.plasma-systemmonitor", "ksysguard"), WHITE, monitor,
+    App(("utilities-system-monitor", "org.kde.plasma-systemmonitor", "ksysguard"), None, monitor,
         custom=_custom_dark("#3A3A3E", "#141416")),
-    App(("filelight", "org.kde.filelight"), WHITE, filelight, custom=_custom_paper),
+    App(("filelight", "org.kde.filelight"), None, filelight, custom=_custom_paper),
     App(("partitionmanager", "org.kde.partitionmanager"), ("#A0AEC0", "#5A6B85"), _const(PARTITION)),
     App(("hwinfo", "org.kde.kinfocenter", "kinfocenter"), ("#4DA3FF", "#0A5FD8"), _const(INFO)),
     App(("kdeconnect", "org.kde.kdeconnect.app", "org.kde.kdeconnect"), ("#7AD7F0", "#2D8FD0"), _const(CONNECT)),
     App(("kwalletmanager", "org.kde.kwalletmanager"), ("#C7CBD1", "#7C838D"), _const(WALLET)),
-    App(("kfontview", "org.kde.kfontview", "kfontinst"), WHITE, fonts, custom=_custom_paper),
+    App(("kfontview", "org.kde.kfontview", "kfontinst"), None, fonts, custom=_custom_paper),
     App(("preferences-desktop-emoticons", "org.kde.plasma.emojier"), ("#FFD60A", "#FF9F0A"), _const(EMOJI)),
     App(("kmenuedit", "org.kde.kmenuedit"), ("#8C9BB4", "#4B5A70"), _const(MENUEDIT)),
     App(("klipper", "org.kde.klipper"), ("#63E6BE", "#12B886"), _const(KLIPPER)),
     App(("preferences-desktop-theme", "goldenglass-settings"), ("#F7C76B", "#D98E2B"), _const(THEME)),
-    App(("goldenglass-apps",), WHITE, apps_grid, custom=_custom_paper),
-    App(("preferences-desktop-color", "org.kde.kcolorschemeeditor"), WHITE, color_wheel, custom=_custom_paper),
+    App(("goldenglass-apps",), None, apps_grid, custom=_custom_paper),
+    App(("preferences-desktop-color", "org.kde.kcolorschemeeditor"), None, color_wheel, custom=_custom_paper),
     App(("org.cachyos.hello", "cachyos-hello"), ("#2EE6C0", "#00897B"), _const(HELLO)),
     App(("org.cachyos.KernelManager",), ("#4CD964", "#1E8E3E"), _const(KERNEL)),
     App(("org.cachyos.scx-manager",), ("#FFAA33", "#E8590C"), _const(SCX)),
     App(("cachy-update-blue", "arch-update"), ("#6EA8FF", "#2F5BEA"), _const(UPDATE)),
-    App(("Alacritty", "alacritty"), WHITE, terminal("#FF9F0A"), custom=terminal_custom),
-    App(("kitty",), WHITE, terminal("#FFD60A", '<path d="M18 21 L21 15.5 L24 21 M40 21 L43 15.5 L46 21" '
+    App(("Alacritty", "alacritty"), None, terminal("#FF9F0A"), custom=terminal_custom),
+    App(("kitty",), None, terminal("#FFD60A", '<path d="M18 21 L21 15.5 L24 21 M40 21 L43 15.5 L46 21" '
                                      'fill="none" stroke="#FFD60A" stroke-width="2.2" stroke-linejoin="round" '
                                      'stroke-linecap="round"/>'), custom=terminal_custom),
     App(("com.mitchellh.ghostty", "ghostty"), ("#6B7BFF", "#2B3496"), _const(GHOST)),
-    App(("foot",), WHITE, terminal("#64D2FF"), custom=terminal_custom),
-    App(("btop",), WHITE, btop, custom=_custom_dark("#3A3A3E", "#141416")),
+    App(("foot",), None, terminal("#64D2FF"), custom=terminal_custom),
+    App(("btop",), None, btop, custom=_custom_dark("#3A3A3E", "#141416")),
     App(("org.gnome.Meld", "meld"), ("#A3E635", "#4D7C0F"), _const(MELD)),
     App(("org.pulseaudio.pavucontrol", "pavucontrol", "multimedia-volume-control"), ("#FF7AB6", "#D6336C"),
         _const(PAVU)),
@@ -311,13 +419,14 @@ APPS: tuple[App, ...] = (
 )
 
 
-def files() -> list[tuple[str, str, str, tuple[str, ...]]]:
-    """(tema, ruta relativa, cuerpo SVG en lienzo 64, alias)."""
+def files(tokens: dict | None = None, style: Style = Style.DEFAULT) -> list[tuple[str, str, str, tuple[str, ...]]]:
+    """(tema, ruta relativa, cuerpo SVG en lienzo 64, alias); `tokens` por defecto, los de goldenglass.toml."""
+    tt = tile_tokens(tokens)
     out = []
     for app in APPS:
         main, aliases = app.names[0], app.names[1:]
-        out.append(("GoldenGlass", f"apps/scalable/{main}.svg", app.svg(False), aliases))
-        out.append(("GoldenGlass-Dark", f"apps/scalable/{main}.svg", app.svg(True), aliases))
+        out.append(("GoldenGlass", f"apps/scalable/{main}.svg", app.svg(False, style, tt), aliases))
+        out.append(("GoldenGlass-Dark", f"apps/scalable/{main}.svg", app.svg(True, style, tt), aliases))
     return out
 
 

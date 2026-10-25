@@ -435,7 +435,7 @@ def build(tokens: dict, out: Path) -> list[Path]:
         size = int(rel.split("/")[1]) if rel.split("/")[1].isdigit() else canvas
         entries.append((rel, _svg(size, body, fallback, canvas), aliases))
     # Apps: dibujo distinto en claro y oscuro
-    for theme, rel, body, aliases in icons_apps.files():
+    for theme, rel, body, aliases in icons_apps.files(tokens):
         (entries if theme == "GoldenGlass" else dark_entries).append((rel, _svg(64, body, fallback), aliases))
 
     for theme_root, items in ((root, entries), (base / "GoldenGlass-Dark", dark_entries)):
@@ -470,7 +470,9 @@ def build(tokens: dict, out: Path) -> list[Path]:
     own = {rel.split("/")[0] for rel, _, _ in dark_entries}
     for ctx in sorted({rel.split("/")[0] for rel, _, _ in entries} - own):
         _link(f"../GoldenGlass/{ctx}", base / "GoldenGlass-Dark" / ctx)
-    return [base / theme for theme in THEMES]
+    # Datos para goldenglass-wrap-icons en el equipo del usuario (sin TOML ni ggcommon)
+    tile_json = icons_apps.write_tile_json(tokens, base / icons_apps.TILE_JSON)
+    return [*(base / theme for theme in THEMES), tile_json]
 
 
 def preview(tokens: dict, path: Path, dark: bool = False) -> None:
