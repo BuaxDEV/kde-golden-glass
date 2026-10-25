@@ -112,8 +112,24 @@ popup_shadow_alpha = 0.30
 tooltip_shadow = 12
 tooltip_shadow_alpha = 0.22
 task_dot_size = 4        # indicador de app abierta en el dock
+# gestor de tareas del Plasma Style (widgets/tasks.svg): opacidad del punto
+# (color de texto) según el estado de la app
+task_dot_alpha = 0.55            # abierta (y al pasar el ratón: macOS no resalta)
+task_dot_minimized_alpha = 0.35
+task_dot_focus_alpha = 0.85
+task_dot_attention = "#FF9500"   # pide atención; el mismo en claro y oscuro (decisión pendiente)
+task_progress_alpha = 0.35       # progreso (color de acento)
 item_hover_alpha = 0.10  # resaltado de listas (sobre color de texto)
 item_selected_alpha = 0.28  # selección de listas (sobre color de acento)
+item_selected_hover_boost = 0.08  # selección bajo el cursor: item_selected_alpha + esto
+item_padding_v = 4       # margen del contenido de cada elemento de lista
+item_padding_h = 8
+# campos de texto (KRunner/Spotlight, contraseña de bloqueo): sobre el color de texto
+field_alpha = 0.08       # relleno
+field_border_alpha = 0.14
+field_hover_alpha = 0.28 # anillo al pasar el ratón
+field_padding_v = 6      # margen del texto dentro del campo
+field_padding_h = 10
 
 # ---------------------------------------------------------------------------
 # Sombras de ventana
