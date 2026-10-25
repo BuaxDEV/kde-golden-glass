@@ -227,7 +227,7 @@ PlasmoidItem {
         KCMUtils.KCMLauncher.openSystemSettings(module);
     }
 
-    // Icono de la barra; abierto, con el resaltado de los menús de macOS
+    // Menu bar icon; while open, with the highlight of the macOS menus
     fullRepresentation: MouseArea {
         id: icon
         hoverEnabled: true
@@ -238,7 +238,8 @@ PlasmoidItem {
         Rectangle {
             anchors.centerIn: parent
             width: parent.width + 2 * root.cc.icon_highlight_padding
-            height: Math.min(parent.height, T.tokens.plasma.menubar_height - 2 * root.cc.icon_highlight_inset)
+            // inset from the bar the icon is in (its panel window), whatever its height
+            height: Math.min(parent.height, Window.height - 2 * root.cc.icon_highlight_inset)
             radius: root.cc.icon_highlight_radius
             color: Qt.alpha(Kirigami.Theme.textColor, root.cc.icon_highlight_alpha)
             visible: panel.visible

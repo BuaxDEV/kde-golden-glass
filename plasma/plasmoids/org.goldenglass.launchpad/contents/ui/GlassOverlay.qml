@@ -29,8 +29,6 @@ import QtQuick
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 
-import "tokens.js" as T
-
 PlasmaCore.Dialog {
     id: overlay
 
@@ -50,7 +48,10 @@ PlasmaCore.Dialog {
 
     signal opened()
 
-    readonly property real menuBarHeight: T.tokens.plasma.menubar_height
+    // Real height of the menu bar on this screen: what the panels take at the
+    // top edge. plasma.menubar_height is only the height of new menu bars,
+    // and a menu bar that hides itself takes nothing.
+    readonly property real menuBarHeight: Plasmoid.containment ? Plasmoid.containment.availableScreenRect.y : 0
     property rect screen: Plasmoid.containment.screenGeometry
     property bool closing: false
 
