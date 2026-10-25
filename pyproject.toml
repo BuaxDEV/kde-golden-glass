@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 GoldenGlass contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Configuración de las herramientas de Python (tools/): ruff. No es un
+# Configuración de las herramientas de Python (tools/): ruff y pytest. No es un
 # paquete instalable; los scripts se ejecutan tal cual (tools/gen_tokens.py).
 
 [tool.ruff]
@@ -22,3 +22,6 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # la lambda de re.sub se usa dentro de la misma iteración del bucle
 "tools/lookandfeel.py" = ["B023"]
+
+[tool.pytest.ini_options]
+testpaths = ["tools/tests"]

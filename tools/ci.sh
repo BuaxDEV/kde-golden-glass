@@ -4,7 +4,7 @@
 # Integración continua de GoldenGlass, dentro de un contenedor Arch Linux:
 #
 #   1. dependencias de compilación del PKGBUILD (pacman)
-#   2. comprobaciones rápidas: Python (ruff), shell (shellcheck), traducciones
+#   2. comprobaciones rápidas: Python (ruff, pytest), shell (shellcheck), traducciones
 #   3. compatibilidad con el Plasma actual de Arch (tools/check_plasma_compat.py)
 #   4. generadores (tools/gen_tokens.py) y qmllint de lo generado
 #   5. C++: compilación y pruebas (ctest)
@@ -47,7 +47,7 @@ step "Dependencias de compilación"
 # shellcheck disable=SC1091,SC2034,SC2154
 mapfile -t makedeps < <(cd "$ROOT/packaging/goldenglass" && startdir=$PWD && source PKGBUILD && printf '%s\n' "${makedepends[@]}")
 # herramientas que solo usa la CI (no son dependencias del paquete)
-citools=(ruff shellcheck)
+citools=(ruff shellcheck python-pytest)
 pacman -Syu --noconfirm --needed base-devel "${makedeps[@]}" "${citools[@]}"
 
 step "Clon de trabajo (commit $(git -C "$ROOT" rev-parse --short HEAD))"
@@ -74,6 +74,8 @@ mapfile -t scripts < <(for f in "$WORK"/goldenglass/tools/*; do
   [[ -f $f ]] && head -n1 "$f" | grep -qE '^#!.*[/ ](ba)?sh$' && echo "$f"
 done)
 as_builder shellcheck "${scripts[@]}"
+# pruebas de tools/ (tools/tests, con pytest)
+as_builder bash -c "cd '$WORK/goldenglass' && python -m pytest -q -p no:cacheprovider"
 
 step "Compatibilidad con Plasma (tools/check_plasma_compat.py)"
 # los paquetes que traen los módulos QML que importamos (pacman -F): un módulo
