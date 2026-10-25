@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tema de SDDM «GoldenGlass» (pantalla de inicio de sesión).
 
-Copia login/sddm/ (QML e iconos) y escribe theme.conf con los valores de
-[login] de los tokens, la fuente de la interfaz y el fondo de GoldenGlass
-instalado en el sistema (día y noche, 16:9 y 16:10).
+Copia login/sddm/ (QML e iconos), rellena metadata.desktop (versión) y escribe
+theme.conf con los valores de [login] de los tokens, la fuente de la interfaz y
+el fondo de GoldenGlass instalado en el sistema (día y noche, 16:9 y 16:10).
 
 Salida:
   build/login/sddm/GoldenGlass/{Main.qml,metadata.desktop,theme.conf,icons/}
@@ -19,6 +19,7 @@ import subprocess
 from pathlib import Path
 
 import wallpaper
+from ggcommon import fill_template
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "login" / "sddm"
@@ -80,6 +81,9 @@ def build(tokens: dict, out: Path) -> list[Path]:
     if root.exists():
         shutil.rmtree(root)
     shutil.copytree(SOURCE, root, ignore=shutil.ignore_patterns("*.po"))
+    meta = root / "metadata.desktop"
+    meta.write_text(fill_template((SOURCE / meta.name).read_text(encoding="utf-8"), tokens,
+                                  (SOURCE / meta.name).relative_to(ROOT)), encoding="utf-8")
     conf = root / "theme.conf"
     conf.write_text(theme_conf(tokens), encoding="utf-8")
     # SDDM carga <idioma>.qm de TranslationsDirectory; msgfmt --qt los compila

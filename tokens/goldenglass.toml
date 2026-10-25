@@ -12,7 +12,8 @@
 
 [meta]
 name = "GoldenGlass"
-version = "0.2.1"
+# La versión no va aquí: sale del archivo VERSION (la misma de CMake y del
+# PKGBUILD) y los generadores la ven como meta.version.
 
 # ---------------------------------------------------------------------------
 # Geometría (px lógicos)

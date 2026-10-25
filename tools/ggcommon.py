@@ -3,7 +3,7 @@
 """Utilidades comunes de los generadores de GoldenGlass.
 
   Color          color de los tokens ("#RRGGBB" o "#RRGGBBAA")
-  load_tokens()  lee tokens/goldenglass.toml
+  load_tokens()  lee tokens/goldenglass.toml (con meta.version desde VERSION)
   fill_template  sustituye los marcadores @sección.clave@ por los tokens
   stamp()        huella de lo que usa un generador con caché
 
@@ -21,6 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TOKENS = ROOT / "tokens" / "goldenglass.toml"
+VERSION = ROOT / "VERSION"
 
 
 # --- color ------------------------------------------------------------------
@@ -74,9 +75,18 @@ def flatten(fg: str, bg: str) -> str:
 # --- tokens -----------------------------------------------------------------
 
 def load_tokens(path: Path | None = None) -> dict:
-    """Tokens de `path` (por defecto tokens/goldenglass.toml)."""
+    """Tokens de `path` (por defecto tokens/goldenglass.toml).
+
+    La versión sale de VERSION, la única fuente (CMake y el PKGBUILD también la
+    leen de ahí): se añade como meta.version. Instalado, VERSION va junto a
+    tokens/ (CMakeLists.txt).
+    """
     with (path or TOKENS).open("rb") as f:
-        return tomllib.load(f)
+        tokens = tomllib.load(f)
+    if "version" in tokens.get("meta", {}):
+        raise SystemExit("meta.version no va en los tokens: la versión sale del archivo VERSION")
+    tokens.setdefault("meta", {})["version"] = VERSION.read_text(encoding="utf-8").strip()
+    return tokens
 
 
 # --- plantillas -------------------------------------------------------------
