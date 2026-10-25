@@ -203,6 +203,21 @@ ambient_alpha = 0.1
 controls_ms = 150
 
 # ---------------------------------------------------------------------------
+# Movimiento de los plasmoids (Motion.qml): todos los *_ms de animación de los
+# plasmoids ([apps], [scroll], [dock], [control_center]) son duraciones a
+# velocidad normal (factor 1) y se multiplican por la «Velocidad de animación»
+# global de Plasma (kdeglobals [KDE] AnimationDurationFactor). No se escalan
+# las esperas que no son animaciones: label_delay_ms, preview_hide_ms,
+# bar_hide_ms y glass_update_ms.
+# ---------------------------------------------------------------------------
+[motion]
+# Kirigami.Units.longDuration con factor 1: Plasma da max(1, round(esto ×
+# factor)), así que el factor es longDuration ÷ esto (spike SP-04)
+kirigami_long_ms = 200
+# con «Reducir movimiento», fundido que sustituye a escalas y desplazamientos
+reduced_fade_ms = 150
+
+# ---------------------------------------------------------------------------
 # Decoración de ventanas
 # ---------------------------------------------------------------------------
 [decoration]

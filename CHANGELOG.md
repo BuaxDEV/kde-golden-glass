@@ -15,6 +15,28 @@
   `goldenglassrc [Common]` y nunca supera a la activa. Las dos sombras se
   preparan de antemano: cambiar el foco no dibuja nada. La opacidad del
   contorno de la ventana sale del token `shadow.outline_alpha`.
+- **Atajos de ventana** (script `org.goldenglass.shortcuts`), como Fn+Ctrl+F/C
+  de macOS Sequoia con Meta en lugar de Fn: `Meta+Ctrl+F` llena la pantalla y
+  `Meta+Ctrl+C` centra la ventana. Para volver al tamaño anterior (maximizada,
+  en mosaico o a pantalla completa) sirve el atajo nativo de KWin
+  `Meta+Retroceso`. Las mitades siguen siendo las nativas `Meta+flechas`, y los
+  cuartos se alcanzan encadenándolas. Las instalaciones existentes reciben los
+  atajos nuevos al recargar KWin o iniciar sesión, sin cambiar los que ya
+  hubieras reasignado.
+- **Los plasmoids siguen la velocidad de animación global:** el Centro de
+  control, Apps y el dock (paneles, tarjetas, desplazamiento, rebote y
+  ampliación) usan la «Velocidad de animación» de Ajustes del sistema, como el
+  resto de Plasma, y la cambian en vivo; al mínimo no animan y los paneles se
+  abren y cierran al momento. Con la velocidad normal todo dura lo mismo que
+  antes. Las esperas (antes de mostrar el nombre de la app o de ocultar las
+  miniaturas y la barra de desplazamiento) no cambian.
+- **`goldenglass-glass`:** el módulo de Ajustes y el slider del Centro de
+  control ya no se pisan si lanzan la herramienta a la vez: toda operación que
+  escribe (`--level`, `--refraction`, `--menubar-background`, `--check`) toma
+  un `flock` exclusivo en `$XDG_RUNTIME_DIR/goldenglass-glass.lock` y la
+  segunda espera a la primera; `--get*` no esperan. El tema
+  `GoldenGlassTuned` se genera en un directorio hermano y se cambia de golpe,
+  así que Plasma nunca lo ve a medias.
 
 ### Proyecto
 

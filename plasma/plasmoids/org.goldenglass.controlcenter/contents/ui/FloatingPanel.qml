@@ -117,24 +117,24 @@ PlasmaCore.Dialog {
                 target: body
                 property: "opacity"
                 to: 1
-                duration: panel.cc.open_fade_ms
+                duration: Motion.fadeMs(panel.cc.open_fade_ms)
                 easing.type: Easing.OutCubic
             }
             NumberAnimation {
                 target: origin
                 property: "xScale"
                 to: 1
-                duration: panel.cc.open_ms
+                duration: Motion.moveMs(panel.cc.open_ms)
                 easing.type: Easing.OutBack
-                easing.overshoot: panel.cc.open_overshoot
+                easing.overshoot: Motion.overshoot(panel.cc.open_overshoot)
             }
             NumberAnimation {
                 target: origin
                 property: "yScale"
                 to: 1
-                duration: panel.cc.open_ms_y
+                duration: Motion.moveMs(panel.cc.open_ms_y)
                 easing.type: Easing.OutBack
-                easing.overshoot: panel.cc.open_overshoot
+                easing.overshoot: Motion.overshoot(panel.cc.open_overshoot)
             }
         }
 
@@ -144,21 +144,21 @@ PlasmaCore.Dialog {
                 target: body
                 property: "opacity"
                 to: 0
-                duration: panel.cc.close_ms
+                duration: Motion.fadeMs(panel.cc.close_ms)
                 easing.type: Easing.OutCubic
             }
             NumberAnimation {
                 target: origin
                 properties: "xScale,yScale"
                 to: panel.cc.close_scale
-                duration: panel.cc.close_ms
+                duration: Motion.moveMs(panel.cc.close_ms)
                 easing.type: Easing.InCubic
             }
             SequentialAnimation {
                 // KWin no difumina a medias: el vidrio se quita cuando las
                 // tarjetas ya casi no se ven
                 PauseAnimation {
-                    duration: panel.cc.close_ms * panel.cc.close_unblur_at
+                    duration: Motion.fadeMs(panel.cc.close_ms) * panel.cc.close_unblur_at
                 }
                 ScriptAction {
                     script: glass.track(false)

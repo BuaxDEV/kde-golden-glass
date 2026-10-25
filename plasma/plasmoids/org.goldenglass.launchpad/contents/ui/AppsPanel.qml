@@ -377,16 +377,16 @@ PlasmaCore.Dialog {
                 target: card
                 property: "opacity"
                 to: 1
-                duration: panel.tok.open_fade_ms
+                duration: Motion.fadeMs(panel.tok.open_fade_ms)
                 easing.type: Easing.OutCubic
             }
             NumberAnimation {
                 target: zoom
                 properties: "xScale,yScale"
                 to: 1
-                duration: panel.tok.open_ms
+                duration: Motion.moveMs(panel.tok.open_ms)
                 easing.type: Easing.OutBack
-                easing.overshoot: panel.tok.open_overshoot
+                easing.overshoot: Motion.overshoot(panel.tok.open_overshoot)
             }
         }
 
@@ -396,21 +396,21 @@ PlasmaCore.Dialog {
                 target: card
                 property: "opacity"
                 to: 0
-                duration: panel.tok.close_ms
+                duration: Motion.fadeMs(panel.tok.close_ms)
                 easing.type: Easing.OutCubic
             }
             NumberAnimation {
                 target: zoom
                 properties: "xScale,yScale"
                 to: panel.tok.close_scale
-                duration: panel.tok.close_ms
+                duration: Motion.moveMs(panel.tok.close_ms)
                 easing.type: Easing.InCubic
             }
             SequentialAnimation {
                 // KWin no difumina a medias: el vidrio se quita cuando el panel
                 // ya casi no se ve
                 PauseAnimation {
-                    duration: panel.tok.close_ms * panel.tok.close_unblur_at
+                    duration: Motion.fadeMs(panel.tok.close_ms) * panel.tok.close_unblur_at
                 }
                 ScriptAction {
                     script: glass.track(false)

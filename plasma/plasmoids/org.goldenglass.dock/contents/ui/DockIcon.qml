@@ -50,9 +50,12 @@ Item {
     property int bouncesLeft: 0
     readonly property real bounceHeight: size * T.tokens.dock.bounce
 
-    // con duración 0 (animaciones globales desactivadas) el rebote no arranca:
-    // reiniciarlo en onFinished sería un bucle por fotograma
-    readonly property bool bounceEnabled: T.tokens.dock.bounce_ms > 1 && Kirigami.Units.longDuration > 1
+    // sin animaciones (Motion.animated), con «Reducir movimiento» o con
+    // bounce_ms a 0 cada tramo dura 0 ms y el rebote no arranca: una animación
+    // de 0 ms termina dentro de start(), así que reiniciarla en onFinished
+    // sería una recursión sin fin (SP-04). Con 1 ms o más termina en el
+    // fotograma siguiente.
+    readonly property bool bounceEnabled: Motion.moveMs(T.tokens.dock.bounce_ms / 2) >= 1
 
     function bounce(times) {
         if (!bounceEnabled) {
@@ -81,14 +84,14 @@ Item {
             target: tile
             property: "bounceLift"
             to: tile.bounceHeight
-            duration: T.tokens.dock.bounce_ms / 2
+            duration: Motion.moveMs(T.tokens.dock.bounce_ms / 2)
             easing.type: Easing.OutQuad
         }
         NumberAnimation {
             target: tile
             property: "bounceLift"
             to: 0
-            duration: T.tokens.dock.bounce_ms / 2
+            duration: Motion.moveMs(T.tokens.dock.bounce_ms / 2)
             easing.type: Easing.InQuad
         }
         onFinished: {

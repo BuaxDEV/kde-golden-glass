@@ -52,7 +52,7 @@ Rectangle {
         target: tile
         property: "pressAmount"
         to: 1
-        duration: T.tokens.control_center.press_ms
+        duration: Motion.moveMs(T.tokens.control_center.press_ms)
         easing.type: Easing.OutCubic
     }
     NumberAnimation {
@@ -60,9 +60,9 @@ Rectangle {
         target: tile
         property: "pressAmount"
         to: 0
-        duration: T.tokens.control_center.release_ms
+        duration: Motion.moveMs(T.tokens.control_center.release_ms)
         easing.type: Easing.OutBack
-        easing.overshoot: T.tokens.control_center.release_overshoot
+        easing.overshoot: Motion.overshoot(T.tokens.control_center.release_overshoot)
     }
 
     // Al pulsarla, el vidrio se aclara y brilla desde el punto de contacto

@@ -7,6 +7,12 @@
 //
 // Cambiar de escritorio se queda en Meta+Ctrl+←/→: Ctrl+←/→ es saltar palabra
 // en los campos de texto de Linux (en macOS eso es Option+←/→).
+//
+// Organizar ventanas, como Fn+Ctrl+F/C de macOS Sequoia (Meta en lugar de Fn):
+// Meta+Ctrl+F llena la pantalla y Meta+Ctrl+C centra. Volver al tamaño anterior
+// es el nativo «Window Restore» (Meta+Retroceso), sin atajo propio: Meta+Ctrl+R
+// ya es de Spectacle. Las mitades son las nativas Meta+←/→/↑/↓ y los cuartos se
+// alcanzan encadenándolas (p. ej. Meta+← y luego Meta+↑).
 
 function invoke(action) {
     callDBus("org.kde.kglobalaccel", "/component/kwin", "org.kde.kglobalaccel.Component", "invokeShortcut", action);
@@ -16,3 +22,15 @@ registerShortcut("GoldenGlass Mission Control", "GoldenGlass: Mission Control (o
                  () => invoke("Overview"));
 registerShortcut("GoldenGlass App Expose", "GoldenGlass: App Exposé (windows of the current app)", "Ctrl+Down",
                  () => invoke("ExposeClass"));
+
+// «Llenar» no alterna: si ya llena la pantalla no hace nada (volver es Meta+Retroceso).
+// setMaximize quita antes el mosaico de la ventana. Una ventana que no se puede
+// maximizar (diálogo, tamaño fijo, pantalla completa) se deja como está.
+registerShortcut("GoldenGlass Fill", "GoldenGlass: Fill the screen (maximize)", "Meta+Ctrl+F", () => {
+    const w = workspace.activeWindow;
+    if (w && w.maximizable) {
+        w.setMaximize(true, true);
+    }
+});
+registerShortcut("GoldenGlass Center", "GoldenGlass: Center window", "Meta+Ctrl+C",
+                 () => invoke("Window Move Center"));
