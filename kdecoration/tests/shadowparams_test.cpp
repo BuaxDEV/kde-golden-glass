@@ -14,9 +14,9 @@ using namespace GoldenGlass;
 
 namespace
 {
-ShadowStyle style(const ShadowSetting &setting, int outlineTop = 0)
+ShadowStyle style(const ShadowSetting &setting, int outlineTop = 0, bool showBorders = false)
 {
-    return makeShadowStyle(setting, 0xFF000000u, 12.0, outlineTop, Tokens::ShadowOutlineAlpha);
+    return makeShadowStyle(setting, 0xFF000000u, 12.0, outlineTop, showBorders);
 }
 }
 
@@ -115,6 +115,20 @@ private Q_SLOTS:
         other = base;
         other.cornerRadius = 13.5;
         QVERIFY(base.key() != other.key());
+    }
+
+    void showBordersStrengthensTheOutlineAndRebuildsTheShadow()
+    {
+        const ShadowStyle plain = style({ShadowSizeMedium, 64});
+        const ShadowStyle bordered = style({ShadowSizeMedium, 64}, 0, true);
+        QCOMPARE(plain.outlineAlpha, Tokens::ShadowOutlineAlpha);
+        QCOMPARE(bordered.outlineAlpha, Tokens::AccessibilityBordersWindowShadowOutlineAlpha);
+        QVERIFY(plain.key() != bordered.key());
+
+        // keyed on its own even if both outline alphas were the same
+        ShadowStyle sameAlpha = bordered;
+        sameAlpha.outlineAlpha = plain.outlineAlpha;
+        QVERIFY(plain.key() != sameAlpha.key());
     }
 };
 

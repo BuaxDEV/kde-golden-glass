@@ -127,6 +127,13 @@ inline ShadowSettings resolveShadowSettings(const ShadowSetting &active, const S
     return result;
 }
 
+//* opacity of the window outline in the shadow (× the strength); stronger
+//* with «Show borders»
+inline qreal shadowOutlineAlpha(bool showBorders)
+{
+    return showBorders ? Tokens::AccessibilityBordersWindowShadowOutlineAlpha : Tokens::ShadowOutlineAlpha;
+}
+
 //* Todo lo que cambia la textura de una sombra. Dos ventanas (o los dos estados
 //* de una) con el mismo estilo comparten la textura.
 struct ShadowStyle {
@@ -135,6 +142,7 @@ struct ShadowStyle {
     QRgb color = 0;
     qreal cornerRadius = 0; //* escalado a la rejilla de la pantalla
     int outlineTop = 0; //* el contorno empieza debajo de la barra flotante
+    bool showBorders = false; //* «Show borders»: keyed on its own, so toggling it always rebuilds the texture
     qreal outlineAlpha = 0; //* contorno de la ventana, × strength
 
     bool isNone() const
@@ -150,15 +158,15 @@ struct ShadowStyle {
         return std::tuple_cat(std::make_tuple(params.offset.x(), params.offset.y()),
                               layer(params.shadow1),
                               layer(params.shadow2),
-                              std::make_tuple(strength, color, cornerRadius, outlineTop, outlineAlpha));
+                              std::make_tuple(strength, color, cornerRadius, outlineTop, showBorders, outlineAlpha));
     }
 };
 
 using ShadowKey = decltype(std::declval<ShadowStyle>().key());
 
-inline ShadowStyle makeShadowStyle(const ShadowSetting &setting, QRgb color, qreal cornerRadius, int outlineTop, qreal outlineAlpha)
+inline ShadowStyle makeShadowStyle(const ShadowSetting &setting, QRgb color, qreal cornerRadius, int outlineTop, bool showBorders)
 {
-    return ShadowStyle{lookupShadowParams(setting.size), setting.strength, color, cornerRadius, outlineTop, outlineAlpha};
+    return ShadowStyle{lookupShadowParams(setting.size), setting.strength, color, cornerRadius, outlineTop, showBorders, shadowOutlineAlpha(showBorders)};
 }
 
 } // namespace GoldenGlass

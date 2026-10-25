@@ -149,6 +149,17 @@ QColor Decoration::outlineColor() const
 }
 
 //________________________________________________________________
+QColor Decoration::windowOutlineColor() const
+{
+    // «Show borders» pulls the outline further towards the text colour than
+    // the colour scheme's frame contrast
+    const qreal contrast = m_internalSettings->showBorders() ? Tokens::AccessibilityBordersWindowOutlineContrast : KColorScheme::frameContrast();
+    return KColorUtils::mix(window()->color(window()->isActive() ? ColorGroup::Active : ColorGroup::Inactive, ColorRole::Frame),
+                            window()->palette().text().color(),
+                            contrast);
+}
+
+//________________________________________________________________
 QColor Decoration::fontColor() const
 {
     auto c = window();
@@ -513,12 +524,7 @@ if (m_internalSettings->floatingTitlebar()){
     if (isMaximized() || !outlinesEnabled()) {
         setBorderOutline(KDecoration3::BorderOutline()); // no outline
     } else {
-        const auto color = KColorUtils::mix(
-            window()->color(window()->isActive() ? ColorGroup::Active : ColorGroup::Inactive,
-                            ColorRole::Frame),
-                            window()->palette().text().color(),
-                                            KColorScheme::frameContrast()
-        );
+        const QColor color = windowOutlineColor();
 
         const qreal thickness = std::max(KDecoration3::pixelSize(window()->scale()),
                                          KDecoration3::snapToPixelGrid(1, window()->scale()));
@@ -575,9 +581,7 @@ if (m_internalSettings->floatingTitlebar()){
     if (isMaximized() || !outlinesEnabled()) {
         setBorderOutline(KDecoration3::BorderOutline());
     } else {
-        const auto color = KColorUtils::mix(window()->color(window()->isActive() ? ColorGroup::Active : ColorGroup::Inactive, ColorRole::Frame),
-                                            window()->palette().text().color(),
-                                            KColorScheme::frameContrast());
+        const QColor color = windowOutlineColor();
 
         const qreal thickness = std::max(KDecoration3::pixelSize(window()->scale()), KDecoration3::snapToPixelGrid(1, window()->scale()));
 
@@ -1027,8 +1031,10 @@ void Decoration::updateShadows()
     const int outlineTop = (m_internalSettings->floatingTitlebar() && !isMaximized()) ? (buttonSize() + (Metrics::TitleBar_TopMargin * 2) + 13) : 0;
     const QRgb color = m_internalSettings->shadowColor().rgba();
 
-    m_activeShadow = shadowFor(makeShadowStyle(resolved.active, color, m_scaledCornerRadius, outlineTop, Tokens::ShadowOutlineAlpha));
-    m_inactiveShadow = shadowFor(makeShadowStyle(resolved.inactive, color, m_scaledCornerRadius, outlineTop, Tokens::ShadowOutlineAlpha));
+    const bool showBorders = m_internalSettings->showBorders();
+
+    m_activeShadow = shadowFor(makeShadowStyle(resolved.active, color, m_scaledCornerRadius, outlineTop, showBorders));
+    m_inactiveShadow = shadowFor(makeShadowStyle(resolved.inactive, color, m_scaledCornerRadius, outlineTop, showBorders));
     applyShadow();
 }
 
