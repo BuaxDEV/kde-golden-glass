@@ -54,6 +54,27 @@
   segunda espera a la primera; `--get*` no esperan. El tema
   `GoldenGlassTuned` se genera en un directorio hermano y se cambia de golpe,
   así que Plasma nunca lo ve a medias.
+- **Borde del vidrio como en macOS 27:** una línea oscura fina por fuera y el
+  filo de luz justo dentro, ahora dibujados por encima del contenido del dock,
+  la barra y los popups (antes el relleno del Plasma Style tapaba casi todo el
+  filo). El efecto de refracción lo pinta en un pase aparte solo sobre la
+  banda del borde (≈ 0,04 ms por fotograma en 4K), y el Plasma Style lleva
+  además una línea negra y otra blanca que se ven también sin el efecto. Con
+  el vidrio más opaco el borde conserva más contraste (tokens
+  `[glass.refraction]` y `[glass.border]`, por calibrar).
+- **Reducir transparencia** en Ajustes del sistema › Vidrio › Accesibilidad:
+  la barra de menús, el dock, los popups, el panel de Apps, el Centro de
+  control, las barras de título, las toolbars, las barras laterales y los
+  menús se vuelven opacos, sin difuminado ni refracción. Tu nivel de vidrio se
+  conserva para cuando lo desactives; mientras tanto el slider y «Refracción»
+  quedan deshabilitados. También desde la terminal: `goldenglass-glass
+  --reduce-transparency on|off`.
+- **La refracción sigue de verdad al nivel de vidrio:** el efecto de KWin no
+  se enteraba de los cambios de nivel hasta reiniciar la sesión;
+  `goldenglass-glass` ahora se lo pide directamente.
+- **El vidrio de Plasma ya no se vuelve opaco al activar la refracción:**
+  activarla en vivo (también el primer inicio de sesión tras instalar)
+  dejaba a Plasma sin blur hasta reiniciar KWin.
 
 ### Proyecto
 
@@ -66,6 +87,14 @@
   `/usr/share/goldenglass/windows.json` (tokens `[kwin]`); `tools/install.sh`
   añade el lanzador y el autostart. `tools/sandbox.sh` usa el módulo QML
   `org.goldenglass.glass` del árbol compilado en vez del instalado.
+- `tools/sandbox.sh`: cierra al salir el KWin virtual que lanza (antes quedaba
+  vivo: sus capacidades impiden leer su entorno) y admite
+  `GG_SANDBOX_WIDTH`, `GG_SANDBOX_HEIGHT` y `GG_SANDBOX_SCALE` para probar en
+  4K y con escalas fraccionarias.
+- Los plasmoids leen la accesibilidad con un único singleton,
+  `Accessibility.qml` (`MotionReduce.qml` pasa a ser
+  `AccessibilityReader.qml`); `goldenglass-glass` aplica todo con `apply()`,
+  que ya prevé «Mostrar bordes».
 
 ## 0.2.1 — 2026-10-15
 
