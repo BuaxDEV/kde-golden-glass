@@ -1,0 +1,302 @@
+# SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Manifiesto de la API privada de Plasma que usa GoldenGlass.
+#
+# Plasma no promete estabilidad para sus módulos QML privados (org.kde.*private*,
+# org.kde.taskmanager, org.kde.notificationmanager): una versión renombra una
+# propiedad o quita un tipo y el plasmoid deja de cargar sin que la CI lo note.
+# tools/check_plasma_compat.py lee este archivo y lo comprueba contra el Plasma
+# instalado (.qmltypes, plugins y archivos del sistema). Aquí va lo que el QML
+# del repositorio usa HOY, ni más ni menos. Si un error dice «ya no existe»,
+# hay que portar el QML al nuevo nombre (y actualizar el manifiesto).
+#
+# Al usar una API privada nueva (módulo, tipo, propiedad, método, señal, valor
+# de enum o rol) se añade aquí en el mismo cambio; un módulo privado que el QML
+# importa y no está aquí hace fallar la comprobación y una prueba
+# (tools/tests/test_check_plasma_compat.py), y otra prueba exige que cada
+# nombre aparezca en los archivos que se le atribuyen.
+#
+# --- Formato -------------------------------------------------------------------------
+#
+#   [modules."org.kde.x"]                    módulo QML (el que importa el QML)
+#   files = ["ruta.qml", …]                  archivos del repo que lo usan (desde la raíz);
+#                                            salen en los errores. Valen para todo el módulo
+#   plugin_strings = ["Nombre", …]           nombres sin .qmltypes (singletons registrados a
+#                                            mano, p. ej. constantes): se buscan como cadenas
+#                                            en la biblioteca del plugin
+#   unverified = ["Nombre", …]               nombres que no se pueden comprobar ni así; solo
+#                                            documentan (el resumen los cuenta)
+#
+#   [modules."org.kde.x".types.Tipo]         tipo, por su nombre en QML (o, si no se exporta
+#                                            y solo llega como valor, por su nombre de C++:
+#                                            "PulseAudioQt::Sink")
+#   files = […]                              (opcional) sustituye a los del módulo para este tipo
+#   properties = […]                         propiedades (Property del .qmltypes)
+#   methods = […]                            métodos invocables (Method)
+#   signals = […]                            señales (Signal; onFoo → "foo")
+#   enums = ["Valor", "Enum.Valor"]          valores de enum; con o sin el nombre del enum
+#   roles = […]                              roles de un modelo C++ (roleNames()): no están en
+#                                            los .qmltypes. Se comprueba que el nombre sea una
+#                                            cadena (Latin-1 o UTF-16) del plugin. Aproximado:
+#                                            no prueba que el rol sea de ese modelo, pero un rol
+#                                            quitado o renombrado deja de estar en el binario
+#   unverified_roles = […]                   roles que ni así se pueden comprobar (no están en el
+#                                            plugin: viven en otra biblioteca o se construyen en
+#                                            ejecución). Solo documentan
+#
+# Los miembros heredados cuentan (se sigue la cadena de prototipos del .qmltypes,
+# incluidos los de módulos de los que depende: QAbstractItemModel y compañía).
+#
+# [system] son contratos con el sistema que esperan funciones planificadas
+# (docs/MACOS27-PLAN.md): todavía no hay QML que los use, así que en vez de
+# «files» llevan «used_by». Las rutas se buscan en XDG_DATA_DIRS
+# (por defecto /usr/local/share y /usr/share), dentro de cada carpeta de «search»:
+#
+#   [[system.dbus_interface]]                interfaz D-Bus en XML (introspección)
+#   file, search, interface, methods, used_by
+#   [[system.desktop_file]]                  .desktop que debe existir (y, con «keys», valer esto
+#   file, search, keys = { Clave = "valor" }, used_by       en [Desktop Entry]; true/false sin
+#                                            distinguir mayúsculas)
+
+# --- org.kde.taskmanager ---------------------------------------------------------------
+
+[modules."org.kde.taskmanager"]
+files = [
+  "plasma/plasmoids/org.goldenglass.appname/contents/ui/main.qml",
+  "plasma/plasmoids/org.goldenglass.dock/contents/ui/DockView.qml",
+  "plasma/shell/org.goldenglass.desktop/contents/views/Panel.qml",
+]
+
+[modules."org.kde.taskmanager".types.TasksModel]
+properties = [
+  "activeTask", "activity", "count", "filterByActivity", "filterByCurrentVirtualDesktop",
+  "filterByRegion", "filterByScreen", "filterByVirtualDesktop", "filterHidden", "filterMinimized",
+  "groupInline", "groupMode", "launchInPlace", "launcherList", "regionGeometry", "screenGeometry",
+  "separateLaunchers", "sortMode", "virtualDesktop",
+]
+methods = [
+  "data", "index", "makeModelIndex", "makePersistentModelIndex", "move", "requestActivate",
+  "requestAddLauncher", "requestClose", "requestNewInstance", "requestOpenUrls",
+  "requestPublishDelegateGeometry", "requestRemoveLauncher", "requestToggleMinimized", "rowCount",
+  "syncLaunchers",
+]
+signals = ["countChanged", "dataChanged", "launcherListChanged", "layoutChanged", "modelReset"]
+enums = ["GroupApplications", "GroupDisabled", "SortLastActivated", "SortManual"]
+
+# Los roles de TasksModel son los valores de AdditionalRoles (model.AppId en los delegados y
+# data(index, AbstractTasksModel.AppId)): se comprueban como enum
+[modules."org.kde.taskmanager".types.AbstractTasksModel]
+files = [
+  "plasma/plasmoids/org.goldenglass.appname/contents/ui/main.qml",
+  "plasma/plasmoids/org.goldenglass.dock/contents/ui/DockView.qml",
+  "plasma/plasmoids/org.goldenglass.dock/contents/ui/TaskMenu.qml",
+]
+enums = [
+  "AppId", "AppName", "CanLaunchNewInstance", "ChildCount", "HasLauncher", "IsActive",
+  "IsDemandingAttention", "IsGroupParent", "IsLauncher", "IsMinimizable", "IsMinimized", "IsStartup",
+  "IsWindow", "LastActivated", "LauncherUrl", "LauncherUrlWithoutIcon", "WinIdList",
+]
+
+[modules."org.kde.taskmanager".types.ActivityInfo]
+properties = ["currentActivity"]
+
+[modules."org.kde.taskmanager".types.VirtualDesktopInfo]
+properties = ["currentDesktop"]
+
+[modules."org.kde.taskmanager".types.RegionFilterMode]
+files = ["plasma/shell/org.goldenglass.desktop/contents/views/Panel.qml"]
+enums = ["Intersect"]
+
+[modules."org.kde.taskmanager".types.ScreencastingRequest]
+files = ["plasma/plasmoids/org.goldenglass.dock/contents/ui/WindowPreviews.qml"]
+properties = ["nodeId", "uuid"]
+
+# --- org.kde.notificationmanager --------------------------------------------------------
+
+[modules."org.kde.notificationmanager"]
+files = ["plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/main.qml"]
+
+[modules."org.kde.notificationmanager".types.Settings]
+properties = ["notificationsInhibitedByApplication", "notificationsInhibitedUntil"]
+methods = ["revokeApplicationInhibitions", "save"]
+
+# --- org.kde.plasma.private.kicker -------------------------------------------------------
+
+[modules."org.kde.plasma.private.kicker"]
+files = [
+  "plasma/plasmoids/org.goldenglass.dock/contents/ui/DockView.qml",
+  "plasma/plasmoids/org.goldenglass.dock/contents/ui/TaskMenu.qml",
+  "plasma/plasmoids/org.goldenglass.launchpad/contents/ui/AppsLauncher.qml",
+]
+# claves de las acciones (actionList) y la acción de la lista de saltos del .desktop
+plugin_strings = ["_kicker_jumpListAction", "actionArgument", "actionId"]
+
+# AppsPanel.qml no importa Kicker: recibe sus modelos y llama a trigger()
+[modules."org.kde.plasma.private.kicker".types.RootModel]
+files = [
+  "plasma/plasmoids/org.goldenglass.launchpad/contents/ui/AppsLauncher.qml",
+  "plasma/plasmoids/org.goldenglass.launchpad/contents/ui/AppsPanel.qml",
+]
+properties = [
+  "appNameFormat", "appletInterface", "autoPopulate", "flat", "showAllApps", "showAllAppsCategorized",
+  "showFavoritesPlaceholder", "showPowerSession", "showRecentApps", "showRecentDocs",
+  "showRecentFolders", "showSeparators", "showTopLevelItems", "sorted",
+]
+methods = ["modelForRow", "refresh", "trigger"]
+roles = ["actionList", "decoration", "display", "favoriteId", "url"]
+
+[modules."org.kde.plasma.private.kicker".types.RecentUsageModel]
+files = [
+  "plasma/plasmoids/org.goldenglass.dock/contents/ui/DockView.qml",
+  "plasma/plasmoids/org.goldenglass.launchpad/contents/ui/AppsLauncher.qml",
+  "plasma/plasmoids/org.goldenglass.launchpad/contents/ui/AppsPanel.qml",
+]
+properties = ["shownItems"]
+methods = ["trigger"]
+enums = ["OnlyApps"]
+roles = ["actionList", "decoration", "display", "favoriteId", "url"]
+
+[modules."org.kde.plasma.private.kicker".types.RunnerModel]
+files = ["plasma/plasmoids/org.goldenglass.launchpad/contents/ui/AppsLauncher.qml"]
+properties = ["appletInterface", "count", "mergeResults", "query", "runners"]
+methods = ["modelForRow"]
+
+[modules."org.kde.plasma.private.kicker".types.SimpleFavoritesModel]
+files = ["plasma/plasmoids/org.goldenglass.dock/contents/ui/TaskMenu.qml"]
+properties = ["favorites"]
+methods = ["trigger"]
+roles = ["actionList"]
+
+# --- org.kde.plasma.private.mpris ---------------------------------------------------------
+
+[modules."org.kde.plasma.private.mpris"]
+files = [
+  "plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/NowPlaying.qml",
+  "plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/NowPlayingDetail.qml",
+  "plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/main.qml",
+  "plasma/shell/org.goldenglass.desktop/contents/lockscreen/MediaControls.qml",
+]
+
+[modules."org.kde.plasma.private.mpris".types.Mpris2Model]
+files = ["plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/main.qml"]
+properties = ["currentPlayer"]
+
+# El reproductor (Mpris2Model.currentPlayer) llega como valor; MultiplexerModel (pantalla de
+# bloqueo) expone sus propiedades como roles (model.artUrl, model.track…)
+[modules."org.kde.plasma.private.mpris".types.PlayerContainer]
+properties = [
+  "album", "artUrl", "artist", "canControl", "canGoNext", "canGoPrevious", "canPause", "canPlay",
+  "canRaise", "canSeek", "iconName", "identity", "length", "playbackStatus", "position", "track",
+]
+methods = ["Next", "PlayPause", "Previous", "Raise", "updatePosition"]
+
+[modules."org.kde.plasma.private.mpris".types.MultiplexerModel]
+files = ["plasma/shell/org.goldenglass.desktop/contents/lockscreen/MediaControls.qml"]
+# el contenedor del reproductor: no es un rol del plugin ni una propiedad del reproductor
+unverified_roles = ["container"]
+
+[modules."org.kde.plasma.private.mpris".types.PlaybackStatus]
+enums = ["Playing", "Stopped"]
+
+# --- org.kde.plasma.private.volume ---------------------------------------------------------
+
+[modules."org.kde.plasma.private.volume"]
+files = [
+  "plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/SoundDetail.qml",
+  "plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/main.qml",
+]
+# PulseAudio es un singleton registrado a mano (constantes de volumen): sin .qmltypes
+plugin_strings = ["MaximalVolume", "MinimalVolume", "NormalVolume", "PulseAudio"]
+
+[modules."org.kde.plasma.private.volume".types.GlobalConfig]
+files = ["plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/main.qml"]
+properties = ["raiseMaximumVolume"]
+
+[modules."org.kde.plasma.private.volume".types.PreferredDevice]
+properties = ["sink"]
+
+[modules."org.kde.plasma.private.volume".types.SinkModel]
+files = ["plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/SoundDetail.qml"]
+roles = ["Description", "Name", "PulseObject"]
+
+# El sumidero llega como valor (PreferredDevice.sink, model.PulseObject). Los roles FormFactor
+# e IconName del modelo son estas propiedades con la inicial en mayúscula
+[modules."org.kde.plasma.private.volume".types."PulseAudioQt::Sink"]
+properties = ["default", "formFactor", "iconName", "muted", "volume"]
+
+# --- org.kde.plasma.private.brightnesscontrolplugin ------------------------------------------
+
+[modules."org.kde.plasma.private.brightnesscontrolplugin"]
+files = [
+  "plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/DisplayDetail.qml",
+  "plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/main.qml",
+]
+
+[modules."org.kde.plasma.private.brightnesscontrolplugin".types.DarkModeControl]
+properties = ["darkMode"]
+
+[modules."org.kde.plasma.private.brightnesscontrolplugin".types.NightLightInhibitor]
+files = ["plasma/plasmoids/org.goldenglass.controlcenter/contents/ui/main.qml"]
+properties = ["inhibited"]
+methods = ["toggleInhibition"]
+
+[modules."org.kde.plasma.private.brightnesscontrolplugin".types.ScreenBrightnessControl]
+properties = ["displays", "isBrightnessAvailable", "isSilent"]
+methods = ["setBrightness"]
+# roles del modelo displays (los delegados los piden por nombre)
+roles = ["brightness", "displayName", "label", "maxBrightness"]
+
+# --- org.kde.plasma.private.sessions ---------------------------------------------------------
+
+[modules."org.kde.plasma.private.sessions"]
+files = [
+  "plasma/plasmoids/org.goldenglass.systemmenu/contents/ui/main.qml",
+  "plasma/shell/org.goldenglass.desktop/contents/lockscreen/LockScreenUi.qml",
+]
+
+[modules."org.kde.plasma.private.sessions".types.SessionManagement]
+properties = ["canHibernate", "canLock", "canLogout", "canReboot", "canShutdown", "canSuspend", "canSwitchUser"]
+methods = ["hibernate", "lock", "requestLogout", "requestReboot", "requestShutdown", "suspend", "switchUser"]
+signals = ["aboutToSuspend"]
+enums = ["ConfirmationMode.ForcePrompt"]
+
+# --- org.kde.plasma.private.keyboardindicator --------------------------------------------------
+
+[modules."org.kde.plasma.private.keyboardindicator"]
+files = ["plasma/shell/org.goldenglass.desktop/contents/lockscreen/LockScreenUi.qml"]
+
+[modules."org.kde.plasma.private.keyboardindicator".types.KeyState]
+properties = ["key", "locked"]
+
+# --- org.kde.plasma.private.accessibility ------------------------------------------------------
+
+[modules."org.kde.plasma.private.accessibility"]
+files = ["plasma/shell/org.goldenglass.desktop/contents/lockscreen/LockScreenUi.qml"]
+
+[modules."org.kde.plasma.private.accessibility".types.AccessibilityStatus]
+properties = ["slowKeysEnabled"]
+
+# --- Sistema: contratos que esperan Spotlight y Notificaciones ---------------------------------
+# (docs/MACOS27-PLAN.md §3.4 y §4.12)
+
+[[system.dbus_interface]]
+file = "org.kde.krunner.App.xml"
+search = ["dbus-1/interfaces"]
+interface = "org.kde.krunner.App"
+methods = [
+  "display", "displaySingleRunner", "displayWithClipboardContents", "query", "querySingleRunner",
+  "toggleDisplay",
+]
+used_by = "Spotlight (docs/MACOS27-PLAN.md §4.12): KRunner por D-Bus"
+
+[[system.desktop_file]]
+file = "org.kde.krunner.desktop"
+search = ["kglobalaccel", "applications"]
+keys = { DBusActivatable = "true", X-DBUS-ServiceName = "org.kde.krunner" }
+used_by = "Spotlight (docs/MACOS27-PLAN.md §4.12): activación D-Bus de KRunner"
+
+[[system.desktop_file]]
+file = "plasma-runner-baloosearch.desktop"
+search = ["krunner/dbusplugins", "kservices6", "applications"]
+used_by = "Spotlight (docs/MACOS27-PLAN.md §4.12): búsqueda de archivos con Baloo"
