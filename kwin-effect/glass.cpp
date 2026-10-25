@@ -144,13 +144,28 @@ GlassEffect::GlassEffect()
         m_glassPass.edgeLocation = m_glassPass.shader->uniformLocation("edge");
         m_glassPass.strengthLocation = m_glassPass.shader->uniformLocation("strength");
         m_glassPass.dispersionLocation = m_glassPass.shader->uniformLocation("dispersion");
-        m_glassPass.specularLocation = m_glassPass.shader->uniformLocation("specular");
         m_glassPass.tintLocation = m_glassPass.shader->uniformLocation("tint");
         m_glassPass.clarityLocation = m_glassPass.shader->uniformLocation("clarity");
-        m_glassPass.rimWidthLocation = m_glassPass.shader->uniformLocation("rimWidth");
-        m_glassPass.rimBottomLocation = m_glassPass.shader->uniformLocation("rimBottom");
-        m_glassPass.rimTopGainLocation = m_glassPass.shader->uniformLocation("rimTopGain");
         m_glassPass.sharpTextureLocation = m_glassPass.shader->uniformLocation("sharpTexture");
+    }
+
+    m_edgePass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
+                                                                          QStringLiteral(":/effects/goldenglass_glass/shaders/glass.vert"),
+                                                                          QStringLiteral(":/effects/goldenglass_glass/shaders/edge.frag"));
+    if (!m_edgePass.shader) {
+        qCWarning(KWIN_BLUR) << "Failed to load glass edge shader";
+        return;
+    } else {
+        m_edgePass.mvpMatrixLocation = m_edgePass.shader->uniformLocation("modelViewProjectionMatrix");
+        m_edgePass.boxLocation = m_edgePass.shader->uniformLocation("box");
+        m_edgePass.cornerRadiusLocation = m_edgePass.shader->uniformLocation("cornerRadius");
+        m_edgePass.opacityLocation = m_edgePass.shader->uniformLocation("opacity");
+        m_edgePass.shadeLocation = m_edgePass.shader->uniformLocation("shade");
+        m_edgePass.shadeWidthLocation = m_edgePass.shader->uniformLocation("shadeWidth");
+        m_edgePass.specularLocation = m_edgePass.shader->uniformLocation("specular");
+        m_edgePass.rimWidthLocation = m_edgePass.shader->uniformLocation("rimWidth");
+        m_edgePass.rimBottomLocation = m_edgePass.shader->uniformLocation("rimBottom");
+        m_edgePass.rimTopGainLocation = m_edgePass.shader->uniformLocation("rimTopGain");
     }
 
     m_downsamplePass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
@@ -299,16 +314,20 @@ void GlassEffect::reconfigure(ReconfigureFlags flags)
 
     // GoldenGlass: la refracción sigue al nivel de vidrio (0 = más claro: entera;
     // 1 = más opaco: por RefractionOpaqueFactor). goldenglass-glass llama a
-    // KWin.reconfigure al cambiar el nivel.
+    // KWin.reconfigure al cambiar el nivel. The edge keeps more of itself on
+    // opaque glass (RefractionRimOpaqueFactor): its contrast matters more there.
     const KConfigGroup glass(KSharedConfig::openConfig(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig), QStringLiteral("Glass"));
     const double level = std::clamp(glass.readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel), 0.0, 1.0);
-    const double factor = 1.0 + (GoldenGlass::Tokens::RefractionOpaqueFactor - 1.0) * level;
+    const double lensFactor = 1.0 + (GoldenGlass::Tokens::RefractionOpaqueFactor - 1.0) * level;
+    const double rimFactor = 1.0 + (GoldenGlass::Tokens::RefractionRimOpaqueFactor - 1.0) * level;
     m_refractionEdge = GoldenGlass::Tokens::RefractionEdge;
-    m_refractionStrength = GoldenGlass::Tokens::RefractionStrength * factor;
+    m_refractionStrength = GoldenGlass::Tokens::RefractionStrength * lensFactor;
     m_refractionDispersion = GoldenGlass::Tokens::RefractionDispersion;
-    m_refractionSpecular = GoldenGlass::Tokens::RefractionSpecular * factor;
     m_refractionTint = GoldenGlass::Tokens::RefractionTint;
-    m_refractionClarity = GoldenGlass::Tokens::RefractionClarity * factor;
+    m_refractionClarity = GoldenGlass::Tokens::RefractionClarity * lensFactor;
+    m_rimSpecular = GoldenGlass::Tokens::RefractionSpecular * rimFactor;
+    m_edgeShade = GoldenGlass::Tokens::RefractionEdgeShade * rimFactor;
+    m_edgeShadeWidth = GoldenGlass::Tokens::RefractionEdgeShadeWidth;
     for (auto &[window, data] : m_windows) {
         data.blurItem->setPixelsToExpandRepaintsBelowOpaqueRegions(m_expandSize);
     }
@@ -562,7 +581,9 @@ bool GlassEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewp
     blur(renderTarget, viewport, w, mask, deviceRegion, data);
 
     // Draw the window over the blurred area
-    return effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
+    const bool painted = effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
+    drawEdge(viewport, w, mask, deviceRegion, data);
+    return painted;
 }
 
 GLTexture *GlassEffect::ensureNoiseTexture()
@@ -614,17 +635,7 @@ void GlassEffect::blur(const RenderTarget &renderTarget, const RenderViewport &v
         return;
     }
 
-    // Compute the effective blur shape. Note that if the window is transformed, so will be the blur shape.
-    RegionF blurShape = blurRegion(w);
-    if (data.xScale() != 1 || data.yScale() != 1) {
-        blurShape.scale(data.xScale(), data.yScale());
-    }
-    if (data.xTranslation() || data.yTranslation()) {
-        blurShape.translate(data.xTranslation(), data.yTranslation());
-    }
-
-    blurShape.translate(w->pos());
-
+    const RegionF blurShape = paintedBlurShape(w, data);
     const Rect backgroundRect = blurShape.boundingRect().rounded();
     const Rect scaledBackgroundRect = backgroundRect.scaled(viewport.scale()).rounded();
     const Rect deviceBackgroundRect = viewport.mapToDeviceCoordinates(backgroundRect).rounded();
@@ -993,13 +1004,8 @@ void GlassEffect::drawGlass(const RenderViewport &viewport, const RegionF &blurS
     shader->setUniform(m_glassPass.backgroundSizeLocation, QVector2D(scaledBackgroundRect.width(), scaledBackgroundRect.height()));
     shader->setUniform(m_glassPass.strengthLocation, float(m_refractionStrength * scale));
     shader->setUniform(m_glassPass.dispersionLocation, m_refractionDispersion);
-    shader->setUniform(m_glassPass.specularLocation, m_refractionSpecular);
     shader->setUniform(m_glassPass.tintLocation, m_refractionTint);
     shader->setUniform(m_glassPass.clarityLocation, m_refractionClarity);
-    // filo de luz: rimBottom abajo, rimBottom + rimTopGain arriba
-    shader->setUniform(m_glassPass.rimWidthLocation, float(GoldenGlass::Tokens::RefractionRimWidth));
-    shader->setUniform(m_glassPass.rimBottomLocation, float(GoldenGlass::Tokens::RefractionRimBottom));
-    shader->setUniform(m_glassPass.rimTopGainLocation, float(1.0 - GoldenGlass::Tokens::RefractionRimBottom));
     shader->setUniform(m_glassPass.sharpTextureLocation, 1);
 
     // unidad 1: el fondo sin difuminar (la primera textura del Blur, en caché)
@@ -1019,10 +1025,7 @@ void GlassEffect::drawGlass(const RenderViewport &viewport, const RegionF &blurS
         const RectF box = piece.bounds.translated(-backgroundRect.topLeft()).scaled(scale);
         shader->setUniform(m_glassPass.boxLocation, QVector4D(box.center().x(), box.center().y(), box.width() * 0.5, box.height() * 0.5));
         shader->setUniform(m_glassPass.cornerRadiusLocation, radii);
-        // en superficies bajas (el dock) la banda curvada no ocupa toda la placa
-        const float edge = std::min(float(m_refractionEdge * scale),
-                                    float(std::min(box.width(), box.height()) * GoldenGlass::Tokens::RefractionEdgeMaxFraction));
-        shader->setUniform(m_glassPass.edgeLocation, edge);
+        shader->setUniform(m_glassPass.edgeLocation, lensEdge(box, scale));
         GLVertexBuffer::streamingBuffer()->draw(GL_TRIANGLES, 6, vertexCount);
     }
 
@@ -1033,6 +1036,131 @@ void GlassEffect::drawGlass(const RenderViewport &viewport, const RegionF &blurS
     glActiveTexture(GL_TEXTURE0);
 
     ShaderManager::instance()->popShader();
+}
+
+RegionF GlassEffect::paintedBlurShape(EffectWindow *w, const WindowPaintData &data) const
+{
+    // Compute the effective blur shape. Note that if the window is transformed, so will be the blur shape.
+    RegionF blurShape = blurRegion(w);
+    if (data.xScale() != 1 || data.yScale() != 1) {
+        blurShape.scale(data.xScale(), data.yScale());
+    }
+    if (data.xTranslation() || data.yTranslation()) {
+        blurShape.translate(data.xTranslation(), data.yTranslation());
+    }
+    blurShape.translate(w->pos());
+    return blurShape;
+}
+
+float GlassEffect::lensEdge(const RectF &deviceBox, qreal scale) const
+{
+    // en superficies bajas (el dock) la banda curvada no ocupa toda la placa
+    return std::min(float(m_refractionEdge * scale),
+                    float(std::min(deviceBox.width(), deviceBox.height()) * GoldenGlass::Tokens::RefractionEdgeMaxFraction));
+}
+
+void GlassEffect::drawEdge(const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, const WindowPaintData &data)
+{
+    if (!m_edgePass.shader || (m_edgeShade <= 0 && m_rimSpecular <= 0) || !isGlassSurface(w) || !m_windows.contains(w)
+        || !shouldBlur(w, mask, data)) {
+        return;
+    }
+    const RegionF blurShape = paintedBlurShape(w, data);
+    if (blurShape.isEmpty()) {
+        return;
+    }
+
+    const qreal scale = viewport.scale();
+    const Rect backgroundRect = blurShape.boundingRect().rounded();
+    const Rect scaledBackgroundRect = backgroundRect.scaled(scale).rounded();
+    const Rect deviceBackgroundRect = viewport.mapToDeviceCoordinates(backgroundRect).rounded();
+    const float shadeWidth = m_edgeShadeWidth * scale;
+    // one more pixel for the antialiased end of the rim
+    constexpr float rimTail = 1;
+
+    struct PieceEdge
+    {
+        QVector4D box;
+        QVector4D radii;
+        float rimWidth;
+        int firstVertex;
+        int vertexCount;
+    };
+    QList<PieceEdge> pieces;
+    QList<RectF> quads;
+    for (const GlassPiece<RectF> &piece : glassPieces<RectF>(blurShape.rects())) {
+        const QVector4D radii = cornerRadii(piece.rects, piece.bounds) * scale;
+        const RectF box = piece.bounds.translated(-backgroundRect.topLeft()).scaled(scale);
+        const float rimWidth = lensEdge(box, scale) * GoldenGlass::Tokens::RefractionRimWidth;
+        const float maxRadius = std::max({radii.x(), radii.y(), radii.z(), radii.w()});
+        const qsizetype firstQuad = quads.size();
+        for (const RectF &band : edgeBand(box, shadeWidth + rimWidth + rimTail, maxRadius)) {
+            if (deviceRegion == Region::infinite()) {
+                quads.append(band);
+                continue;
+            }
+            for (const Rect &clipRect : deviceRegion.rects()) {
+                if (const RectF clipped = band.intersected(RectF(clipRect.translated(-deviceBackgroundRect.topLeft()))); !clipped.isEmpty()) {
+                    quads.append(clipped);
+                }
+            }
+        }
+        pieces.append({QVector4D(box.center().x(), box.center().y(), box.width() * 0.5, box.height() * 0.5), radii, rimWidth,
+                       int(firstQuad * 6), int((quads.size() - firstQuad) * 6)});
+    }
+    if (quads.isEmpty()) {
+        return;
+    }
+
+    GLVertexBuffer *vbo = GLVertexBuffer::streamingBuffer();
+    vbo->reset();
+    vbo->setAttribLayout(std::span(GLVertexBuffer::GLVertex2DLayout), sizeof(GLVertex2D));
+    if (auto result = vbo->map<GLVertex2D>(quads.size() * 6)) {
+        auto map = *result;
+        size_t index = 0;
+        for (const RectF &quad : std::as_const(quads)) {
+            const QVector2D topLeft(quad.left(), quad.top());
+            const QVector2D topRight(quad.right(), quad.top());
+            const QVector2D bottomLeft(quad.left(), quad.bottom());
+            const QVector2D bottomRight(quad.right(), quad.bottom());
+            for (const QVector2D &corner : {topLeft, bottomRight, bottomLeft, topLeft, topRight, bottomRight}) {
+                map[index++] = GLVertex2D{.position = corner, .texcoord = QVector2D()};
+            }
+        }
+        vbo->unmap();
+    } else {
+        qCWarning(KWIN_BLUR) << "Failed to map vertex buffer";
+        return;
+    }
+    vbo->bindArrays();
+
+    GLShader *shader = m_edgePass.shader.get();
+    ShaderManager::instance()->pushShader(shader);
+    QMatrix4x4 projectionMatrix = viewport.projectionMatrix();
+    projectionMatrix.translate(scaledBackgroundRect.x(), scaledBackgroundRect.y());
+    shader->setUniform(m_edgePass.mvpMatrixLocation, projectionMatrix);
+    shader->setUniform(m_edgePass.opacityLocation, float(w->opacity() * data.opacity()));
+    shader->setUniform(m_edgePass.shadeLocation, m_edgeShade);
+    shader->setUniform(m_edgePass.shadeWidthLocation, shadeWidth);
+    shader->setUniform(m_edgePass.specularLocation, m_rimSpecular);
+    shader->setUniform(m_edgePass.rimBottomLocation, float(GoldenGlass::Tokens::RefractionRimBottom));
+    shader->setUniform(m_edgePass.rimTopGainLocation, float(1.0 - GoldenGlass::Tokens::RefractionRimBottom));
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    for (const PieceEdge &piece : std::as_const(pieces)) {
+        if (piece.vertexCount == 0) {
+            continue;
+        }
+        shader->setUniform(m_edgePass.boxLocation, piece.box);
+        shader->setUniform(m_edgePass.cornerRadiusLocation, piece.radii);
+        shader->setUniform(m_edgePass.rimWidthLocation, piece.rimWidth);
+        vbo->draw(GL_TRIANGLES, piece.firstVertex, piece.vertexCount);
+    }
+    glDisable(GL_BLEND);
+
+    ShaderManager::instance()->popShader();
+    vbo->unbindArrays();
 }
 
 bool GlassEffect::isActive() const
