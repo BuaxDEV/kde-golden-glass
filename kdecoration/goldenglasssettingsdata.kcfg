@@ -183,4 +183,24 @@
 
   </group>
 
+  <!-- GoldenGlass: accesibilidad (Ajustes › Accesibilidad › Pantalla de macOS),
+       compartida con el estilo y la decoración. De fábrica, los tokens
+       [accessibility]. Quién escribe y aplica cada clave (F12/F13, pendiente):
+       «Accesibilidad» en docs/ARCHITECTURE.md. -->
+  <group name="Accessibility">
+
+    <entry name="ShowBorders" type="Bool">
+      <default code="true">GoldenGlass::Tokens::AccessibilityShowBorders</default>
+    </entry>
+
+    <entry name="ReduceTransparency" type="Bool">
+      <default code="true">GoldenGlass::Tokens::AccessibilityReduceTransparency</default>
+    </entry>
+
+    <entry name="ReduceMotion" type="Bool">
+      <default code="true">GoldenGlass::Tokens::AccessibilityReduceMotion</default>
+    </entry>
+
+  </group>
+
 </kcfg>
