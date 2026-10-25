@@ -29,13 +29,6 @@ declare -A TARGETS=(
   [build/plasma/look-and-feel/org.goldenglass.light.desktop]="$DATA/plasma/look-and-feel/org.goldenglass.light.desktop"
   [build/plasma/look-and-feel/org.goldenglass.dark.desktop]="$DATA/plasma/look-and-feel/org.goldenglass.dark.desktop"
   [build/plasma/shells/org.goldenglass.desktop]="$DATA/plasma/shells/org.goldenglass.desktop"
-  [build/plasma/plasmoids/org.goldenglass.systemmenu]="$DATA/plasma/plasmoids/org.goldenglass.systemmenu"
-  [build/plasma/plasmoids/org.goldenglass.appname]="$DATA/plasma/plasmoids/org.goldenglass.appname"
-  [build/plasma/plasmoids/org.goldenglass.clock]="$DATA/plasma/plasmoids/org.goldenglass.clock"
-  [build/plasma/plasmoids/org.goldenglass.controlcenter]="$DATA/plasma/plasmoids/org.goldenglass.controlcenter"
-  [build/plasma/plasmoids/org.goldenglass.launchpad]="$DATA/plasma/plasmoids/org.goldenglass.launchpad"
-  [build/plasma/plasmoids/org.goldenglass.trash]="$DATA/plasma/plasmoids/org.goldenglass.trash"
-  [build/plasma/plasmoids/org.goldenglass.dock]="$DATA/plasma/plasmoids/org.goldenglass.dock"
   [plasma/kwin/scripts/org.goldenglass.shortcuts]="$DATA/kwin/scripts/org.goldenglass.shortcuts"
   [build/wallpapers/GoldenGlass]="$DATA/wallpapers/GoldenGlass"
   [build/cursors/GoldenGlass-cursors]="$DATA/icons/GoldenGlass-cursors"
@@ -48,6 +41,13 @@ declare -A TARGETS=(
   [assets/logo/goldenglass.svg]="$DATA/icons/hicolor/scalable/apps/goldenglass.svg"
   [assets/logo/goldenglass-symbolic.svg]="$DATA/icons/hicolor/scalable/apps/goldenglass-symbolic.svg"
 )
+# Plasmoids: todos los de plasma/plasmoids/, sin lista a mano (como el PKGBUILD).
+# tools/plasmoids.py los prepara en build/ con el mismo nombre (su Id); se
+# recorren las fuentes para que valga también antes de generar y al desinstalar.
+for src in "$ROOT"/plasma/plasmoids/*/; do
+  id=$(basename -- "$src")
+  TARGETS[build/plasma/plasmoids/$id]="$DATA/plasma/plasmoids/$id"
+done
 
 mode=copy
 # shellcheck disable=SC2209 # «link» es un valor, no el comando link(1)
