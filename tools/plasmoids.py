@@ -18,11 +18,12 @@ Además:
 from __future__ import annotations
 
 import json
-import re
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+
+from ggcommon import fill_template
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "plasma" / "plasmoids"
@@ -37,25 +38,12 @@ SHARED = {
 }
 
 
-def _token(tokens: dict, path: str) -> str:
-    value = tokens
-    for key in path.split("."):
-        value = value[key]
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    return str(value)
-
-
-def _fill_templates(dst: Path, tokens: dict) -> list[Path]:
+def fill_templates(src: Path, dst: Path, tokens: dict) -> list[Path]:
+    """Plantillas *.in de la copia `dst` del paquete `src` → sin .in."""
     written = []
     for template in sorted(dst.rglob("*.in")):
-        def value(match: re.Match, template: Path = template) -> str:
-            # un marcador mal escrito o una clave que falta: se dice dónde
-            try:
-                return _token(tokens, match.group(1))
-            except (KeyError, TypeError):
-                raise SystemExit(f"{template.name}: el marcador @{match.group(1)}@ no está en los tokens") from None
-        text = re.sub(r"@([a-z_]+(?:\.[a-z_]+)+)@", value, template.read_text(encoding="utf-8"))
+        name = (src / template.relative_to(dst)).relative_to(ROOT)
+        text = fill_template(template.read_text(encoding="utf-8"), tokens, name)
         target = template.with_suffix("")
         target.write_text(text, encoding="utf-8")
         template.unlink()
@@ -87,7 +75,7 @@ def build(out: Path, tokens: dict | None = None) -> list[Path]:
             for name in files:
                 shutil.copy2(SOURCES / origin / "contents" / "ui" / name, dst / "contents" / "ui" / name)
         if tokens is not None:
-            written += _fill_templates(dst, tokens)
+            written += fill_templates(src, dst, tokens)
             js = dst / "contents" / "ui" / "tokens.js"
             js.write_text("// Generado por tools/gen_tokens.py desde tokens/goldenglass.toml — NO EDITAR\n"
                           ".pragma library\n\nvar tokens = " + json.dumps(tokens, ensure_ascii=False) + ";\n",

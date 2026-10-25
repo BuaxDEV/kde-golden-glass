@@ -5,7 +5,7 @@
     Splash de GoldenGlass: logo centrado y barra de progreso fina, como el
     arranque de macOS. ksplash avanza `stage` de 1 a 6.
 
-    Plantilla: tools/gen_tokens.py sustituye los marcadores entre arrobas desde los tokens.
+    Plantilla: tools/lookandfeel.py sustituye los marcadores @sección.clave@ desde los tokens.
 */
 
 import QtQuick
@@ -13,7 +13,7 @@ import org.kde.kirigami as Kirigami
 
 Rectangle {
     id: root
-    color: "@SPLASH_BACKGROUND@"
+    color: "@lookandfeel.splash_background@"
 
     property int stage
     readonly property int lastStage: 6
@@ -51,12 +51,12 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: logo.bottom
             anchors.topMargin: Kirigami.Units.gridUnit * 3
-            color: "@SPLASH_TRACK@"
+            color: "@lookandfeel.splash_track@"
 
             Rectangle {
                 height: parent.height
                 radius: parent.radius
-                color: "@SPLASH_FILL@"
+                color: "@lookandfeel.splash_fill@"
                 width: Math.max(parent.height, parent.width * Math.min(root.stage, root.lastStage) / root.lastStage)
                 Behavior on width {
                     NumberAnimation {

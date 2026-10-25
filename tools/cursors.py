@@ -22,13 +22,14 @@ Uso directo para iterar el diseño:
 from __future__ import annotations
 
 import colorsys
-import hashlib
 import json
 import math
 import shutil
 import struct
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from ggcommon import stamp
 
 THEME_ID = "GoldenGlass-cursors"
 THEME_NAME = "GoldenGlass"
@@ -401,7 +402,7 @@ def xcursor(cursor: Cursor) -> bytes:
 # --- paquete ------------------------------------------------------------------
 
 def _stamp() -> str:
-    return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    return stamp(Path(__file__))
 
 
 def _symlink(target: str, link: Path) -> None:

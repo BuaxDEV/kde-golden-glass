@@ -28,7 +28,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import tomllib
 import traceback
 from pathlib import Path
 
@@ -46,42 +45,12 @@ import plasmoids  # noqa: E402
 import plymouth  # noqa: E402
 import sounds  # noqa: E402
 import wallpaper  # noqa: E402
+from ggcommon import Color, load_tokens  # noqa: E402
 
 VARIANTS = {
     "light": ("GoldenGlassLight", "GoldenGlass Light"),
     "dark": ("GoldenGlassDark", "GoldenGlass Dark"),
 }
-
-
-# --- color ------------------------------------------------------------------
-
-class Color:
-    __slots__ = ("r", "g", "b", "a")
-
-    def __init__(self, r: int, g: int, b: int, a: float = 1.0):
-        self.r, self.g, self.b, self.a = r, g, b, a
-
-    @classmethod
-    def parse(cls, value: str) -> "Color":
-        h = value.lstrip("#")
-        if len(h) not in (6, 8):
-            raise ValueError(f"color inválido: {value!r}")
-        r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
-        a = int(h[6:8], 16) / 255 if len(h) == 8 else 1.0
-        return cls(r, g, b, a)
-
-    def over(self, bg: "Color") -> "Color":
-        """Aplana este color (con alfa) sobre un fondo opaco."""
-        a = self.a
-        return Color(*(round(c * a + b * (1 - a))
-                       for c, b in ((self.r, bg.r), (self.g, bg.g), (self.b, bg.b))))
-
-    def mix(self, other: "Color", t: float) -> "Color":
-        return Color(*(round(a + (b - a) * t)
-                       for a, b in ((self.r, other.r), (self.g, other.g), (self.b, other.b))))
-
-    def kde(self) -> str:
-        return f"{self.r},{self.g},{self.b}"
 
 
 # --- .colors ----------------------------------------------------------------
@@ -224,8 +193,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="nivel del slider de vidrio para el Plasma Style (por defecto, glass.default_level)")
     args = ap.parse_args(argv)
 
-    with args.tokens.open("rb") as f:
-        tokens = tomllib.load(f)
+    tokens = load_tokens(args.tokens)
     validate(tokens)
 
     if args.cxx_header:

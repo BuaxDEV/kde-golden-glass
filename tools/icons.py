@@ -514,11 +514,11 @@ def preview(tokens: dict, path: Path, dark: bool = False) -> None:
 
 if __name__ == "__main__":
     import argparse
-    import tomllib
+
+    from ggcommon import load_tokens
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--preview", type=Path, required=True, help="PNG con todos los iconos (claro arriba, oscuro abajo)")
     args = ap.parse_args()
-    toks = tomllib.loads((Path(__file__).resolve().parent.parent / "tokens" / "goldenglass.toml").read_text())
-    preview(toks, args.preview)
+    preview(load_tokens(), args.preview)
     print(args.preview)

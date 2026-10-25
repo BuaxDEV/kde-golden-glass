@@ -3,17 +3,19 @@
 """Generador de los Global Themes (Look-and-Feel) claro y oscuro.
 
 Ambos paquetes salen de `plasma/look-and-feel/common/` (layout, splash) con los
-marcadores entre arrobas sustituidos desde los tokens, más un `defaults` y un `metadata.json`
-propios de cada variante.
+marcadores @sección.clave@ sustituidos desde los tokens (@lookandfeel.…@: valores
+calculados para cada variante), más un `defaults` y un `metadata.json` propios de
+cada variante.
 """
 
 from __future__ import annotations
 
 import json
 import math
-import re
 import shutil
 from pathlib import Path
+
+from ggcommon import fill_template, flatten
 
 ROOT = Path(__file__).resolve().parent.parent
 COMMON = ROOT / "plasma" / "look-and-feel" / "common"
@@ -40,13 +42,6 @@ def _font(family: str, size: int, weight: int = 400) -> str:
     return f"{family},{size},-1,5,{weight},0,0,0,0,0,0,0,0,0,0,1,,0,0"
 
 
-def _flatten(fg: str, bg: str) -> str:
-    f, b = fg.lstrip("#"), bg.lstrip("#")
-    a = int(f[6:8], 16) / 255 if len(f) == 8 else 1.0
-    return "#" + "".join(f"{round(int(f[i:i + 2], 16) * a + int(b[i:i + 2], 16) * (1 - a)):02X}"
-                         for i in (0, 2, 4))
-
-
 def _dock_height(tokens: dict) -> int:
     """Grosor inicial del panel del dock: la placa (icono + relleno; el punto de
     app abierta va en el relleno) y encima el hueco para el icono más ampliado
@@ -60,27 +55,24 @@ def _dock_height(tokens: dict) -> int:
     return h + h % 2                          # Plasma solo muestra alturas pares
 
 
-def values(tokens: dict, variant: str) -> dict[str, str]:
+def values(tokens: dict, variant: str) -> dict:
+    """Tokens para las plantillas: los de goldenglass.toml y, en «lookandfeel»,
+    los calculados para esta variante."""
     pal = tokens[variant]
-    label = _flatten(pal["label"], pal["window"])
+    label = flatten(pal["label"], pal["window"])
     if variant == "light":
         splash_bg, splash_fg = pal["window"], label
     else:
-        splash_bg, splash_fg = pal["complementary"], _flatten(pal["label"], pal["complementary"])
+        splash_bg, splash_fg = pal["complementary"], flatten(pal["label"], pal["complementary"])
     track_alpha = "26" if variant == "light" else "40"
-    return {
-        "MENUBAR_HEIGHT": str(tokens["plasma"]["menubar_height"]),
-        "DOCK_HEIGHT": str(_dock_height(tokens)),
-        "DOCK_HIDING": tokens["plasma"]["dock_hiding"],
-        "SLIDE_IN_MS": str(tokens["plasma"]["slide_in_ms"]),
-        "SLIDE_OUT_MS": str(tokens["plasma"]["slide_out_ms"]),
+    return {**tokens, "lookandfeel": {
+        "dock_height": _dock_height(tokens),
         # el applet de bandeja separa los iconos en múltiplos de smallSpacing (4 px)
-        "TRAY_ICON_SPACING": str(max(1, round(tokens["plasma"]["menubar_tray_spacing"] / 4))),
-        "PER_SCREEN_DESKTOPS": "true" if tokens["plasma"]["per_screen_desktops"] else "false",
-        "SPLASH_BACKGROUND": splash_bg,
-        "SPLASH_TRACK": _with_alpha(splash_fg, track_alpha),
-        "SPLASH_FILL": splash_fg,
-    }
+        "tray_icon_spacing": max(1, round(tokens["plasma"]["menubar_tray_spacing"] / 4)),
+        "splash_background": splash_bg,
+        "splash_track": _with_alpha(splash_fg, track_alpha),
+        "splash_fill": splash_fg,
+    }}
 
 
 def _with_alpha(rgb: str, alpha_hex: str) -> str:
@@ -176,17 +168,6 @@ def metadata(tokens: dict, variant: str) -> str:
     }, indent=4) + "\n"
 
 
-def _fill(text: str, vals: dict[str, str], src: Path) -> str:
-    """Sustituye los marcadores @NOMBRE@; uno desconocido (mal escrito) para
-    la generación diciendo en qué plantilla está."""
-    def value(match: re.Match) -> str:
-        try:
-            return vals[match.group(1)]
-        except KeyError:
-            raise SystemExit(f"{src.relative_to(ROOT)}: marcador desconocido @{match.group(1)}@") from None
-    return re.sub(r"@([A-Z_]+)@", value, text)
-
-
 def build(tokens: dict, out: Path) -> list[Path]:
     written: list[Path] = []
     for variant, (pkg_id, _, _) in VARIANTS.items():
@@ -201,7 +182,7 @@ def build(tokens: dict, out: Path) -> list[Path]:
             dst = root / src.relative_to(COMMON)
             dst.parent.mkdir(parents=True, exist_ok=True)
             if src.suffix in TEMPLATED:
-                text = _fill(src.read_text(encoding="utf-8"), vals, src)
+                text = fill_template(src.read_text(encoding="utf-8"), vals, src.relative_to(ROOT))
                 dst.write_text(text, encoding="utf-8")
             else:
                 shutil.copy2(src, dst)

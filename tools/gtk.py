@@ -26,6 +26,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from ggcommon import Color
+
 THEME_ID = "GoldenGlass"
 ADW_CANDIDATES = (Path.home() / ".local/share/themes", Path.home() / ".themes", Path("/usr/share/themes"))
 HEADER = "/* Generado por tools/gen_tokens.py desde tokens/goldenglass.toml — NO EDITAR */\n"
@@ -43,11 +45,10 @@ def _adw_dir() -> Path:
 
 def _css_color(value: str) -> str:
     """#RRGGBB o #RRGGBBAA → color CSS de GTK."""
-    h = value.lstrip("#")
-    if len(h) == 8:
-        r, g, b, a = (int(h[i:i + 2], 16) for i in (0, 2, 4, 6))
-        return f"rgba({r}, {g}, {b}, {a / 255:.3f})"
-    return f"#{h}"
+    c = Color.parse(value)
+    if len(value.lstrip("#")) == 8:
+        return f"rgba({c.r}, {c.g}, {c.b}, {c.a:.3f})"
+    return c.hex()
 
 
 def _palette(pal: dict) -> dict[str, str]:

@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 
 import plasma_theme
+from ggcommon import Color
 
 # Orden de los <choice> en los .kcfg: el índice es el valor del enum.
 SHADOW_SIZES = ("ShadowNone", "ShadowSmall", "ShadowMedium", "ShadowLarge", "ShadowVeryLarge")
@@ -37,9 +38,8 @@ def _shadow_strength(alpha: float) -> int:
 
 def _argb(value: str) -> str:
     """#RRGGBB[AA] → literal 0xAARRGGBB (formato de QColor::fromRgba)."""
-    h = value.lstrip("#")
-    alpha = h[6:8] if len(h) == 8 else "FF"
-    return "0x" + (alpha + h[:6]).upper() + "u"
+    c = Color.parse(value)
+    return f"0x{c.alpha8:02X}{c.r:02X}{c.g:02X}{c.b:02X}u"
 
 
 def header(tokens: dict) -> str:

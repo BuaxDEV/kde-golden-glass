@@ -70,7 +70,8 @@ el token y se regenera (`install.sh` y el PKGBUILD lo hacen solos).
 goldenglass/
 ├── tokens/              # goldenglass.toml
 ├── tools/               # gen_tokens.py (+ plasma_theme.py, lookandfeel.py, wallpaper.py,
-│                        # cursors.py, sounds.py, plymouth.py…), install.sh,
+│                        # cursors.py, sounds.py, plymouth.py…; utilidades comunes
+│                        # en ggcommon.py), install.sh,
 │                        # system.py (goldenglass-system),
 │                        # preview_plasma.py (vista previa), sandbox.sh (sesión aislada)
 ├── assets/logo/         # logo GoldenGlass (símbolo monocromo y versión a color)
