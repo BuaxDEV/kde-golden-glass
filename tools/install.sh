@@ -11,7 +11,7 @@
 #                               trabajo tal cual (rama, cambios a medias).
 #   tools/install.sh --uninstall
 #
-# Lanzadores (goldenglass-system, goldenglass-dock): van a $GOLDENGLASS_BIN_DIR
+# Lanzadores (goldenglass-system, goldenglass-dock, goldenglass-windows): van a $GOLDENGLASS_BIN_DIR
 # (por defecto ~/.local/bin); --uninstall los quita de ahí. tools/sandbox.sh lo
 # fija dentro de su directorio para no escribir en el HOME real.
 #
@@ -71,14 +71,16 @@ AUTOSTART="$CONF/autostart/goldenglass-gtk-sync.desktop"
 BIN_DIR="${GOLDENGLASS_BIN_DIR:-$HOME/.local/bin}"
 SYSTEM_BIN="$BIN_DIR/goldenglass-system"
 DOCK_BIN="$BIN_DIR/goldenglass-dock"
+WINDOWS_BIN="$BIN_DIR/goldenglass-windows"
+WINDOWS_AUTOSTART="$CONF/autostart/goldenglass-windows.desktop"
 
 if [[ $mode == uninstall ]]; then
   pkill -u "$USER" -f "$ROOT/tools/gtk_sync.py" 2>/dev/null || true
   python3 "$ROOT/tools/gtk_sync.py" --restore 2>/dev/null || true
-  rm -fv -- "$AUTOSTART"
+  rm -fv -- "$AUTOSTART" "$WINDOWS_AUTOSTART"
   # deja la configuración del usuario como estaba antes de goldenglass-system
   python3 "$ROOT/tools/system.py" disable sounds chime || true
-  rm -fv -- "$SYSTEM_BIN" "$DOCK_BIN"
+  rm -fv -- "$SYSTEM_BIN" "$DOCK_BIN" "$WINDOWS_BIN"
   for dst in "${TARGETS[@]}"; do
     [[ -e $dst || -L $dst ]] && rm -rfv -- "$dst"
   done
@@ -132,6 +134,23 @@ cat >"$DOCK_BIN" <<EOF
 exec python3 "$ROOT/tools/dock.py" "\$@"
 EOF
 chmod 755 "$DOCK_BIN"
+# goldenglass-windows (KWin window effects, Reduce Motion): used by the «Glass»
+# settings module; at login it fills in the factory values the user left empty.
+cat >"$WINDOWS_BIN" <<EOF
+#!/bin/sh
+exec python3 "$ROOT/tools/windows.py" "\$@"
+EOF
+chmod 755 "$WINDOWS_BIN"
+cat >"$WINDOWS_AUTOSTART" <<EOF
+[Desktop Entry]
+Type=Application
+Name=GoldenGlass window effects
+Comment=Sets the GoldenGlass window effects of KWin that the user left unset
+Exec=python3 "$ROOT/tools/windows.py" --check
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=1
+NoDisplay=true
+EOF
 
 # Apps de terceros encerradas en squircle a partir de sus iconos instalados.
 # (Volver a ejecutar tools/wrap_icons.py al instalar apps nuevas.)

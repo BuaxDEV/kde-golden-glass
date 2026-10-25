@@ -173,6 +173,12 @@ package_goldenglass-plasma() {
   # goldenglass-dock: ajustes del dock en vivo (lo usa el módulo «Dock»)
   install -Dm644 goldenglass/tools/dock.py -t "$pkgdir$_share/tools/"
   _launcher goldenglass-dock dock.py
+  # goldenglass-windows: KWin window effects (factory values at login) and
+  # Reduce Motion; windows.json holds its [kwin] tokens
+  install -Dm644 goldenglass/tools/windows.py -t "$pkgdir$_share/tools/"
+  install -Dm644 gen/kwin/windows.json -t "$pkgdir$_share/"
+  _launcher goldenglass-windows windows.py
+  _autostart goldenglass-windows "GoldenGlass window effects" --check
   install -Dm755 goldenglass/tools/goldenglass-system-helper "$pkgdir/usr/lib/goldenglass/system-helper"
   install -Dm644 goldenglass/tools/org.goldenglass.system.policy -t "$data/polkit-1/actions/"
   _docs
