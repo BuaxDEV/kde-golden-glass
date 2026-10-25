@@ -2,8 +2,8 @@
     "KPackageStructure": "KWin/Script",
     "KPlugin": {
         "Authors": [{ "Name": "GoldenGlass contributors" }],
-        "Description": "macOS-style shortcuts: Ctrl+Up for Mission Control (overview), Ctrl+Down for App Exposé, and Meta+Ctrl+F/C/R to fill, center and restore the window",
-        "Description[es]": "Atajos como en macOS: Ctrl+↑ para Mission Control (vista general), Ctrl+↓ para App Exposé y Meta+Ctrl+F/C/R para llenar, centrar y restaurar la ventana",
+        "Description": "macOS-style shortcuts: Ctrl+Up for Mission Control (overview), Ctrl+Down for App Exposé, and Meta+Ctrl+F/C to fill and center the window",
+        "Description[es]": "Atajos como en macOS: Ctrl+↑ para Mission Control (vista general), Ctrl+↓ para App Exposé y Meta+Ctrl+F/C para llenar y centrar la ventana",
         "EnabledByDefault": false,
         "Id": "org.goldenglass.shortcuts",
         "License": "GPL-3.0-or-later",
