@@ -76,7 +76,7 @@ QQC2.AbstractButton {
                 Layout.fillWidth: true
                 visible: text.length > 0
                 text: row.subtitle
-                opacity: 0.7
+                opacity: T.tokens.text.secondary_alpha
                 font: Kirigami.Theme.smallFont
                 elide: Text.ElideRight
                 textFormat: Text.PlainText
@@ -97,7 +97,7 @@ QQC2.AbstractButton {
             source: row.trailingIcon
             isMask: true
             color: Kirigami.Theme.textColor
-            opacity: 0.6
+            opacity: T.tokens.text.tertiary_alpha
         }
     }
 }

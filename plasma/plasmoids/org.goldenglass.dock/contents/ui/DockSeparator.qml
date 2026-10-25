@@ -9,13 +9,14 @@
 import QtQuick
 
 import org.kde.kirigami as Kirigami
+import "tokens.js" as T
 
 Item {
     Rectangle {
         anchors.centerIn: parent
         width: 1
-        height: parent.height * 0.78
+        height: parent.height * T.tokens.dock.separator_height
         color: Kirigami.Theme.textColor
-        opacity: 0.22
+        opacity: T.tokens.dock.separator_alpha
     }
 }

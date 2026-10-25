@@ -11,6 +11,7 @@ import QtQuick
 import QtQuick.Layouts
 
 import org.kde.kirigami as Kirigami
+import "tokens.js" as T
 
 RowLayout {
     id: row
@@ -39,7 +40,7 @@ RowLayout {
         source: row.iconFrom
         isMask: true
         color: Kirigami.Theme.textColor
-        opacity: iconArea.containsMouse ? 1 : 0.85
+        opacity: iconArea.containsMouse ? 1 : T.tokens.text.icon_alpha
 
         MouseArea {
             id: iconArea
@@ -65,7 +66,7 @@ RowLayout {
         source: row.iconTo
         isMask: true
         color: Kirigami.Theme.textColor
-        opacity: 0.85
+        opacity: T.tokens.text.icon_alpha
     }
 
     CircleButton {

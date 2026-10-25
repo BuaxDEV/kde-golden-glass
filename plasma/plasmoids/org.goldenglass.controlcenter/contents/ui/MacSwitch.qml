@@ -23,7 +23,7 @@ QQC2.AbstractButton {
     implicitWidth: cc.switch_width
     implicitHeight: cc.switch_height
     Accessible.role: Accessible.CheckBox
-    opacity: enabled ? 1 : 0.5
+    opacity: enabled ? 1 : T.tokens.text.disabled_alpha
 
     background: Rectangle {
         radius: height / 2
@@ -40,9 +40,9 @@ QQC2.AbstractButton {
             radius: width / 2
             y: inset
             x: control.checked ? parent.width - width - inset : inset
-            color: "white"
+            color: control.cc.switch_knob
             border.width: 1
-            border.color: Qt.rgba(0, 0, 0, 0.08)
+            border.color: Qt.rgba(0, 0, 0, control.cc.switch_knob_border_alpha)
             Behavior on x { NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic } }
         }
     }

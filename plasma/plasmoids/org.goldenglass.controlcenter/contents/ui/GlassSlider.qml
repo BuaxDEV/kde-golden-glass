@@ -23,7 +23,7 @@ QQT.Slider {
     // alto del botón redondo opcional de SliderTile: todas las tarjetas miden igual
     implicitHeight: Kirigami.Units.iconSizes.small + Kirigami.Units.smallSpacing * 2
     wheelEnabled: true
-    opacity: enabled ? 1 : 0.5
+    opacity: enabled ? 1 : T.tokens.text.disabled_alpha
 
     background: Rectangle {
         x: control.leftPadding

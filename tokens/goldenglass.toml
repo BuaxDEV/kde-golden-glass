@@ -325,6 +325,11 @@ close_ms = 160
 close_scale = 0.96
 close_unblur_at = 0.5    # fracción del cierre a la que se quita el blur de KWin
 glass_update_ms = 32
+glyph_alpha = 0.8        # glifo de Apps junto al buscador y puntos del botón «⋯»
+
+# Reloj de la barra de menús (plasmoid org.goldenglass.clock)
+[clock]
+calendar_border_alpha = 0.25 # rejilla del calendario
 
 [scroll]
 # Desplazamiento como en macOS (GlassScrollView de los plasmoids): barra
@@ -398,6 +403,14 @@ attention_bounces = 8    # rebotes al pedir atención (luego queda quieto)
 show_recent = true       # apps recientes no fijadas, tras un separador
 recent_count = 3
 preview_width = 220      # px de las miniaturas de ventanas en el tooltip
+preview_alpha = 0.06     # fondo de cada miniatura (color de texto)
+preview_hover_alpha = 0.16
+preview_active_border = 2    # px del filo de acento de la ventana activa
+preview_hide_ms = 300    # margen para pasar el ratón del icono a las miniaturas
+press_alpha = 0.7        # icono pulsado: más oscuro, como macOS
+dot_alpha = 0.8          # punto de app abierta (color de texto)
+separator_height = 0.78  # separador de apps recientes (fracción del alto)
+separator_alpha = 0.22
 label_delay_ms = 400     # espera antes del nombre de la app al pasar el ratón
 # Rangos de los deslizadores del módulo «Dock» (px). goldenglass-dock acepta
 # otros más amplios (24–128 y 24–256) y el main.xml del plasmoid no pone
@@ -406,6 +419,17 @@ settings_icon_size_min = 32
 settings_icon_size_max = 80
 settings_magnification_size_min = 48   # y nunca menos que el tamaño del icono
 settings_magnification_size_max = 128
+
+# ---------------------------------------------------------------------------
+# Texto e iconos secundarios de los plasmoids: opacidad sobre el color de texto
+# de Kirigami. No son label_secondary ni label_tertiary de las paletas (50–55 %
+# y 25 %), que se aplanan sobre un fondo.
+# ---------------------------------------------------------------------------
+[text]
+secondary_alpha = 0.7    # subtítulos, artista y álbum, tiempos, avisos
+tertiary_alpha = 0.6     # títulos de sección, iconos al final de una fila, «Sin aplicaciones»
+icon_alpha = 0.85        # iconos a los lados de los sliders (enteros al pasar el ratón)
+disabled_alpha = 0.5     # controles deshabilitados
 
 # ---------------------------------------------------------------------------
 # Centro de control (plasmoid org.goldenglass.controlcenter): cuadrícula de 4
@@ -469,6 +493,11 @@ row_icon = 16
 separator_alpha = 0.12
 switch_width = 36            # interruptor de la cabecera
 switch_height = 20
+switch_knob = "#FFFFFF"      # botón del interruptor
+switch_knob_border_alpha = 0.08  # su filo (negro)
+press_color = "#FFFFFF"      # brillo de las tarjetas al pulsar (press_brighten_alpha, press_glow_alpha)
+media_pressed_alpha = 0.6    # botones de reproducción pulsados
+media_disabled_alpha = 0.35  # y deshabilitados
 
 # ---------------------------------------------------------------------------
 # Pantalla de bloqueo (shell org.goldenglass.desktop, tools/shell.py): fecha y

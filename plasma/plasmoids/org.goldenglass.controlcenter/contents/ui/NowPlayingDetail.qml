@@ -99,7 +99,7 @@ DetailView {
                 Layout.fillWidth: true
                 visible: text.length > 0
                 text: view.hasPlayer ? view.player.artist : ""
-                opacity: 0.7
+                opacity: T.tokens.text.secondary_alpha
                 elide: Text.ElideRight
                 textFormat: Text.PlainText
             }
@@ -107,7 +107,7 @@ DetailView {
                 Layout.fillWidth: true
                 visible: text.length > 0
                 text: view.hasPlayer ? view.player.album : ""
-                opacity: 0.7
+                opacity: T.tokens.text.secondary_alpha
                 font: Kirigami.Theme.smallFont
                 elide: Text.ElideRight
                 textFormat: Text.PlainText
@@ -141,13 +141,13 @@ DetailView {
             Layout.fillWidth: true
             PlasmaComponents3.Label {
                 text: view.time(progress.value)
-                opacity: 0.7
+                opacity: T.tokens.text.secondary_alpha
                 font: Kirigami.Theme.smallFont
             }
             Item { Layout.fillWidth: true }
             PlasmaComponents3.Label {
                 text: "-" + view.time(progress.to - progress.value)
-                opacity: 0.7
+                opacity: T.tokens.text.secondary_alpha
                 font: Kirigami.Theme.smallFont
             }
         }
@@ -170,7 +170,8 @@ DetailView {
                 implicitHeight: implicitWidth
                 isMask: true
                 color: Kirigami.Theme.textColor
-                opacity: !mediaButton.enabled ? 0.35 : mediaButton.pressed ? 0.6 : 1
+                opacity: !mediaButton.enabled ? T.tokens.control_center.media_disabled_alpha
+                             : mediaButton.pressed ? T.tokens.control_center.media_pressed_alpha : 1
             }
         }
 

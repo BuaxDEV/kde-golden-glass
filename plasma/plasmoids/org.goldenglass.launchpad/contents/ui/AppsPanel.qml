@@ -550,7 +550,7 @@ PlasmaCore.Dialog {
                         source: "view-app-grid-symbolic"
                         isMask: true
                         color: Kirigami.Theme.textColor
-                        opacity: 0.8
+                        opacity: panel.tok.glyph_alpha
                     }
 
                     PlasmaComponents3.TextField {
@@ -618,7 +618,7 @@ PlasmaCore.Dialog {
                                         height: 4
                                         radius: 2
                                         color: Kirigami.Theme.textColor
-                                        opacity: 0.8
+                                        opacity: panel.tok.glyph_alpha
                                     }
                                 }
                             }
@@ -691,7 +691,7 @@ PlasmaCore.Dialog {
                                 topPadding: Kirigami.Units.gridUnit * 4
                                 horizontalAlignment: Text.AlignHCenter
                                 text: i18n("No applications")
-                                opacity: 0.6
+                                opacity: T.tokens.text.tertiary_alpha
                             }
                         }
                     }

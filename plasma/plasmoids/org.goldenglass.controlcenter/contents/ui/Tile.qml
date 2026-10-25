@@ -82,7 +82,7 @@ Rectangle {
             Rectangle {
                 anchors.fill: parent
                 radius: tile.radius
-                color: "white"
+                color: T.tokens.control_center.press_color
                 opacity: T.tokens.control_center.press_brighten_alpha
             }
 
@@ -100,11 +100,11 @@ Rectangle {
                         focalY: centerY
                         GradientStop {
                             position: 0
-                            color: Qt.alpha("white", T.tokens.control_center.press_glow_alpha)
+                            color: Qt.alpha(T.tokens.control_center.press_color, T.tokens.control_center.press_glow_alpha)
                         }
                         GradientStop {
                             position: 1
-                            color: Qt.alpha("white", 0)
+                            color: Qt.alpha(T.tokens.control_center.press_color, 0)
                         }
                     }
                     PathRectangle {

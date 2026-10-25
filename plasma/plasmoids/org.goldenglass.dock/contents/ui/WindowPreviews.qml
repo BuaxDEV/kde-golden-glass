@@ -53,8 +53,8 @@ ColumnLayout {
                     Layout.preferredHeight: previews.thumbWidth * 10 / 16
                     radius: Kirigami.Units.cornerRadius
                     color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b,
-                                   hover.hovered ? 0.16 : 0.06)
-                    border.width: entry.modelData.active ? 2 : 0
+                                   hover.hovered ? T.tokens.dock.preview_hover_alpha : T.tokens.dock.preview_alpha)
+                    border.width: entry.modelData.active ? T.tokens.dock.preview_active_border : 0
                     border.color: Kirigami.Theme.highlightColor
 
                     TaskManager.ScreencastingRequest {

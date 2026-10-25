@@ -78,7 +78,7 @@ Tile {
                 Layout.fillWidth: true
                 visible: text.length > 0
                 text: pill.subtitle
-                opacity: 0.7
+                opacity: T.tokens.text.secondary_alpha
                 font: Kirigami.Theme.smallFont
                 elide: Text.ElideRight
                 textFormat: Text.PlainText

@@ -12,6 +12,7 @@ import QtQuick.Layouts
 import org.kde.bluezqt as BluezQt
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
+import "tokens.js" as T
 
 DetailView {
     id: view
@@ -67,7 +68,7 @@ DetailView {
         Layout.fillWidth: true
         Layout.margins: Kirigami.Units.smallSpacing
         text: i18n("No paired devices")
-        opacity: 0.7
+        opacity: T.tokens.text.secondary_alpha
         textFormat: Text.PlainText
     }
 }
