@@ -1400,7 +1400,8 @@ ventana. Plasma 6.8.1, KWin 6.8.1 virtual, Qt 6.12.
       máscara pintada en el acento) y `tools/tests/test_wrap_icons.py` (una
       máquina inventada en `tmp_path`: los seis `wrapped`, las apps omitidas,
       los temas de fábrica sin depender de los estilos, `--if-changed`,
-      `--clean`, `--sheet` y la búsqueda con `QIcon.fromTheme`). Hoja de
+      `--clean`, `--sheet`, la búsqueda con `QIcon.fromTheme` y el símbolo
+      extraído en el acento de la paleta con el motor de iconos de KDE). Hoja de
       contacto: `python3 tools/icons_apps.py --preview hoja.png --style tinted
       --style clear [--accent '#AF52DE']`.
   - **Protección de nombres:** al generar se crean en `<tema>/inherited/`

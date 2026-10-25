@@ -138,3 +138,41 @@ def test_icon_lookup_finds_the_styled_wrapped_icons(machine, monkeypatch, _token
     finally:
         QIcon.setThemeSearchPaths(paths)
         QIcon.setThemeName(name)
+
+
+KDE_PROBE = """
+import sys
+from PyQt6.QtGui import QGuiApplication, QIcon, QPalette
+app = QGuiApplication(sys.argv[:1])
+img = QIcon.fromTheme("acme-tool").pixmap(64, 64).toImage()
+print(QIcon.themeName(), app.palette().color(QPalette.ColorRole.Accent).name(), img.pixelColor(%d, %d).name())
+""" % L_BAR
+
+
+def test_kde_icon_engine_paints_the_extracted_glyph_in_the_palette_accent(machine, monkeypatch, _tokens):
+    """KIconLoader rewrites the colour scheme <style> of the wrapped SVG; the PNG mask survives it."""
+    import os
+    import subprocess
+
+    if not Path("/usr/lib/qt6/plugins/platformthemes/KDEPlasmaPlatformTheme6.so").exists():
+        pytest.skip("no KDE platform theme (plasma-integration)")
+    home = machine / "kde"
+    icons_dir = home / "data" / "icons"
+    monkeypatch.setattr(icons, "_family", lambda tokens: "Inter")
+    icons.build(_tokens, home / "data")
+    run(monkeypatch, icons_dir)
+    (home / "config").mkdir(parents=True)
+    (home / "config" / "kdeglobals").write_text("[Icons]\nTheme=GoldenGlass-Tinted-Dark\n", encoding="utf-8")
+    env = {key: value for key, value in os.environ.items()
+           if key not in ("WAYLAND_DISPLAY", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS")}
+    env.update(HOME=str(home), XDG_CONFIG_HOME=str(home / "config"), XDG_DATA_HOME=str(home / "data"),
+               XDG_CACHE_HOME=str(home / "cache"), XDG_STATE_HOME=str(home / "state"),
+               XDG_CONFIG_DIRS=str(home / "no-config-dirs"), XDG_DATA_DIRS="/usr/share",
+               DBUS_SESSION_BUS_ADDRESS=f"unix:path={home / 'no-bus'}",
+               QT_QPA_PLATFORM="offscreen", QT_QPA_PLATFORMTHEME="kde")
+    out = subprocess.run([sys.executable, "-c", KDE_PROBE], env=env, capture_output=True, text=True,
+                         timeout=60, check=True).stdout.split()
+    theme, accent, glyph = out[-3:]
+    assert theme == "GoldenGlass-Tinted-Dark"
+    assert accent != _tokens["light"]["accent"].lower()
+    assert glyph == accent
