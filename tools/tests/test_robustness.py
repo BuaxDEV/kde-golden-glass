@@ -242,7 +242,8 @@ class GlassConcurrencyTest(unittest.TestCase):
         with glass.session_lock(), mock.patch.object(glass, "effect_available", return_value=True), \
                 contextlib.redirect_stdout(io.StringIO()) as out:
             start = time.monotonic()
-            reads = ("--get", "--get-refraction", "--get-menubar-background", "--get-reduce-transparency")
+            reads = ("--get", "--get-refraction", "--get-menubar-background", "--get-reduce-transparency",
+                     "--get-show-borders")
             for flag in reads:
                 self.assertEqual(glass.main([flag]), 0, flag)
             self.assertLess(time.monotonic() - start, 2)
@@ -250,7 +251,8 @@ class GlassConcurrencyTest(unittest.TestCase):
 
     def test_writes_wait_for_the_lock(self) -> None:
         for argv in (["--menubar-background", "on"], ["--level", "0.8", "--no-plasma-reload"],
-                     ["--reduce-transparency", "on", "--no-plasma-reload"], ["--refraction", "off"], ["--check"]):
+                     ["--reduce-transparency", "on", "--no-plasma-reload"],
+                     ["--show-borders", "on", "--no-plasma-reload"], ["--refraction", "off"], ["--check"]):
             with self.subTest(argv=argv), mock.patch.object(glass, "effect_available", return_value=True), \
                     mock.patch.object(glass, "effects_call", return_value=""), \
                     mock.patch.object(glass, "write_tuned_theme"):
