@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Configuración de las herramientas de Python (tools/): ruff. No es un
+# paquete instalable; los scripts se ejecutan tal cual (tools/gen_tokens.py).
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+include = ["tools/**/*.py"]
+
+[tool.ruff.lint]
+# Errores reales, no estilo: nombres sin definir o sin usar (F), sintaxis y
+# sentencias (E4/E7/E9), fallos probables (B) y errores de pylint (PLE).
+select = ["F", "E4", "E7", "E9", "B", "PLE"]
+ignore = [
+    "E702",  # varias sentencias con «;» en una línea: estilo usado a propósito
+    "E741",  # nombres como «l»: estilo
+    "B905",  # zip() sin strict=: las listas tienen la misma longitud por construcción
+]
+
+[tool.ruff.lint.per-file-ignores]
+# la lambda de re.sub se usa dentro de la misma iteración del bucle
+"tools/lookandfeel.py" = ["B023"]

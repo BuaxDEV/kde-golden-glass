@@ -182,7 +182,7 @@ def validate(tokens: dict) -> None:
             try:
                 Color.parse(value)
             except ValueError as e:
-                raise SystemExit(f"[{variant}].{key}: {e}")
+                raise SystemExit(f"[{variant}].{key}: {e}") from None
 
 
 def main(argv: list[str] | None = None) -> int:

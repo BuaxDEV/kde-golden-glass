@@ -4,7 +4,7 @@
 # Integración continua de GoldenGlass, dentro de un contenedor Arch Linux:
 #
 #   1. dependencias de compilación del PKGBUILD (pacman)
-#   2. comprobaciones rápidas: Python, bash, traducciones
+#   2. comprobaciones rápidas: Python (ruff), bash, traducciones
 #   3. compatibilidad con el Plasma actual de Arch (tools/check_plasma_compat.py)
 #   4. generadores (tools/gen_tokens.py)
 #   5. C++: compilación y pruebas (ctest)
@@ -44,7 +44,9 @@ fi
 
 step "Dependencias de compilación"
 mapfile -t makedeps < <(cd "$ROOT/packaging/goldenglass" && startdir=$PWD && source PKGBUILD && printf '%s\n' "${makedepends[@]}")
-pacman -Syu --noconfirm --needed base-devel "${makedeps[@]}"
+# herramientas que solo usa la CI (no son dependencias del paquete)
+citools=(ruff)
+pacman -Syu --noconfirm --needed base-devel "${makedeps[@]}" "${citools[@]}"
 
 step "Clon de trabajo (commit $(git -C "$ROOT" rev-parse --short HEAD))"
 id -u "$BUILDER" >/dev/null 2>&1 || useradd -m "$BUILDER"
@@ -63,6 +65,8 @@ step "Comprobaciones rápidas"
 grep -Eqx '[0-9]+(\.[0-9]+)*' "$ROOT/VERSION" || { echo "VERSION no válido: $(head -c 80 "$ROOT/VERSION")" >&2; exit 1; }
 as_builder bash -c "cd '$WORK/goldenglass' && python -m py_compile tools/*.py && for f in tools/*.sh; do bash -n \"\$f\"; done \
   && find plasma po login -name '*.po' -print0 | xargs -0 -n1 msgfmt --check -o /dev/null"
+# ruff (reglas en pyproject.toml)
+as_builder bash -c "cd '$WORK/goldenglass' && ruff check --no-cache"
 
 step "Compatibilidad con Plasma (tools/check_plasma_compat.py)"
 # los paquetes que traen los módulos QML que importamos (pacman -F): un módulo
