@@ -878,7 +878,7 @@ dentro de «Vidrio».
   cada esquina medido en la propia región (Plasma la manda con la forma
   redondeada de su SVG, en franjas: una esquina mide lo que tardan en tocar el
   lateral). Así sirve para cualquier superficie sin saber de qué tipo es.
-  Distancia con signo `sdfRoundedBox` (la de KWin, copiada en el shader); una
+  Distancia con signo `sdfRoundedBox` (la de KWin, incluida en el shader); una
   pasada por pieza, y fuera de su forma el shader deja los píxeles
   transparentes.
 - **Shader** (`shaders/glass.frag`):

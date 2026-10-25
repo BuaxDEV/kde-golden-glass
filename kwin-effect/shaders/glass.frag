@@ -33,16 +33,9 @@ in vec2 vertex;
 
 out vec4 fragColor;
 
-// sdfRoundedBox de KWin (src/opengl/sdf.glsl): negativa dentro de la forma
-float sdfRoundedBox(vec2 position, vec2 center, vec2 extents, vec4 radius)
-{
-    vec2 p = position - center;
-    float r = p.x > 0.0
-        ? (p.y < 0.0 ? radius.y : radius.w)
-        : (p.y < 0.0 ? radius.x : radius.z);
-    vec2 q = abs(p) - extents + vec2(r);
-    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
-}
+// sdfRoundedBox de KWin (src/opengl/sdf.glsl, :/opengl/ en libkwin; KWin
+// resuelve el #include): negativa dentro de la forma
+#include "sdf.glsl"
 
 float shape(vec2 p)
 {

@@ -118,7 +118,8 @@ built-in blur in `libkwin`, its own resource prefix and logging category,
 linking xcb); `git log -- kwin-effect` shows the GoldenGlass changes on top:
 the refraction pass (`shaders/glass.frag`, `drawGlass()`, `isGlassSurface()`,
 corner radii from the blur region) and reading the glass level from
-`goldenglassrc`. `sdfRoundedBox` is copied from KWin's `src/opengl/sdf.glsl`.
+`goldenglassrc`. `shaders/glass.frag` includes KWin's `src/opengl/sdf.glsl`
+for `sdfRoundedBox`, as the upstream `onscreen_rounded.frag` does.
 It reads the same `Effect-blur` settings as KWin's Blur.
 
 The plugin only loads with the KWin version it was built against
