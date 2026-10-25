@@ -168,6 +168,7 @@ private:
     float m_edgeShade = 0;
     float m_edgeShadeWidth = 0;
     float m_rimSpecular = 0;
+    bool m_reduceTransparency = false;
 
     struct
     {

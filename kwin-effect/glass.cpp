@@ -316,8 +316,8 @@ void GlassEffect::reconfigure(ReconfigureFlags flags)
     // 1 = más opaco: por RefractionOpaqueFactor). goldenglass-glass llama a
     // KWin.reconfigure al cambiar el nivel. The edge keeps more of itself on
     // opaque glass (RefractionRimOpaqueFactor): its contrast matters more there.
-    const KConfigGroup glass(KSharedConfig::openConfig(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig), QStringLiteral("Glass"));
-    const double level = std::clamp(glass.readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel), 0.0, 1.0);
+    const KSharedConfig::Ptr goldenglassrc = KSharedConfig::openConfig(QStringLiteral("goldenglassrc"), KConfig::SimpleConfig);
+    const double level = std::clamp(goldenglassrc->group(QStringLiteral("Glass")).readEntry("Level", GoldenGlass::Tokens::GlassDefaultLevel), 0.0, 1.0);
     const double lensFactor = 1.0 + (GoldenGlass::Tokens::RefractionOpaqueFactor - 1.0) * level;
     const double rimFactor = 1.0 + (GoldenGlass::Tokens::RefractionRimOpaqueFactor - 1.0) * level;
     m_refractionEdge = GoldenGlass::Tokens::RefractionEdge;
@@ -328,6 +328,17 @@ void GlassEffect::reconfigure(ReconfigureFlags flags)
     m_rimSpecular = GoldenGlass::Tokens::RefractionSpecular * rimFactor;
     m_edgeShade = GoldenGlass::Tokens::RefractionEdgeShade * rimFactor;
     m_edgeShadeWidth = GoldenGlass::Tokens::RefractionEdgeShadeWidth;
+
+    // «Reduce transparency»: opaque Plasma glass with no blur, lens or edge.
+    // libplasma stops asking for blur behind its dialogs and panels when the
+    // theme's plasmarc disables it, but windows that ask by themselves (the
+    // GlassRegion of the plasmoids) do not (spike SP-03), so the effect drops
+    // every Plasma surface itself.
+    m_reduceTransparency = goldenglassrc->group(QStringLiteral("Accessibility"))
+                               .readEntry("ReduceTransparency", GoldenGlass::Tokens::AccessibilityReduceTransparency);
+    if (m_reduceTransparency) {
+        m_refractionStrength = m_refractionClarity = m_rimSpecular = m_edgeShade = 0;
+    }
     for (auto &[window, data] : m_windows) {
         data.blurItem->setPixelsToExpandRepaintsBelowOpaqueRegions(m_expandSize);
     }
@@ -631,7 +642,7 @@ void GlassEffect::blur(const RenderTarget &renderTarget, const RenderViewport &v
 
     GlassEffectData &blurInfo = it->second;
     GlassRenderData &renderInfo = blurInfo.render[m_currentView];
-    if (!shouldBlur(w, mask, data)) {
+    if (!shouldBlur(w, mask, data) || (m_reduceTransparency && isGlassSurface(w))) {
         return;
     }
 
