@@ -137,6 +137,9 @@ field_padding_h = 10
 # ---------------------------------------------------------------------------
 # Sombras de ventana
 # ---------------------------------------------------------------------------
+[shadow]
+color = "#000000"    # sombras de ventanas (decoración) y de menús (estilo)
+
 [shadow.active]
 size = 64
 strength = 0.45
@@ -154,6 +157,19 @@ title_alignment = "AlignCenterFullWidth"  # AlignLeft | AlignCenter | AlignCente
 # Barra de título de vidrio con la misma opacidad que la toolbar: ambas se ven
 # como una sola superficie (toolbar unificada).
 glass_titlebar = true
+animation_ms = 150       # animaciones de los botones (el estilo usa style.animation_ms)
+# Opciones de la decoración heredadas de Breeze, apagadas de fábrica:
+title_gradient_lighter = 120   # degradado de la barra de título: arriba, QColor::lighter(%)
+highlight_threshold = 130      # filo claro arriba solo en barras más oscuras que esto (qGray)
+highlight_alpha = 0.118        # opacidad de ese filo blanco (30/255)
+
+# ---------------------------------------------------------------------------
+# Estilo de aplicaciones (kstyle): valores de fábrica de sus ajustes
+# ---------------------------------------------------------------------------
+[style]
+animation_ms = 250       # animaciones de los controles (la decoración usa decoration.animation_ms)
+progress_busy_step_ms = 800  # barra de progreso indeterminada: duración de cada paso
+dolphin_view_alpha = 1.0     # opacidad de la vista de archivos de Dolphin
 
 # ---------------------------------------------------------------------------
 # Menús

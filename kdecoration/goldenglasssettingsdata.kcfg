@@ -40,7 +40,7 @@
     </entry>
 
     <entry name="ShadowColor" type = "Color">
-       <default>0, 0, 0</default>
+       <default code="true">QColor::fromRgba(GoldenGlass::Tokens::ShadowColor)</default>
     </entry>
 
     <!-- close button -->
@@ -135,7 +135,7 @@
     </entry>
 
     <entry name="AnimationsDuration" type = "Int">
-       <default>150</default>
+       <default code="true">GoldenGlass::Tokens::DecorationAnimationsDuration</default>
     </entry>
 
     <!-- hide title bar -->

@@ -920,7 +920,7 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
     // render a linear gradient on title area
     if (c->isActive() && m_internalSettings->drawBackgroundGradient()) {
         QLinearGradient gradient(0, 0, 0, m_titleRect.height());
-        gradient.setColorAt(0.0, titleBarColor.lighter(120));
+        gradient.setColorAt(0.0, titleBarColor.lighter(GoldenGlass::Tokens::DecorationTitleGradientLighter));
         gradient.setColorAt(0.8, titleBarColor);
         painter->setBrush(gradient);
 
@@ -932,9 +932,9 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
     painter->drawPath(*m_titleBarPath);
 
     // top highlight
-    if (qGray(titleBarColor.rgb()) < 130 && m_internalSettings->drawHighlight()) {
+    if (qGray(titleBarColor.rgb()) < GoldenGlass::Tokens::DecorationHighlightThreshold && m_internalSettings->drawHighlight()) {
         if (isMaximized()) {
-            painter->setPen(QColor(255, 255, 255, 30));
+            painter->setPen(QColor(255, 255, 255, GoldenGlass::Tokens::DecorationHighlightAlpha));
             painter->drawLine(m_titleRect.topLeft(), m_titleRect.topRight());
 
         } else if (!c->isShaded()) {
@@ -949,7 +949,7 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
             QPainter p(&pix);
             p.setRenderHint(QPainter::Antialiasing);
             p.setPen(Qt::NoPen);
-            p.setBrush(QColor(255, 255, 255, 30));
+            p.setBrush(QColor(255, 255, 255, GoldenGlass::Tokens::DecorationHighlightAlpha));
             p.drawRoundedRect(copy, m_scaledCornerRadius, m_scaledCornerRadius);
 
             p.setBrush(Qt::black);
