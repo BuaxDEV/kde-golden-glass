@@ -207,16 +207,16 @@ def _own_names(icons_dir: Path) -> set[str]:
 
 def _generator_files() -> list[Path]:
     """Lo que decide el dibujo: este script, los módulos que carga de su
-    carpeta (icons, icons_apps, icons_mime…) y los tokens, si están (en el
-    repositorio; el paquete instala solo los módulos)."""
+    carpeta (icons, icons_apps, icons_mime…) y los tokens del tile (el TOML en el
+    repositorio, el icon-tile.json en el paquete)."""
     here = Path(__file__).resolve().parent
     files = {Path(__file__).resolve()}
     for module in list(sys.modules.values()):
         origin = getattr(module, "__file__", None)
         if origin and Path(origin).resolve().parent == here:
             files.add(Path(origin).resolve())
-    tokens = here.parent / "tokens" / "goldenglass.toml"
-    if tokens.is_file():
+    tokens = icons_apps.tile_tokens_source()
+    if tokens:
         files.add(tokens)
     return sorted(files)
 

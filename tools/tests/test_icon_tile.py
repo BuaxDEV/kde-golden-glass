@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -99,6 +101,69 @@ def test_toml_has_exactly_the_fields_of_tiletokens(tokens):
 def test_number_format_matches_the_old_literals():
     assert [icons_apps._alpha(v) for v in (0.30, 0.06, 0.55, 0.1, 1, 0)] == [".30", ".06", ".55", ".10", "1.00", ".00"]
     assert [icons_apps._length(v) for v in (1.3, 0.8, 0.4, 1, 10, 0)] == ["1.3", ".8", ".4", "1", "10", "0"]
+
+
+# --- tokens instalados (icon-tile.json) ------------------------------------------
+
+@pytest.fixture
+def installed(tokens, tmp_path, monkeypatch):
+    """Simula el paquete: sin TOML del repositorio y con icon-tile.json en XDG_DATA_DIRS."""
+    data = tmp_path / "share"
+    icons_apps.write_tile_json(tokens, data / "goldenglass" / icons_apps.TILE_JSON)
+    monkeypatch.setattr(icons_apps, "REPO_TOKENS", tmp_path / "no-such.toml")
+    monkeypatch.setattr(icons_apps, "HERE", tmp_path / "tools")
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("XDG_DATA_DIRS", str(data))
+    icons_apps._default_tile_tokens.cache_clear()
+    yield data
+    icons_apps._default_tile_tokens.cache_clear()
+
+
+def test_generated_json_matches_the_toml_section(tokens, tmp_path):
+    path = icons_apps.write_tile_json(tokens, tmp_path / "icon-tile.json")
+    assert json.loads(path.read_text(encoding="utf-8")) == {"icon_tile": tokens["icon_tile"]}
+
+
+def test_build_writes_the_json(tokens, tmp_path, monkeypatch):
+    import icons
+    import icons_mime
+
+    # solo interesa el archivo de datos: sin fuentes del sistema ni iconos
+    monkeypatch.setattr(icons, "_family", lambda tokens: "Inter")
+    monkeypatch.setattr(icons, "ICONS", [])
+    monkeypatch.setattr(icons, "_guards", lambda *args, **kwargs: None)
+    monkeypatch.setattr(icons_apps, "files", lambda tokens=None, style=Style.DEFAULT: [])
+    monkeypatch.setattr(icons_mime, "files", lambda family: [])
+    written = icons.build(tokens, tmp_path)
+    path = tmp_path / "icons" / icons_apps.TILE_JSON
+    assert path in written
+    assert json.loads(path.read_text(encoding="utf-8")) == {"icon_tile": tokens["icon_tile"]}
+
+
+def test_installed_json_gives_the_same_drawing(installed, tile_tokens):
+    assert icons_apps.tile_tokens_source() == installed / "goldenglass" / icons_apps.TILE_JSON
+    assert icons_apps.tile_tokens() == tile_tokens
+    assert digest(render(icons_apps.tile_tokens())) == GOLDEN
+
+
+def test_installed_json_next_to_tools(installed, tokens, tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_DATA_DIRS", str(tmp_path / "empty"))
+    icons_apps.write_tile_json(tokens, tmp_path / icons_apps.TILE_JSON)  # HERE.parent == tmp_path
+    assert icons_apps.tile_tokens_source() == tmp_path / icons_apps.TILE_JSON
+
+
+def test_missing_tokens_fail_clearly(installed, tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_DATA_DIRS", str(tmp_path / "empty"))
+    assert icons_apps.tile_tokens_source() is None
+    with pytest.raises(SystemExit, match="icon-tile.json"):
+        icons_apps.tile_tokens()
+
+
+def test_icon_tools_do_not_import_ggcommon():
+    code = ("import sys; sys.path.insert(0, 'tools'); import icons_apps, wrap_icons; "
+            "icons_apps.tile_tokens(); assert 'ggcommon' not in sys.modules")
+    root = Path(__file__).resolve().parent.parent.parent
+    assert subprocess.run([sys.executable, "-c", code], cwd=root, check=False).returncode == 0
 
 
 # --- validación de gen_tokens --------------------------------------------------

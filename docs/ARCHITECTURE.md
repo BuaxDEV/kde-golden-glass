@@ -589,10 +589,12 @@ ejecuta bajo `dbus-run-session` (un bus de sesión propio y descartable, con
     color. No se dibujan marcas de terceros.
     Los colores, opacidades y sombras del squircle (fondos grafito y papel,
     brillo, filo, sombras del tile y del símbolo) están en `[icon_tile]` de los
-    tokens, validada por `gen_tokens.py`; `icons_apps.py` y `wrap_icons.py` los
-    leen con `ggcommon.load_tokens()` (`TileTokens`), así que el paquete
-    `goldenglass-icons` depende de `goldenglass-kstyle` (que instala `ggcommon.py`,
-    los tokens y `VERSION`). `tile()` y `App.svg()` reciben un `Style`
+    tokens, validada por `gen_tokens.py`. Las herramientas de iconos son
+    autónomas (no importan `ggcommon`): `icons_apps.tile_tokens()` toma los
+    tokens explícitos, si no el TOML del repositorio (desarrollo), si no el
+    `icon-tile.json` que genera `icons.build()` y instala `goldenglass-icons` en
+    `/usr/share/goldenglass/` (se busca en `XDG_DATA_DIRS/goldenglass/` y junto a
+    `tools/`), y si no, falla con un mensaje claro. `tile()` y `App.svg()` reciben un `Style`
     (`tools/icons_style.py`, hoy solo `DEFAULT`) para los estilos Tintado y
     Transparente. `tools/tests/test_icon_tile.py` guarda el SHA-256 de cada SVG
     (`icon_tile_golden.py`, se regenera con `--update` cuando el cambio visual es

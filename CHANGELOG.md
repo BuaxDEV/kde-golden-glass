@@ -14,8 +14,9 @@
 
 - Los colores, opacidades y sombras del squircle de los iconos de apps pasan a
   la sección `[icon_tile]` de los tokens, sin cambio visual (los SVG generados
-  son idénticos byte a byte). `goldenglass-icons` ahora depende de
-  `goldenglass-kstyle` para leer los tokens al encerrar iconos de terceros.
+  son idénticos byte a byte). `goldenglass-icons` instala
+  `/usr/share/goldenglass/icon-tile.json` con esos valores para que
+  `goldenglass-wrap-icons` siga sin depender de los tokens ni de otros paquetes.
 
 ## 0.2.1 — 2026-10-15
 

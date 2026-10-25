@@ -15,9 +15,13 @@ squircle a partir de su icono instalado.
 
 from __future__ import annotations
 
+import json
 import math
+import os
+import tomllib
 from dataclasses import dataclass
 from functools import lru_cache
+from pathlib import Path
 from typing import Callable
 
 import icons_mime
@@ -88,15 +92,50 @@ class TileTokens:
                 + shadow("glyphshadow", self.glyph_shadow_blur, self.glyph_shadow_dy, self.glyph_shadow_alpha))
 
 
+HERE = Path(__file__).resolve().parent
+REPO_TOKENS = HERE.parent / "tokens" / "goldenglass.toml"   # solo existe en el repositorio
+TILE_JSON = "icon-tile.json"                                  # lo genera icons.build()
+
+
+def _data_dirs() -> list[Path]:
+    home = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
+    return [home, *map(Path, os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":"))]
+
+
+def tile_tokens_source() -> Path | None:
+    """Archivo de donde salen los tokens del tile: el TOML del repositorio (desarrollo), si no el
+    icon-tile.json instalado (XDG_DATA_DIRS/goldenglass/ y junto a tools/), o None."""
+    if REPO_TOKENS.is_file():
+        return REPO_TOKENS
+    for path in (*(d / "goldenglass" / TILE_JSON for d in _data_dirs()), HERE.parent / TILE_JSON):
+        if path.is_file():
+            return path
+    return None
+
+
 @lru_cache(maxsize=1)
 def _default_tile_tokens() -> TileTokens:
-    from ggcommon import load_tokens
-    return TileTokens.from_tokens(load_tokens())
+    path = tile_tokens_source()
+    if path is None:
+        raise SystemExit(f"no encuentro los tokens del icono ({TILE_JSON} en $XDG_DATA_DIRS/goldenglass/ "
+                         f"ni tokens/goldenglass.toml): reinstala goldenglass-icons")
+    if path.suffix == ".json":
+        with path.open(encoding="utf-8") as f:
+            return TileTokens.from_tokens(json.load(f))
+    with path.open("rb") as f:
+        return TileTokens.from_tokens(tomllib.load(f))
 
 
 def tile_tokens(tokens: dict | None = None) -> TileTokens:
-    """[icon_tile] de `tokens`, o de tokens/goldenglass.toml (junto al repositorio o instalado)."""
+    """[icon_tile] de `tokens`, o de la fuente por defecto (ver tile_tokens_source)."""
     return TileTokens.from_tokens(tokens) if tokens is not None else _default_tile_tokens()
+
+
+def write_tile_json(tokens: dict, path: Path) -> Path:
+    """Escribe [icon_tile] como JSON para las herramientas instaladas (sin TOML ni ggcommon)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"icon_tile": tokens["icon_tile"]}, indent=2) + "\n", encoding="utf-8")
+    return path
 
 
 def _squircle(cx: float = 32, cy: float = 32, r: float = 26, n: float = 5.0, steps: int = 96) -> str:
