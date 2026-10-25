@@ -98,7 +98,7 @@ def header(tokens: dict) -> str:
         ("StyleAnimationsDuration", int(tokens["style"]["animation_ms"]), "animaciones de los controles (ms)"),
         ("StyleProgressBarBusyStepDuration", int(tokens["style"]["progress_busy_step_ms"]), "progreso indeterminado (ms)"),
         ("DolphinViewOpacity", round(tokens["style"]["dolphin_view_alpha"] * 100), "% de opacidad de la vista de Dolphin"),
-        ("ListHoverAlpha", float(tokens["style"]["list_hover_alpha"]), "resaltado de listas (color de selección)"),
+        ("ListHoverAlpha", float(tokens["plasma"]["item_hover_alpha"]), "resaltado de listas (color de texto, como Plasma)"),
         ("ListSelectedHoverLighter", int(tokens["style"]["list_selected_hover_lighter"]), "selección bajo el cursor (QColor::lighter)"),
         ("Refracción (efecto de KWin goldenglass_glass, px lógicos)", None, None),
         ("RefractionEdge", float(tokens["glass"]["refraction"]["edge"]), "ancho de la zona curvada"),

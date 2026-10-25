@@ -126,7 +126,7 @@ task_dot_minimized_alpha = 0.35
 task_dot_focus_alpha = 0.85
 task_dot_attention = "#FF9500"   # pide atención; el mismo en claro y oscuro (decisión pendiente)
 task_progress_alpha = 0.35       # progreso (color de acento)
-item_hover_alpha = 0.10  # resaltado de listas (sobre color de texto)
+item_hover_alpha = 0.10  # resaltado de listas bajo el cursor (sobre color de texto); también en las apps (estilo)
 item_selected_alpha = 0.28  # selección de listas (sobre color de acento)
 item_selected_hover_boost = 0.08  # selección bajo el cursor: item_selected_alpha + esto
 item_padding_v = 4       # margen del contenido de cada elemento de lista
@@ -178,10 +178,8 @@ highlight_alpha = 0.118        # opacidad de ese filo blanco (30/255)
 animation_ms = 250       # animaciones de los controles (la decoración usa decoration.animation_ms)
 progress_busy_step_ms = 800  # barra de progreso indeterminada: duración de cada paso
 dolphin_view_alpha = 1.0     # opacidad de la vista de archivos de Dolphin
-# Listas de las apps: resaltado bajo el cursor (opacidad del color de
-# selección; Plasma usa plasma.item_hover_alpha sobre el color de texto) y
-# selección bajo el cursor (QColor::lighter, %)
-list_hover_alpha = 0.2
+# Listas de las apps: selección bajo el cursor (QColor::lighter, %). El
+# resaltado bajo el cursor es plasma.item_hover_alpha, como en Plasma.
 list_selected_hover_lighter = 110
 
 # ---------------------------------------------------------------------------

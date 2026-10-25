@@ -4884,10 +4884,13 @@ bool Style::drawPanelItemViewItemPrimitive(const QStyleOption *option, QPainter 
 
     // change color to implement mouse over
     if (mouseOver && !hasCustomBackground) {
-        if (!selected)
+        if (!selected) {
+            // como macOS y las listas de Plasma: velo del color de texto, no del acento
+            color = palette.color(colorGroup, QPalette::Text);
             color.setAlphaF(Tokens::ListHoverAlpha);
-        else
+        } else {
             color = color.lighter(Tokens::ListSelectedHoverLighter);
+        }
     }
 
     if (widget) {
