@@ -129,8 +129,7 @@ says so after a KWin update). When KWin updates, rebuild
 
 Ported since the fork: **KWin 6.8.0** (`git diff v6.7.5 v6.8.0 --
 src/plugins/blur src/effect/effect.h`): `drawWindow()` returns whether painting
-succeeded (behind `GOLDENGLASS_KWIN_PAINT_RESULT`, set by CMake for KWin ≥
-6.7.90, so 6.7 still builds) and the blur region is only offset by the content
-rect with server-side decorations (upstream `5d45a63f8d`). Next diff base:
-`v6.8.0`.
+succeeded (KWin 6.8 is now the minimum) and the blur region is only offset by
+the content rect with server-side decorations (upstream `5d45a63f8d`). Next
+diff base: `v6.8.0`.
 

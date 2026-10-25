@@ -549,7 +549,6 @@ bool GlassEffect::shouldBlur(const EffectWindow *w, int mask, const WindowPaintD
     return true;
 }
 
-#ifdef GOLDENGLASS_KWIN_PAINT_RESULT
 bool GlassEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data)
 {
     blur(renderTarget, viewport, w, mask, deviceRegion, data);
@@ -557,15 +556,6 @@ bool GlassEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewp
     // Draw the window over the blurred area
     return effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
 }
-#else
-void GlassEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data)
-{
-    blur(renderTarget, viewport, w, mask, deviceRegion, data);
-
-    // Draw the window over the blurred area
-    effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
-}
-#endif
 
 GLTexture *GlassEffect::ensureNoiseTexture()
 {
