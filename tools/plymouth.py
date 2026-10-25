@@ -127,7 +127,7 @@ def _pieces(boot: dict, pal: dict, scale: int) -> dict:
         "field": _pill(field_w, field_h, _color(fg, pal["field_alpha"]),
                        _color(fg, pal["field_border_alpha"]), 1.0 * s),
         "dot": _pill(boot["dot_size"] * s, boot["dot_size"] * s, _color(fg, 1.0)),
-        "capslock": _capslock(_color(fg, pal["text_alpha"]), 14 * s),
+        "capslock": _capslock(_color(fg, pal["text_alpha"]), boot["capslock_size"] * s),
     }
 
 

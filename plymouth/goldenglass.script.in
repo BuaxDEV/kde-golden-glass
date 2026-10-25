@@ -14,8 +14,8 @@ Window.SetBackgroundTopColor(@plymouth.background@);
 Window.SetBackgroundBottomColor(@plymouth.background@);
 
 global.scale = Window.GetHeight() / 1080;
-if (global.scale < 0.5) {
-    global.scale = 0.5;
+if (global.scale < @boot.min_scale@) {
+    global.scale = @boot.min_scale@;
 }
 
 // Juego de imágenes más cercano por encima de la escala (tools/plymouth.py
@@ -59,7 +59,7 @@ logo.bottom = logo.y + logo.size;
 // --- barra de progreso --------------------------------------------------------
 
 bar.width = px(@boot.bar_width@);
-bar.height = Math.Max(px(@boot.bar_height@), 2);
+bar.height = Math.Max(px(@boot.bar_height@), @boot.bar_min_height@);
 bar.cap = Math.Int(bar.height / 2);
 bar.x = centerX(bar.width);
 bar.y = logo.bottom + px(@boot.bar_gap@);
@@ -103,9 +103,9 @@ field.sprite.SetPosition(field.x, field.y, 10);
 field.dot = asset("dot").Scale(px(@boot.dot_size@), px(@boot.dot_size@));
 field.dotStep = px(@boot.dot_size@) * 2;
 field.maxDots = Math.Int((field.width - field.height) / field.dotStep);
-field.caps = Sprite(asset("capslock").Scale(px(14), px(14)));
-field.caps.SetPosition(field.x + field.width - Math.Int(field.height / 2) - px(7),
-                       field.y + Math.Int((field.height - px(14)) / 2), 12);
+field.caps = Sprite(asset("capslock").Scale(px(@boot.capslock_size@), px(@boot.capslock_size@)));
+field.caps.SetPosition(field.x + field.width - Math.Int(field.height / 2) - px(@boot.capslock_size@ / 2),
+                       field.y + Math.Int((field.height - px(@boot.capslock_size@)) / 2), 12);
 field.entry = Sprite();       // texto de una pregunta (no contraseña)
 field.prompt = Sprite();      // texto de la petición, bajo el campo
 for (i = 0; i < field.maxDots; i++) {
@@ -129,7 +129,7 @@ fun showPrompt(prompt) {
     field.sprite.SetOpacity(1);
     image = Image.Text(prompt, @plymouth.foreground@, @plymouth.text_alpha@, global.font);
     field.prompt.SetImage(image);
-    field.prompt.SetPosition(centerX(image.GetWidth()), field.y + field.height + px(14), 12);
+    field.prompt.SetPosition(centerX(image.GetWidth()), field.y + field.height + px(@boot.prompt_gap@), 12);
     field.prompt.SetOpacity(1);
 }
 
@@ -196,7 +196,7 @@ fun messageCallback(text) {
     image = Image.Text(text, @plymouth.foreground@, @plymouth.text_alpha@, global.font);
     message.sprite.SetImage(image);
     message.sprite.SetPosition(centerX(image.GetWidth()),
-                               Window.GetY() + Window.GetHeight() - px(64) - image.GetHeight(), 12);
+                               Window.GetY() + Window.GetHeight() - px(@boot.message_bottom@) - image.GetHeight(), 12);
     message.sprite.SetOpacity(1);
 }
 
@@ -233,7 +233,7 @@ fun refreshCallback() {
         }
     }
     if (global.showBar) {
-        bar.shown = bar.shown + (bar.target - bar.shown) * 0.08;
+        bar.shown = bar.shown + (bar.target - bar.shown) * @boot.bar_ease@;
         drawBar();
     }
     if (global.asking && !global.question) {

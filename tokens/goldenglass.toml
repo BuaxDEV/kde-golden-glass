@@ -396,11 +396,17 @@ logo_size = 126          # splash de Plasma: gridUnit × 7
 logo_offset = -36        # px del centro del logo al de la pantalla (− = arriba)
 bar_width = 216          # gridUnit × 12
 bar_height = 6
+bar_min_height = 2       # px de pantalla, por pequeña que sea
 bar_gap = 54             # del logo a la barra (gridUnit × 3)
+bar_ease = 0.08          # en cada fotograma la barra avanza esta fracción de lo que le falta
 field_width = 240        # campo de contraseña del disco (LUKS), estilo FileVault
 field_height = 30
 field_gap = 44           # del logo al campo
 dot_size = 8             # puntos de la contraseña
+capslock_size = 14       # aviso de Bloq Mayús dentro del campo
+prompt_gap = 14          # del campo a la petición de contraseña
+message_bottom = 64      # mensajes (fsck, actualizaciones…) desde el borde inferior
+min_scale = 0.5          # escala mínima de las medidas en pantallas bajas
 # Fuente del initramfs: el hook mete el archivo que resuelve fontconfig. Inter
 # Variable (0,9 MB) en vez del alias GoldenGlass Sans, que da Inter.ttc (13 MB).
 font = "Inter Variable"
