@@ -206,6 +206,9 @@ Style::Style()
                  QStringLiteral("reparseConfiguration"),
                  this,
                  SLOT(configurationChanged()));
+
+    // el tamaño del borde de la decoración (kwinrc) cambia al reconfigurar KWin
+    dbus.connect(QString(), QStringLiteral("/KWin"), QStringLiteral("org.kde.KWin"), QStringLiteral("reloadConfig"), this, SLOT(configurationChanged()));
     this->addEventFilter(qApp);
 
     _finder = new Finder(

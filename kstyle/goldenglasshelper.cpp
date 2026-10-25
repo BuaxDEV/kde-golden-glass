@@ -81,6 +81,7 @@ bool PaletteChangedEventFilter::eventFilter(QObject *watched, QEvent *event)
 Helper::Helper(KSharedConfig::Ptr config, QObject *parent)
     : QObject(parent)
     , _config(std::move(config))
+    , _kwinConfig(KSharedConfig::openConfig(QStringLiteral("kwinrc")))
     , _eventFilter(new PaletteChangedEventFilter(this))
 {
 }
@@ -98,6 +99,10 @@ void Helper::loadConfig()
     _viewHoverBrush = KStatefulBrush(KColorScheme::View, KColorScheme::HoverColor);
     _viewNegativeTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme::NegativeText);
     _windowAlternateBackgroundBrush = KStatefulBrush(KColorScheme::Window, KColorScheme::AlternateBackground);
+
+    // el tamaño del borde de la decoración se vuelve a leer de kwinrc
+    _kwinConfig->reparseConfiguration();
+    _cachedAutoValid = false;
 
     const QPalette palette(QApplication::palette());
 
@@ -1811,15 +1816,14 @@ bool Helper::shouldDrawToolsArea(const QWidget *widget) const
     if (!widget) {
         return false;
     }
-    static bool isAuto = false;
-    static QString borderSize;
+    // KWin guarda el tamaño del borde en kwinrc (no en goldenglassrc)
     if (!_cachedAutoValid) {
-        KConfigGroup kdecorationGroup(_config->group(QStringLiteral("org.kde.kdecoration3")));
-        isAuto = kdecorationGroup.readEntry("BorderSizeAuto", true);
-        borderSize = kdecorationGroup.readEntry("BorderSize", "Normal");
+        KConfigGroup kdecorationGroup(_kwinConfig->group(QStringLiteral("org.kde.kdecoration2")));
+        _borderSizeAuto = kdecorationGroup.readEntry("BorderSizeAuto", true);
+        _borderSize = kdecorationGroup.readEntry("BorderSize", "Normal");
         _cachedAutoValid = true;
     }
-    if (isAuto) {
+    if (_borderSizeAuto) {
         auto window = widget->window();
         if (qobject_cast<const QDialog *>(widget)) {
             return true;
@@ -1839,7 +1843,7 @@ bool Helper::shouldDrawToolsArea(const QWidget *widget) const
             return false;
         }
     }
-    if (borderSize != "None" && borderSize != "NoSides") {
+    if (_borderSize != QLatin1String("None") && _borderSize != QLatin1String("NoSides")) {
         return false;
     }
     return true;
