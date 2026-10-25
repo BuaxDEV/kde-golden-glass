@@ -17,7 +17,9 @@
     factor a 0 vale 1: entonces no hay animación y las duraciones son 0. Una
     animación de duración 0 termina dentro de start()/restart(): emite
     finished y ejecuta sus ScriptAction, así que los cierres de los paneles
-    acaban igual.
+    acaban igual. plasmashell 6.8.1 resuelve el singleton por el qmldir de
+    contents/ui (probado en una sesión aislada con el dock y el Centro de
+    control, también al cambiar el factor en vivo).
 
     Las esperas de interfaz que no son animaciones (Timer.interval,
     label_delay_ms, preview_hide_ms, bar_hide_ms, glass_update_ms) no pasan
