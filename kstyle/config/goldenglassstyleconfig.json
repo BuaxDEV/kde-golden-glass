@@ -1,13 +1,16 @@
 {
     "KPlugin": {
         "Description": "Modify the appearance of widgets",
+        "Description[es]": "Modificar el aspecto de los controles",
         "Icon": "preferences-desktop-theme",
         "Name": "GoldenGlass: Widget Style",
+        "Name[es]": "GoldenGlass: estilo de los controles",
         "ServiceTypes": [
             "KCModule"
         ]
     },
     "X-KDE-Keywords": "goldenglass,widget,style",
+    "X-KDE-Keywords[es]": "goldenglass,controles,estilo",
     "X-KDE-ParentApp": "kcontrol",
     "X-KDE-Weight": 50
 }

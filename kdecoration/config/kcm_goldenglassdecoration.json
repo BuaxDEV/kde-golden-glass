@@ -1,10 +1,13 @@
 {
     "KPlugin": {
         "Description": "Modify the appearance of window decorations",
+        "Description[es]": "Modificar el aspecto de las decoraciones de ventanas",
         "Icon": "preferences-system-windows",
-        "Name": "GoldenGlass: Window Decoration"
+        "Name": "GoldenGlass: Window Decoration",
+        "Name[es]": "GoldenGlass: decoración de ventanas"
     },
     "X-KDE-Keywords": "GoldenGlass,decoration",
+    "X-KDE-Keywords[es]": "GoldenGlass,decoración,ventanas",
     "X-KDE-ParentApp": "kcontrol",
     "X-KDE-Weight": 50
 }

@@ -4,10 +4,12 @@
         "Authors": [{"Name": "GoldenGlass contributors"}],
         "Category": "",
         "Description": "GoldenGlass desktop shell: Plasma desktop with a macOS-style lock screen",
+        "Description[es]": "Shell de escritorio de GoldenGlass: el escritorio de Plasma con una pantalla de bloqueo como la de macOS",
         "Icon": "user-desktop",
         "Id": "org.goldenglass.desktop",
         "License": "GPL-3.0-or-later",
         "Name": "GoldenGlass Desktop",
+        "Name[es]": "Escritorio GoldenGlass",
         "Website": "https://github.com/BuaxDEV/kde-golden-glass"
     },
     "X-KDE-ParentApp": "org.kde.plasmashell",
