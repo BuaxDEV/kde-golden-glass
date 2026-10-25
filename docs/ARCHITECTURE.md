@@ -1009,6 +1009,14 @@ dentro de «Vidrio».
 | F9 | Tema de SDDM + fondo y sincronización en Plasma Login Manager | ✅ |
 | F10 | Dock unificado: ampliación, rebote, vistas previas, recientes; módulo Dock | ✅ |
 | F11 | Efecto de KWin `goldenglass_glass` (fork de Blur) con refracción; interruptor en Vidrio | ✅ |
+| F12 | Material y accesibilidad: filo del vidrio, sombra inactiva, semáforos grises, Reducir transparencia, Mostrar bordes | 📋 |
+| F13 | Ventanas y movimiento: efectos de KWin, atajos de tiling, velocidad de animación global, Reducir movimiento | 📋 |
+| F14 | Barra de menús y Dock: barra a 24 px, HUD de volumen y brillo, apps en segundo plano | 📋 |
+| F15 | Estilos de icono Tintado y Transparente; módulo Estilo de iconos | 📋 |
+| F16 | Spotlight propio (sustituye a KRunner) con vistas, portapapeles y teclas rápidas | 📋 |
+| F17 | Centro de notificaciones y avisos de vidrio | 📋 |
+
+F12–F17 se planifican en [MACOS27-PLAN.md](MACOS27-PLAN.md).
 
 Orden de menor a mayor riesgo: lo independiente primero; lo que depende de la
 API interna de KWin y de Plasma, al final.
