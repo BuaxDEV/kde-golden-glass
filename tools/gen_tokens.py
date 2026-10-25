@@ -207,6 +207,18 @@ def validate_glass_edge(glass: dict) -> None:
             raise SystemExit(f"[glass.{section}].{key} must be a number in [{low:g}, {high:g}], not {value!r}")
 
 
+def validate_dock_background(dock: dict) -> None:
+    """[dock] background apps: a switch, a dot opacity and a delay in ms."""
+    if not isinstance(dock.get("show_background"), bool):
+        raise SystemExit(f"[dock].show_background must be true or false, not {dock.get('show_background')!r}")
+    alpha = dock.get("background_dot_alpha")
+    if not _is_number(alpha) or not 0 <= alpha <= 1:
+        raise SystemExit(f"[dock].background_dot_alpha must be a number in [0, 1], not {alpha!r}")
+    delay = dock.get("background_delay_ms")
+    if not isinstance(delay, int) or isinstance(delay, bool) or delay < 0:
+        raise SystemExit(f"[dock].background_delay_ms must be a whole number of ms >= 0, not {delay!r}")
+
+
 def validate_kwin(kwin: dict) -> None:
     for key in ("open_scale", "close_scale"):
         value = kwin.get(key)
@@ -276,6 +288,7 @@ def validate(tokens: dict) -> None:
     validate_motion(tokens["motion"])
     validate_kwin(tokens["kwin"])
     validate_glass_edge(tokens["glass"])
+    validate_dock_background(tokens["dock"])
 
     validate_icon_tile(tokens["icon_tile"])
 

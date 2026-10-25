@@ -6,6 +6,7 @@
   goldenglass-dock --get                      # JSON con los ajustes (null = de fábrica)
   goldenglass-dock --magnification on|off
   goldenglass-dock --magnification-size 96 --icon-size 48 --recent on|off
+  goldenglass-dock --background on|off        # apps en segundo plano
 
 Escribe la configuración del plasmoid org.goldenglass.dock en todos los
 paneles con el script de plasmashell (como el módulo de Ajustes «Dock», que
@@ -24,7 +25,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-KEYS = {"iconSize": int, "magnification": bool, "magnificationSize": int, "showRecent": bool}
+KEYS = {"iconSize": int, "magnification": bool, "magnificationSize": int, "showRecent": bool, "showBackground": bool}
 PLASMOID = "org.goldenglass.dock"
 KCFG = "{http://www.kde.org/standards/kcfg/1.0}"
 
@@ -119,6 +120,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--magnification-size", type=int, metavar="PX")
     ap.add_argument("--icon-size", type=int, metavar="PX")
     ap.add_argument("--recent", type=on_off, metavar="on|off", help="apps recientes en el dock")
+    ap.add_argument("--background", type=on_off, metavar="on|off", help="apps en segundo plano en el dock")
     args = ap.parse_args(argv)
 
     if args.get:
@@ -129,6 +131,7 @@ def main(argv: list[str] | None = None) -> int:
         "magnificationSize": args.magnification_size,
         "iconSize": args.icon_size,
         "showRecent": args.recent,
+        "showBackground": args.background,
     }
     values = {k: v for k, v in values.items() if v is not None}
     if not values:

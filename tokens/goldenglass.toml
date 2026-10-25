@@ -573,6 +573,12 @@ label_delay_ms = 400     # espera antes del nombre de la app al pasar el ratón
 icon_size_min = 32
 icon_size_max = 80
 magnification_size_max = 128
+# Apps en segundo plano (macOS 27): una app sin ventanas cuya unit de systemd
+# sigue viva lleva un punto más tenue. Fijadas siempre; no fijadas, si en la
+# sesión tuvieron ventana o las lanzó el usuario (no las de inicio automático).
+show_background = true        # de fábrica activado (ajuste showBackground)
+background_dot_alpha = 0.35   # punto de app en segundo plano (color de texto); calibrar
+background_delay_ms = 1500    # sin ventanas tanto tiempo antes de pasar a segundo plano
 
 # ---------------------------------------------------------------------------
 # Texto e iconos secundarios de los plasmoids: opacidad sobre el color de texto
