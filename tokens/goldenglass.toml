@@ -288,6 +288,23 @@ minimize_glyph = "#995700"
 zoom = "#28C840"
 zoom_border = "#1AAB29"
 zoom_glyph = "#006500"
+# Vidrio de la gema que dibuja libgoldenglasscommon (decoración y Finder):
+# opacidad 0..1 del blanco de los brillos y del negro de la sombra (en C++,
+# 0..255)
+gem_highlight_top = 0.784          # brillo de arriba, al empezar (200)
+gem_highlight_top_end = 0.078      # y al acabar (20)
+gem_highlight_bottom = 0.431       # brillo de abajo (110)
+gem_shadow_alpha = 0.235           # sombra (60)
+gem_shadow_inactive_alpha = 0.118  # sombra en ventanas sin foco (30)
+inactive_shine = 0.45              # brillos en ventanas sin foco (fracción)
+press_scale = 0.9                  # tamaño al pulsar
+# Semáforos de las ventanas GTK con decoración propia (tools/gtk.py): CSS, con
+# sus propios valores (decisión pendiente: no coinciden con los de la gema)
+gtk_highlight_top = 0.55           # degradado de arriba
+gtk_highlight_bottom = 0.35        # brillo de abajo
+gtk_shadow_alpha = 0.25
+gtk_inactive_border_alpha = 0.12   # filo en gris sin foco (inactive_colored = false)
+gtk_glyph_scale = 0.6              # glifo respecto al icono de GTK
 
 # ---------------------------------------------------------------------------
 # Dock (plasmoid org.goldenglass.dock): ampliación, rebote, apps recientes y

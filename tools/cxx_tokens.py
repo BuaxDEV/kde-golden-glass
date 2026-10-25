@@ -36,6 +36,11 @@ def _shadow_strength(alpha: float) -> int:
     return max(25, min(255, round(alpha * 255)))
 
 
+def _alpha8(alpha: float) -> int:
+    """Opacidad 0..1 → 0..255 (canal alfa de QColor)."""
+    return round(alpha * 255)
+
+
 def _argb(value: str) -> str:
     """#RRGGBB[AA] → literal 0xAARRGGBB (formato de QColor::fromRgba)."""
     c = Color.parse(value)
@@ -124,6 +129,13 @@ def header(tokens: dict) -> str:
         ("TrafficLightDiameter", tl["diameter"], "diámetro"),
         ("TrafficLightGap", tl["gap"], "separación entre bordes"),
         ("TrafficLightInactiveColored", bool(tl["inactive_colored"]), "en color también sin foco"),
+        ("TrafficLightPressScale", float(tl["press_scale"]), "tamaño al pulsar"),
+        ("TrafficLightInactiveShine", float(tl["inactive_shine"]), "brillos sin foco (fracción)"),
+        ("TrafficLightHighlightTopAlpha", _alpha8(tl["gem_highlight_top"]), "brillo de arriba, al empezar (0..255)"),
+        ("TrafficLightHighlightTopEndAlpha", _alpha8(tl["gem_highlight_top_end"]), "brillo de arriba, al acabar (0..255)"),
+        ("TrafficLightHighlightBottomAlpha", _alpha8(tl["gem_highlight_bottom"]), "brillo de abajo (0..255)"),
+        ("TrafficLightShadowAlpha", _alpha8(tl["gem_shadow_alpha"]), "sombra (0..255)"),
+        ("TrafficLightShadowInactiveAlpha", _alpha8(tl["gem_shadow_inactive_alpha"]), "sombra sin foco (0..255)"),
     ]
     colors = [
         ("TrafficLightClose", tl["close"]),
