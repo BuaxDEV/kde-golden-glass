@@ -266,15 +266,19 @@ def effect_loaded(name: str) -> bool:
 
 
 def use_glass_effect(on: bool) -> None:
-    """Uno u otro: goldenglass_glass o el Blur de KWin, en kwinrc y en vivo."""
+    """One or the other: goldenglass_glass or KWin's Blur, live and in kwinrc.
+
+    The live swap goes first, unloading before loading: KWin withdraws the
+    blur capability (ext-background-effect) a moment after a blur provider
+    unloads, so the old one must go before the new one comes. Writing kwinrc
+    first lets KWin reload both from the notification in the other order and
+    leaves Plasma without blur until KWin restarts.
+    """
+    old, new = ("blur", EFFECT) if on else (EFFECT, "blur")
+    effects_call("unloadEffect", f"string:{old}")
+    effects_call("loadEffect", f"string:{new}")
     kwrite("kwinrc", "Plugins", f"{EFFECT}Enabled", "true" if on else "false")
     kwrite("kwinrc", "Plugins", "blurEnabled", "false" if on else "true")
-    if on:
-        effects_call("unloadEffect", "string:blur")
-        effects_call("loadEffect", f"string:{EFFECT}")
-    else:
-        effects_call("unloadEffect", f"string:{EFFECT}")
-        effects_call("loadEffect", "string:blur")
 
 
 def get_refraction() -> str:

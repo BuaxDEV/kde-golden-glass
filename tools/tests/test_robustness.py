@@ -178,6 +178,25 @@ class GlassLevelTest(unittest.TestCase):
             self.assertEqual(glass.get_level(), 0.4)
 
 
+class GlassEffectSwapTest(unittest.TestCase):
+    def test_live_swap_unloads_first_and_comes_before_kwinrc(self) -> None:
+        calls: list[tuple] = []
+        with mock.patch.object(glass, "effects_call", side_effect=lambda *a: calls.append(("dbus", *a)) or ""), \
+                mock.patch.object(glass, "kwrite", side_effect=lambda *a: calls.append(("kwrite", *a))):
+            glass.use_glass_effect(True)
+            glass.use_glass_effect(False)
+        self.assertEqual(calls, [
+            ("dbus", "unloadEffect", "string:blur"),
+            ("dbus", "loadEffect", f"string:{glass.EFFECT}"),
+            ("kwrite", "kwinrc", "Plugins", f"{glass.EFFECT}Enabled", "true"),
+            ("kwrite", "kwinrc", "Plugins", "blurEnabled", "false"),
+            ("dbus", "unloadEffect", f"string:{glass.EFFECT}"),
+            ("dbus", "loadEffect", "string:blur"),
+            ("kwrite", "kwinrc", "Plugins", f"{glass.EFFECT}Enabled", "false"),
+            ("kwrite", "kwinrc", "Plugins", "blurEnabled", "true"),
+        ])
+
+
 class GlassConcurrencyTest(unittest.TestCase):
     """Dos goldenglass-glass a la vez (KCM y slider del Centro de control)."""
 
