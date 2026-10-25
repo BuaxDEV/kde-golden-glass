@@ -5,8 +5,9 @@
 # pieces of a window (e.g. the Control Center's loose cards), which Plasma does
 # not allow from QML; gives the shell the menu bar settings (MenuBarSettings),
 # Plasma the accessibility ones (AccessibilitySettings), the Dock the apps
-# that systemd runs (AppUnits) and the Control Center the volume and
-# brightness OSDs of plasmashell (OsdHost).
+# that systemd runs (AppUnits), the Control Center the volume and
+# brightness OSDs of plasmashell (OsdHost) and the Dock and Apps panel the icon
+# theme switches (IconThemeWatcher).
 include(ECMQmlModule)
 
 # Sources and libraries of the module, one per line (each PR appends its own):
@@ -30,6 +31,8 @@ set(GOLDENGLASS_QMLPLUGIN_SOURCES
     osdinterceptor.h
     osdhost.cpp
     osdhost.h
+    iconthemewatcher.cpp
+    iconthemewatcher.h
 )
 set(GOLDENGLASS_QMLPLUGIN_LIBS
     Qt6::Quick
@@ -37,6 +40,7 @@ set(GOLDENGLASS_QMLPLUGIN_LIBS
     KF6::ConfigCore
     Qt6::DBus
     KF6::I18n
+    KF6::IconThemes
 )
 
 ecm_add_qml_module(goldenglassglassplugin
