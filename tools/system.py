@@ -128,10 +128,21 @@ def write(entry: Entry, value: str | None) -> None:
 
 
 def load_state(path: Path = STATE) -> dict:
+    """Estado guardado: {parte: {clave: valor previo}}. Si está dañado (JSON
+    inválido o con otra forma) se avisa y se empieza de cero, para que enable y
+    disable sigan funcionando; el siguiente guardado lo reemplaza."""
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        state = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return {}
+    except ValueError as exc:  # JSONDecodeError y UnicodeDecodeError lo son
+        reason = str(exc)
+    else:
+        if isinstance(state, dict) and all(isinstance(value, dict) for value in state.values()):
+            return state
+        reason = "no tiene la forma {parte: {clave: valor}}"
+    print(f"goldenglass-system: se ignora {path}, está dañado ({reason})", file=sys.stderr)
+    return {}
 
 
 def write_file(path: Path, text: str, mode: int = 0o644) -> None:
