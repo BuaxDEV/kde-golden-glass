@@ -26,6 +26,7 @@ from PyQt6.QtGui import QColor, QFont, QGuiApplication, QImage, QLinearGradient,
 from PyQt6.QtSvg import QSvgRenderer
 
 from ggcommon import flatten
+from plasma_theme import MENUBAR_PREFIX
 
 ROOT = Path(__file__).resolve().parent.parent
 THEME = ROOT / "build" / "plasma" / "desktoptheme" / "GoldenGlass"
@@ -147,7 +148,7 @@ def main() -> int:
     # Barra de menús: pegada arriba, solo borde inferior.
     panel = Frame(THEME / "translucent/widgets/panel-background.svg", colors)
     mb = plasma["menubar_height"]
-    panel.paint(p, QRectF(0, 0, W, mb), edges=("bottom",))
+    panel.paint(p, QRectF(0, 0, W, mb), prefix=MENUBAR_PREFIX, edges=("bottom",))
     label(14, mb - 9, "  Finder   Archivo   Edición   Ver   Ir   Ventana   Ayuda")
     label(W - 170, mb - 9, "sáb 10 oct  13:04")
 

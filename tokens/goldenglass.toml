@@ -25,7 +25,8 @@ control_small = 4    # checkboxes, controles compactos
 field = 10           # campos de texto de Plasma (Spotlight, contraseña)
 menu = 10            # menús emergentes
 popup = 14           # diálogos de Plasma, notificaciones, Centro de control
-dock = 14            # ≤ plasma.menubar_height / 2: Plasma limita la altura de
+dock = 14
+menubar = 14         # ≤ plasma.menubar_height / 2: Plasma limita la altura de
                      # todo panel a la suma de sus esquinas (ver plasma_theme)
 tooltip = 6
 
@@ -101,7 +102,7 @@ edge_shade_width = 1.5   # ancho de esa banda (px lógicos) — calibrar
 # ---------------------------------------------------------------------------
 [plasma]
 menubar_height = 28
-menubar_padding = 6      # margen inferior del contenido de la barra
+menubar_padding_v = 6    # margen del fondo de la barra (prefijo north- del panel)
 # Barra de menús sin fondo, como macOS 26/27 (el texto va sobre el fondo de
 # pantalla). true = franja de vidrio translúcido, la opción «Mostrar fondo de la
 # barra de menús» de macOS 27 (módulo Vidrio, goldenglass-glass).
