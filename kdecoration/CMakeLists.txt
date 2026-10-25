@@ -14,10 +14,7 @@ set(goldenglassdecoration_SRCS
 )
 ### build library
 kconfig_add_kcfg_files(goldenglassdecoration_SRCS goldenglasssettings.kcfgc)
-add_library(goldenglassdecoration MODULE
-    ${goldenglassdecoration_SRCS}
-    ${goldenglassdecoration_config_SRCS}
-    ${goldenglassdecoration_config_PART_FORMS_HEADERS})
+add_library(goldenglassdecoration MODULE ${goldenglassdecoration_SRCS})
 
 set_target_properties(goldenglassdecoration PROPERTIES
     OUTPUT_NAME org.goldenglass.decoration
@@ -26,18 +23,14 @@ set_target_properties(goldenglassdecoration PROPERTIES
 target_link_libraries(goldenglassdecoration
      PRIVATE
         goldenglasscommon6
+        KF6::ColorScheme
+        KF6::ConfigGui
         KF6::CoreAddons
-        KF6::ConfigWidgets
         KF6::GuiAddons
-        KF6::I18n
         KF6::IconThemes
-        KF6::WindowSystem
-        KF6::KCMUtils
-        Qt6::DBus
         KDecoration3::KDecoration
 )
 install(TARGETS goldenglassdecoration DESTINATION ${KDE_INSTALL_PLUGINDIR}/${KDECORATION_PLUGIN_DIR})
-install(FILES config/goldenglassdecorationconfig.desktop DESTINATION  ${KDE_INSTALL_DATADIR}/kservices6)
 add_subdirectory(config)
 
 # Vista previa de los semáforos (desarrollo; no se instala).
