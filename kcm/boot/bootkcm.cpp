@@ -5,6 +5,7 @@
 #include "bootkcm.h"
 
 #include "../processquery.h"
+#include "goldenglass_tokens.h"
 
 #include <KLocalizedString>
 #include <KPluginFactory>
@@ -138,6 +139,16 @@ bool BootKcm::busy() const
 QString BootKcm::errorText() const
 {
     return m_errorText;
+}
+
+QColor BootKcm::darkBackground() const
+{
+    return QColor::fromRgba(GoldenGlass::Tokens::BootDarkBackground);
+}
+
+QColor BootKcm::lightBackground() const
+{
+    return QColor::fromRgba(GoldenGlass::Tokens::BootLightBackground);
 }
 
 QString BootKcm::themeImage(const QString &variant, const QString &piece) const

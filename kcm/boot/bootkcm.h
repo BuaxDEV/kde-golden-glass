@@ -6,6 +6,7 @@
 
 #include <KQuickConfigModule>
 
+#include <QColor>
 #include <QStringList>
 
 class QJsonObject;
@@ -37,6 +38,10 @@ class BootKcm : public KQuickConfigModule
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY errorTextChanged)
 
+    //* fondo de los temas de Plymouth negro y gris (tokens [boot]), para las miniaturas
+    Q_PROPERTY(QColor darkBackground READ darkBackground CONSTANT)
+    Q_PROPERTY(QColor lightBackground READ lightBackground CONSTANT)
+
 public:
     BootKcm(QObject *parent, const KPluginMetaData &data);
 
@@ -54,6 +59,8 @@ public:
 
     bool busy() const;
     QString errorText() const;
+    QColor darkBackground() const;
+    QColor lightBackground() const;
 
     //* ruta de una imagen del tema de Plymouth (para las miniaturas)
     Q_INVOKABLE QString themeImage(const QString &variant, const QString &piece) const;

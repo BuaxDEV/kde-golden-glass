@@ -18,6 +18,9 @@ class GlassKcm : public KQuickConfigModule
     Q_PROPERTY(double level READ level NOTIFY levelChanged)
     Q_PROPERTY(double defaultLevel READ defaultLevel CONSTANT)
     Q_PROPERTY(QVariantList notches READ notches CONSTANT)
+    //* imán de las muescas y pausa antes de aplicar con el teclado (tokens [glass])
+    Q_PROPERTY(double snapDistance READ snapDistance CONSTANT)
+    Q_PROPERTY(int keyboardApplyDelay READ keyboardApplyDelay CONSTANT)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString errorText READ errorText NOTIFY errorTextChanged)
     //* refracción de Liquid Glass (efecto de KWin goldenglass_glass)
@@ -33,6 +36,8 @@ public:
     double level() const;
     double defaultLevel() const;
     QVariantList notches() const;
+    double snapDistance() const;
+    int keyboardApplyDelay() const;
     bool busy() const;
     QString errorText() const;
     bool refraction() const;

@@ -43,6 +43,10 @@ alpha = 0.5          # opacidad del acento
 [glass]
 default_level = 0.5
 blur_strength = 10   # KWin Blur: 1..15, calibrar
+# Módulo de Ajustes «Vidrio»: al soltar el slider a menos de esto de una
+# muesca, queda en ella; con el teclado se aplica tras esta pausa
+snap_distance = 0.04
+keyboard_apply_ms = 400
 
 [glass.notch.clear]
 position = 0.0
