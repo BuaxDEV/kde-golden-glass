@@ -87,6 +87,8 @@ if [[ -z ${GG_SANDBOX_INNER:-} ]]; then
     || { log "FALLO compilando build/cmake (ver build/sandbox/build.log)"; exit 1; }
   DESTDIR="$STAGE" cmake --install "$ROOT/build/cmake" >/dev/null
   export QT_PLUGIN_PATH="$STAGE/usr/lib/qt6/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
+  # the org.goldenglass.glass QML module of this tree, not an older installed one
+  export QML_IMPORT_PATH="$STAGE/usr/lib/qt6/qml${QML_IMPORT_PATH:+:$QML_IMPORT_PATH}"
   export XDG_DATA_DIRS="$STAGE/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
   export PATH="$STAGE/usr/bin:$PATH"
 

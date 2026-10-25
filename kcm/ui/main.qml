@@ -191,6 +191,24 @@ KCM.SimpleKCM {
                 color: Kirigami.Theme.disabledTextColor
                 text: i18nc("@info", "Off, like macOS: the menu bar is drawn straight over the wallpaper. On: a strip of glass behind it.")
             }
+
+            Item {
+                Kirigami.FormData.isSection: true
+            }
+
+            QQC2.Switch {
+                Kirigami.FormData.label: i18nc("@label", "Accessibility:")
+                text: i18nc("@option:check", "Reduce motion")
+                checked: kcm.reduceMotion
+                onToggled: kcm.reduceMotion = checked
+            }
+            QQC2.Label {
+                Layout.maximumWidth: Kirigami.Units.gridUnit * 20
+                wrapMode: Text.WordWrap
+                font: Kirigami.Theme.smallFont
+                color: Kirigami.Theme.disabledTextColor
+                text: i18nc("@info", "Windows, the dock and panels fade in and out instead of zooming, sliding or bouncing.")
+            }
         }
 
         QQC2.Label {

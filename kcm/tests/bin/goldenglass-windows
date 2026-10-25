@@ -1,0 +1,22 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Stand-in for goldenglass-windows in kcm_apply_test (ctest): writes
+# goldenglassrc [Accessibility] ReduceMotion like the real tool, without
+# touching KWin. It takes a moment so that requests queue up.
+set -eu
+. "$(dirname "$0")/../set_entry.sh"
+
+case "${1:-}" in
+  --reduce-motion)
+    case "${2:-}" in
+      on) value=true ;;
+      off) value=false ;;
+      *) echo "goldenglass-windows (test): on or off, not: ${2:-}" >&2; exit 2 ;;
+    esac
+    sleep 0.2
+    set_entry "${XDG_CONFIG_HOME:?}/goldenglassrc" Accessibility ReduceMotion "$value"
+    ;;
+  *) echo "goldenglass-windows (test): unknown command: $*" >&2; exit 2 ;;
+esac

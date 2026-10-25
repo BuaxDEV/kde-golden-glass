@@ -130,7 +130,8 @@ Item {
         filterByVirtualDesktop: false
         filterByScreen: false
         filterByActivity: true
-        filterHidden: true
+        // a minimized app keeps its icon, like in the Dock: KWin's genie lands on it (spike SP-05)
+        filterHidden: false
         activity: activityInfo.currentActivity
         virtualDesktop: virtualDesktopInfo.currentDesktop
         screenGeometry: Plasmoid.containment.screenGeometry
