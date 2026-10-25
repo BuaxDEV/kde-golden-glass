@@ -546,6 +546,8 @@ PlasmoidItem {
                     SliderRow {
                         id: glassRow
                         Layout.fillWidth: true
+                        // «Reduce transparency» keeps the level but makes the glass opaque
+                        enabled: !Accessibility.reduceTransparency
                         iconFrom: Qt.resolvedUrl("../images/glass-low-symbolic.svg")
                         iconTo: Qt.resolvedUrl("../images/glass-high-symbolic.svg")
                         from: 0

@@ -6,12 +6,12 @@
   plasma/plasmoids/**/*.qml que sale de los tokens pasa por Motion, para seguir
   la velocidad de animación global de Plasma; las esperas que no son
   animaciones (WAITS, Timer.interval) no se escalan.
-- Los plasmoids que usan Motion reciben Motion.qml, MotionReduce.qml y su
+- Los plasmoids que usan Motion reciben Motion.qml, Accessibility.qml, AccessibilityReader.qml y su
   qmldir (SHARED).
 - Prueba en ejecución (opcional: se salta sin qml6, sin Kirigami o sin un
   plugin de plataforma de Kirigami que lea kdeglobals): Motion.ms(100) con
   AnimationDurationFactor 0, 0.25, 1 y 2 en un kdeglobals temporal.
-- «Reduce motion» at run time: with a MotionReduce.qml that reports it on,
+- «Reduce motion» at run time: with an AccessibilityReader.qml that reports it on,
   moves take 0 ms, fades motion.reduced_fade_ms and there is no overshoot;
   without the org.goldenglass.glass module it stays off.
 """
@@ -151,16 +151,18 @@ def test_plasmoids_using_motion_get_it() -> None:
         uses = any("Motion." in f.read_text(encoding="utf-8") for f in files if f.name != "Motion.qml")
         if not uses or plugin_id == origin:
             continue
-        assert {"Motion.qml", "MotionReduce.qml", "qmldir"} <= set(shared.get(origin, [])), plugin_id
+        assert set(plasmoids.MOTION) <= set(shared.get(origin, [])), plugin_id
 
 
 def test_motion_source_files() -> None:
     qmldir = (MOTION_SOURCE / "qmldir").read_text(encoding="utf-8")
     assert "singleton Motion 1.0 Motion.qml" in qmldir.splitlines()
     assert (MOTION_SOURCE / "Motion.qml").read_text(encoding="utf-8").count("pragma Singleton") == 1
-    reduce = (MOTION_SOURCE / "MotionReduce.qml").read_text(encoding="utf-8")
-    assert "import org.goldenglass.glass" in reduce and "AccessibilitySettings {" in reduce
-    assert '"MotionReduce.qml"' in (MOTION_SOURCE / "Motion.qml").read_text(encoding="utf-8")
+    assert "singleton Accessibility 1.0 Accessibility.qml" in qmldir.splitlines()
+    reader = (MOTION_SOURCE / "AccessibilityReader.qml").read_text(encoding="utf-8")
+    assert "import org.goldenglass.glass" in reader and "AccessibilitySettings {" in reader
+    assert '"AccessibilityReader.qml"' in (MOTION_SOURCE / "Accessibility.qml").read_text(encoding="utf-8")
+    assert "Accessibility.reduceMotion" in (MOTION_SOURCE / "Motion.qml").read_text(encoding="utf-8")
 
 
 def test_shared_qmldir_is_merged(tmp_path: Path) -> None:
@@ -203,6 +205,7 @@ Item {
             factor: Motion.factor,
             animated: Motion.animated,
             reduced: Motion.reduced,
+            reduceTransparency: Accessibility.reduceTransparency,
             ms: Motion.ms(100),
             moveMs: Motion.moveMs(100),
             fadeMs: Motion.fadeMs(100),
@@ -278,10 +281,12 @@ import QtQuick
 
 QtObject {
     readonly property bool reduceMotion: true
+    readonly property bool reduceTransparency: false
+    readonly property bool showBorders: false
 }
 """
 
-# what MotionReduce.qml does without goldenglass-kstyle
+# what AccessibilityReader.qml does without goldenglass-kstyle
 MODULE_MISSING = """\
 import org.goldenglass.missing
 
@@ -295,7 +300,7 @@ def _probe_folder(tmp_path: Path, tokens: dict, motion_reduce: str | None = None
     for name in plasmoids.MOTION:
         shutil.copy2(MOTION_SOURCE / name, folder / name)
     if motion_reduce is not None:
-        (folder / "MotionReduce.qml").write_text(motion_reduce, encoding="utf-8")
+        (folder / "AccessibilityReader.qml").write_text(motion_reduce, encoding="utf-8")
     plasmoids.write_tokens_js(folder / "tokens.js", tokens)
     (folder / "main.qml").write_text(PROBE, encoding="utf-8")
     (folder / "Probe.qml").write_text(PROBE_ITEM, encoding="utf-8")
@@ -354,6 +359,7 @@ def test_reduce_motion_is_off_without_the_glass_module(tmp_path: Path, tokens: d
     folder = _probe_folder(tmp_path, tokens, MODULE_MISSING)
     values = _run_probe(qml, folder, tmp_path / "home", 1)
     assert values["reduced"] is False
+    assert values["reduceTransparency"] is False
     assert values["overshoot"] == 1.5
 
 
@@ -369,7 +375,9 @@ def test_reduce_motion_follows_goldenglassrc(tmp_path: Path, tokens: dict) -> No
     folder = _probe_folder(tmp_path, tokens)
     home = tmp_path / "home"
     (home / ".config").mkdir(parents=True)
-    (home / ".config" / "goldenglassrc").write_text("[Accessibility]\nReduceMotion=true\n", encoding="utf-8")
+    (home / ".config" / "goldenglassrc").write_text("[Accessibility]\nReduceMotion=true\nReduceTransparency=true\n",
+                                                    encoding="utf-8")
     values = _run_probe(qml, folder, home, 1, {"QML_IMPORT_PATH": str(BUILT_GLASS_MODULE)})
     assert values["reduced"] is True
+    assert values["reduceTransparency"] is True
     assert values["moveMs"] == 0
