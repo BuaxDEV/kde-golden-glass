@@ -385,7 +385,8 @@ dentro de «Vidrio».
       tarjeta (`goldenGlassTile`), y el efecto `goldenglass_glass` dibuja cada
       una como un vidrio (4.14). Las tarjetas son más claras que los popups
       (`tile_alpha`, sin seguir el nivel de vidrio). Sin el módulo
-      (`GlassBlur.qml` va en un Loader) se ven sin difuminar.
+      (`GlassBlur.qml`, el de Apps copiado por `SHARED`, va en un Loader) se ven
+      sin difuminar.
     - **Animaciones de Liquid Glass** (tiempos y escalas en
       `[control_center]`): al abrir, el vidrio brota del icono de la barra con
       un resorte (`Easing.OutBack`), más deprisa a lo alto que a lo ancho; al
