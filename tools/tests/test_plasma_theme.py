@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: 2026 GoldenGlass contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Glass surfaces of the Plasma Style (tools/plasma_theme.py): the edge is a
-dark outer line and a light inner one with the alphas of [glass.border]."""
+dark outer line and a light inner one with the alphas of [glass.border]; with
+«Show borders» the outer line takes the text colour."""
 
 from __future__ import annotations
 
@@ -30,7 +31,11 @@ def _paint(element: ET.Element) -> tuple[str, float]:
 
 
 def _edges(tile: ET.Element) -> list[ET.Element]:
-    return [child for child in tile if child.get("class") is None]
+    return [child for child in tile if child.get("class") != plasma_theme.BG]
+
+
+def _edge_paint(element: ET.Element) -> tuple[str | None, str, float]:
+    return (element.get("class"), *_paint(element))
 
 
 @pytest.fixture
@@ -43,8 +48,8 @@ def test_every_edge_tile_has_a_dark_then_a_light_line(tokens: dict, surface) -> 
     border = tokens["glass"]["border"]
     for name in (*SIDES, *CORNERS):
         edges = _edges(surface[name])
-        assert [_paint(e) for e in edges] == [("#000000", border["shade_alpha"]),
-                                             ("#FFFFFF", border["highlight_alpha"])], name
+        assert [_edge_paint(e) for e in edges] == [(None, "#000000", border["shade_alpha"]),
+                                                  (None, "#FFFFFF", border["highlight_alpha"])], name
     assert _edges(surface["center"]) == []
 
 
@@ -73,3 +78,42 @@ def test_built_theme_uses_the_edge_on_every_glass_surface(tokens: dict, tmp_path
         for rel in SURFACES:
             tiles = _tiles((root / prefix / rel).read_text(encoding="utf-8"))
             assert len(_edges(tiles["top"])) == 2, prefix + rel
+
+
+def test_show_borders_turns_the_outer_line_into_the_text_colour(tokens: dict) -> None:
+    surface = _tiles(plasma_theme.glass_surface(tokens, radius=14, margin=10, shadow_size=28, shadow_alpha=0.3,
+                                                alpha=0.65, borders=True))
+    outer = (plasma_theme.TEXT, "currentColor", tokens["accessibility"]["borders"]["surface_alpha"])
+    inner = (None, "#FFFFFF", tokens["glass"]["border"]["highlight_alpha"])
+    for name in (*SIDES, *CORNERS):
+        assert [_edge_paint(e) for e in _edges(surface[name])] == [outer, inner], name
+
+
+def _field_edge(svg: str) -> tuple[str | None, str, float]:
+    _fill, edge = _tiles(svg)["base-top"]
+    return _edge_paint(edge)
+
+
+@pytest.mark.parametrize("borders", [False, True])
+def test_field_edge_follows_show_borders(tokens: dict, borders: bool) -> None:
+    alpha = tokens["accessibility"]["borders"]["field_alpha"] if borders else tokens["plasma"]["field_border_alpha"]
+    assert _field_edge(plasma_theme.lineedit_svg(tokens, borders)) == (plasma_theme.TEXT, "currentColor", alpha)
+
+
+@pytest.mark.parametrize("reduce_transparency", [False, True])
+@pytest.mark.parametrize("level", [0.0, 0.5, 1.0])
+def test_built_theme_composes_show_borders_with_level_and_reduce_transparency(
+        tokens: dict, tmp_path: Path, level: float, reduce_transparency: bool) -> None:
+    plasma_theme.build({**tokens, "meta": {**tokens["meta"], "version": "0"}}, tmp_path, level,
+                       reduce_transparency=reduce_transparency, borders=True)
+    root = tmp_path / "plasma" / "desktoptheme" / plasma_theme.THEME_ID
+    alpha = (tokens["accessibility"]["reduce_transparency_alpha"] if reduce_transparency
+             else plasma_theme.glass_alpha(tokens, level))
+    outer = (plasma_theme.TEXT, "currentColor", tokens["accessibility"]["borders"]["surface_alpha"])
+    for rel in SURFACES:
+        tiles = _tiles((root / "translucent" / rel).read_text(encoding="utf-8"))
+        assert _edge_paint(_edges(tiles["top"])[0]) == outer, rel
+        fill = next(child for child in tiles["center"] if child.get("class") == plasma_theme.BG)
+        assert _paint(fill) == ("currentColor", pytest.approx(alpha)), rel
+    field = _field_edge((root / "widgets" / "lineedit.svg").read_text(encoding="utf-8"))
+    assert field == (plasma_theme.TEXT, "currentColor", tokens["accessibility"]["borders"]["field_alpha"])

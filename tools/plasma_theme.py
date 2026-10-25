@@ -248,19 +248,29 @@ def glass_alpha(tokens: dict, level: float | None = None) -> float:
     return notches[-1]["alpha"]
 
 
-def glass_surface(tokens: dict, radius: float, margin: float, shadow_size: float,
-                  shadow_alpha: float, alpha: float) -> str:
-    """Superficie de vidrio completa: marco + máscara de blur + sombra.
+def glass_edge(tokens: dict, borders: bool = False) -> tuple[Paint, Paint]:
+    """Outer and inner line of the glass edge.
 
-    The edge is a dark outer line and a light one just inside (macOS 27's
+    By default a dark outer line and a light one just inside (macOS 27's
     improved contrast); fixed colours with alpha read on light and dark glass.
+    «Show borders» turns the outer line into the text colour, which contrasts
+    with the glass in either colour scheme.
     """
     border = tokens["glass"]["border"]
-    shade = Paint(None, border["shade_alpha"], BLACK.color)
-    highlight = Paint(None, border["highlight_alpha"], WHITE)
+    if borders:
+        outer = Paint(TEXT, tokens["accessibility"]["borders"]["surface_alpha"])
+    else:
+        outer = Paint(None, border["shade_alpha"], BLACK.color)
+    return outer, Paint(None, border["highlight_alpha"], WHITE)
+
+
+def glass_surface(tokens: dict, radius: float, margin: float, shadow_size: float,
+                  shadow_alpha: float, alpha: float, borders: bool = False) -> str:
+    """Whole glass surface: frame, blur mask and shadow."""
+    outer, inner = glass_edge(tokens, borders)
     svg = Svg()
-    frame(svg, "", radius, Paint(BG, alpha), shade, margins=(margin,) * 4, border_width=border["width"],
-          inner_border=highlight)
+    frame(svg, "", radius, Paint(BG, alpha), outer, margins=(margin,) * 4,
+          border_width=tokens["glass"]["border"]["width"], inner_border=inner)
     frame(svg, "mask-", radius, BLACK)
     shadow(svg, radius, shadow_size, shadow_alpha)
     return svg.render()
@@ -345,18 +355,20 @@ def viewitem_svg(tokens: dict) -> str:
     return svg.render()
 
 
-def lineedit_svg(tokens: dict) -> str:
-    """Campo de texto de vidrio (KRunner/Spotlight, contraseña de bloqueo).
+def lineedit_svg(tokens: dict, borders: bool = False) -> str:
+    """Glass text field (KRunner/Spotlight, lock screen password).
 
-    Relleno y filo derivan del color de texto, así funciona igual sobre el
-    vidrio claro, el oscuro y el fondo de la pantalla de bloqueo.
+    Fill and edge come from the text colour, so the field reads the same on
+    light and dark glass and on the lock screen wallpaper. «Show borders»
+    makes the edge stronger.
     """
     p = tokens["plasma"]
     r = tokens["radius"]["field"]
     margins = (p["field_padding_v"], p["field_padding_h"]) * 2
     clear = Paint(None, 0.0, "#000000")
+    edge_alpha = tokens["accessibility"]["borders"]["field_alpha"] if borders else p["field_border_alpha"]
     svg = Svg()
-    frame(svg, "base-", r, Paint(TEXT, p["field_alpha"]), Paint(TEXT, p["field_border_alpha"]), margins=margins)
+    frame(svg, "base-", r, Paint(TEXT, p["field_alpha"]), Paint(TEXT, edge_alpha), margins=margins)
     # Plasma agranda hover/focus hacia fuera según sus márgenes: cada anillo
     # cubre el filo de 1 px de base y sobresale solo lo que le queda de ancho.
     frame(svg, "hover-", r + 1, clear, Paint(TEXT, p["field_hover_alpha"]), margins=(1, 1, 1, 1), border_width=2)
@@ -405,12 +417,15 @@ def plasmoidheading_svg(tokens: dict) -> str:
 
 # --- paquete ------------------------------------------------------------------
 
-def build(tokens: dict, out: Path, level: float | None = None, *, reduce_transparency: bool = False) -> list[Path]:
-    """Escribe el Plasma Style en `out/plasma/desktoptheme/GoldenGlass`.
+def build(tokens: dict, out: Path, level: float | None = None, *, reduce_transparency: bool = False,
+          borders: bool = False) -> list[Path]:
+    """Writes the Plasma Style to `out/plasma/desktoptheme/GoldenGlass`.
 
     With `reduce_transparency` the glass is opaque (accessibility
     reduce_transparency_alpha) and the theme asks for neither blur nor
-    contrast behind it.
+    contrast behind it. With `borders` («Show borders») the glass and the
+    fields get a text-coloured edge (accessibility.borders); it composes with
+    any level and with `reduce_transparency`.
     """
     root = out / "plasma" / "desktoptheme" / THEME_ID
     p = tokens["plasma"]
@@ -429,18 +444,18 @@ def build(tokens: dict, out: Path, level: float | None = None, *, reduce_transpa
     variants = {"translucent/": alpha, "": 1.0, "opaque/": 1.0, "solid/": 1.0}
     for prefix, a in variants.items():
         files[f"{prefix}dialogs/background.svg"] = glass_surface(
-            tokens, rad["popup"], p["popup_margin"], p["popup_shadow"], p["popup_shadow_alpha"], a)
+            tokens, rad["popup"], p["popup_margin"], p["popup_shadow"], p["popup_shadow_alpha"], a, borders)
         files[f"{prefix}widgets/panel-background.svg"] = glass_surface(
-            tokens, rad["dock"], p["dock_padding"], p["popup_shadow"], p["popup_shadow_alpha"], a)
+            tokens, rad["dock"], p["dock_padding"], p["popup_shadow"], p["popup_shadow_alpha"], a, borders)
         files[f"{prefix}widgets/tooltip.svg"] = glass_surface(
-            tokens, rad["tooltip"], p["tooltip_margin"], p["tooltip_shadow"], p["tooltip_shadow_alpha"], a)
+            tokens, rad["tooltip"], p["tooltip_margin"], p["tooltip_shadow"], p["tooltip_shadow_alpha"], a, borders)
         files[f"{prefix}widgets/background.svg"] = glass_surface(
-            tokens, rad["popup"], p["popup_margin"], p["popup_shadow"], p["popup_shadow_alpha"], a)
+            tokens, rad["popup"], p["popup_margin"], p["popup_shadow"], p["popup_shadow_alpha"], a, borders)
 
     files["widgets/tasks.svg"] = tasks_svg(tokens)
     files["widgets/viewitem.svg"] = viewitem_svg(tokens)
     files["widgets/menubaritem.svg"] = menubaritem_svg(tokens)
-    files["widgets/lineedit.svg"] = lineedit_svg(tokens)
+    files["widgets/lineedit.svg"] = lineedit_svg(tokens, borders)
     files["widgets/plasmoidheading.svg"] = plasmoidheading_svg(tokens)
 
     vib = tokens["glass"]["vibrancy"]
