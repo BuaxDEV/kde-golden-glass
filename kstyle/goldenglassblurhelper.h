@@ -87,7 +87,12 @@ protected:
     //! update blur regions for given widget
     void update(QWidget *) const;
 
+    //! remove the blur region KWin keeps for the window
+    void disableBlur(QWidget *) const;
+
 private:
+    static const char blurEnabledProperty[];
+
     bool _isDolphin = false;
     bool _translucentTitlebar = false;
 };

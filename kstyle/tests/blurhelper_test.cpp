@@ -13,6 +13,7 @@
 #include <QTemporaryDir>
 #include <QStandardPaths>
 
+#include "goldenglassblurhelper.h"
 #include "goldenglassstyleconfigdata.h"
 
 // Mock widget that inherits from QAbstractScrollArea and pretends to be KItemListContainer
@@ -54,6 +55,10 @@ private Q_SLOTS:
     void testBlurEnabledWhenOpacityLessThan100();
     void testBlurRegionIncludesKItemListContainer();
     void testBlurIndependentOfSidebarOpacity();
+
+    // la ventana que pasa a opaca (o deja el estilo) retira su región en KWin
+    void testBlurDisabledWhenWindowBecomesOpaque();
+    void testBlurDisabledOnUnregister();
 };
 
 void BlurHelperTest::initTestCase()
@@ -187,6 +192,65 @@ void BlurHelperTest::testBlurIndependentOfSidebarOpacity()
 
     QVERIFY(!shouldBlurView);
     QVERIFY(!shouldBlurSidebar);
+}
+
+namespace
+{
+void setWindowAlpha(QWidget *widget, int alpha)
+{
+    QPalette palette(widget->palette());
+    QColor color(palette.color(QPalette::Window));
+    color.setAlpha(alpha);
+    palette.setColor(QPalette::Window, color);
+    widget->setPalette(palette);
+}
+
+bool blurEnabled(const QWidget *widget)
+{
+    return widget->property("_goldenglass_blurEnabled").toBool();
+}
+}
+
+void BlurHelperTest::testBlurDisabledWhenWindowBecomesOpaque()
+{
+    // sin barras translúcidas: una ventana opaca no tiene región
+    GoldenGlass::StyleConfigData::setMenuBarOpacity(100);
+    GoldenGlass::StyleConfigData::setToolBarOpacity(100);
+    GoldenGlass::StyleConfigData::setDolphinSidebarOpacity(100);
+
+    QWidget window;
+    window.resize(200, 150);
+    setWindowAlpha(&window, 128);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    GoldenGlass::BlurHelper helper(nullptr);
+    helper.registerWidget(&window, false);
+    QVERIFY(blurEnabled(&window));
+
+    setWindowAlpha(&window, 255);
+    helper.forceUpdate(&window);
+    QVERIFY(!blurEnabled(&window));
+
+    setWindowAlpha(&window, 128);
+    helper.forceUpdate(&window);
+    QVERIFY(blurEnabled(&window));
+}
+
+void BlurHelperTest::testBlurDisabledOnUnregister()
+{
+    QWidget window;
+    window.resize(200, 150);
+    setWindowAlpha(&window, 128);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    GoldenGlass::BlurHelper helper(nullptr);
+    helper.registerWidget(&window, false);
+    QVERIFY(blurEnabled(&window));
+
+    helper.unregisterWidget(&window);
+    QVERIFY(!blurEnabled(&window));
 }
 
 QTEST_MAIN(BlurHelperTest)

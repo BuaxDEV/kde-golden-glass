@@ -27,15 +27,19 @@ ecm_add_test(
         dolphinviewopacity_test${QT_MAJOR_VERSION}
 )
 
-# Test for blur helper behavior (config-only tests, no actual blur helper)
+# Test for blur helper behavior (config and the blur helper itself)
 ecm_add_test(
     blurhelper_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../goldenglassblurhelper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../goldenglasspropertynames.cpp
     ${test_config_SRCS}
     LINK_LIBRARIES
         Qt${QT_MAJOR_VERSION}::Test
         Qt${QT_MAJOR_VERSION}::Widgets
         KF${QT_MAJOR_VERSION}::ConfigCore
         KF${QT_MAJOR_VERSION}::ConfigGui
+        KF${QT_MAJOR_VERSION}::ColorScheme
+        KF${QT_MAJOR_VERSION}::WindowSystem
     TEST_NAME
         blurhelper_test${QT_MAJOR_VERSION}
 )
