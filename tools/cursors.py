@@ -29,7 +29,7 @@ import struct
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ggcommon import stamp
+from ggcommon import load_tokens, stamp
 
 THEME_ID = "GoldenGlass-cursors"
 THEME_NAME = "GoldenGlass"
@@ -41,8 +41,6 @@ WAIT_DELAY = 40  # ms por fotograma: una vuelta por segundo
 
 INK = "#000000"
 PAPER = "#FFFFFF"
-GREEN = "#34C759"
-RED = "#FF3B30"
 
 
 @dataclass
@@ -250,7 +248,15 @@ COLOR_PICKER = Shape(
 )
 
 
-def cursors() -> list[Cursor]:
+def _badges(tokens: dict) -> dict[str, str]:
+    """Colores de las insignias «copiar» y «no permitido»: los semánticos de la
+    paleta clara (los cursores son iguales en claro y oscuro)."""
+    light = tokens["light"]
+    return {"copy": light["positive"], "forbidden": light["negative"]}
+
+
+def cursors(tokens: dict) -> list[Cursor]:
+    badges = _badges(tokens)
     arrow = Shape(ARROW_HOT, fills=f'<path d="{ARROW}"/>')
     hor, ver = _double_arrow(0), _double_arrow(90)
     fdiag, bdiag = _double_arrow(45, 9.5), _double_arrow(-45, 9.5)
@@ -288,14 +294,14 @@ def cursors() -> list[Cursor]:
         Cursor("help", [_arrow_with(_badge(*BADGE_C, BADGE_R, INK, QUESTION))],
                aliases=["5c6cd98b3f3ebcb1f9c7f1c204630408", "d9ce0ab605698f320427677b458ad60b",
                         "left_ptr_help", "question_arrow", "whats_this"]),
-        Cursor("copy", [_arrow_with(_badge(*BADGE_C, BADGE_R, GREEN, PLUS))],
+        Cursor("copy", [_arrow_with(_badge(*BADGE_C, BADGE_R, badges["copy"], PLUS))],
                aliases=["1081e37283d90000800003c07f3ef6bf", "6407b0e94181790501fd1e167b474872",
                         "b66166c04f8c3109214a4fbd64a50fc8", "dnd-copy"]),
         Cursor("alias", [_arrow_with(_badge(*BADGE_C, BADGE_R, INK, ALIAS))],
                aliases=["3085a0e285430894940527032f8b26df", "640fb0e74195791501fd1ed57b41487f",
                         "a2a266d0498c3104214a47bd64ab0fc8", "link", "dnd-link"]),
         Cursor("context-menu", [_arrow_with(_badge(*BADGE_C, BADGE_R, INK, MENU))]),
-        Cursor("not-allowed", [_arrow_with(_badge(*BADGE_C, BADGE_R, RED, FORBIDDEN))],
+        Cursor("not-allowed", [_arrow_with(_badge(*BADGE_C, BADGE_R, badges["forbidden"], FORBIDDEN))],
                aliases=["circle", "crossed_circle", "03b6e0fcb3499374a867c041f52298f0",
                         "no-drop", "dnd-no-drop", "forbidden"]),
         Cursor("progress", progress, WAIT_DELAY,
@@ -401,8 +407,8 @@ def xcursor(cursor: Cursor) -> bytes:
 
 # --- paquete ------------------------------------------------------------------
 
-def _stamp() -> str:
-    return stamp(Path(__file__))
+def _stamp(tokens: dict) -> str:
+    return stamp(Path(__file__), data=_badges(tokens))
 
 
 def _symlink(target: str, link: Path) -> None:
@@ -411,11 +417,11 @@ def _symlink(target: str, link: Path) -> None:
     link.symlink_to(target)
 
 
-def build(out: Path) -> list[Path]:
-    """Genera el tema; se salta si el generador no cambió."""
+def build(tokens: dict, out: Path) -> list[Path]:
+    """Genera el tema; se salta si ni el generador ni sus colores cambiaron."""
     root = out / "cursors" / THEME_ID
     stamp_file = root / ".stamp"
-    if stamp_file.exists() and stamp_file.read_text() == _stamp():
+    if stamp_file.exists() and stamp_file.read_text() == _stamp(tokens):
         return []
     if root.exists():
         shutil.rmtree(root)
@@ -423,7 +429,7 @@ def build(out: Path) -> list[Path]:
     xdir.mkdir(parents=True)
     sdir.mkdir()
 
-    all_cursors = cursors()
+    all_cursors = cursors(tokens)
     for cur in all_cursors:
         folder = sdir / cur.name
         folder.mkdir()
@@ -449,17 +455,17 @@ def build(out: Path) -> list[Path]:
         f"Name={THEME_NAME}\n"
         "Comment=macOS-inspired cursors for GoldenGlass\n"
         "Inherits=breeze_cursors\n", encoding="utf-8")
-    stamp_file.write_text(_stamp())
+    stamp_file.write_text(_stamp(tokens))
     return [root]
 
 
-def preview(path: Path, px: int = 64) -> None:
+def preview(tokens: dict, path: Path, px: int = 64) -> None:
     """Hoja con todos los cursores sobre fondo claro y oscuro."""
     from PyQt6.QtCore import QByteArray, QRectF
     from PyQt6.QtGui import QColor, QImage, QPainter
     from PyQt6.QtSvg import QSvgRenderer
 
-    items = cursors()
+    items = cursors(tokens)
     cols = 9
     rows = math.ceil(len(items) / cols)
     cell = px + 16
@@ -488,5 +494,5 @@ if __name__ == "__main__":
     ap.add_argument("--preview", type=Path, required=True, help="PNG con todos los cursores")
     ap.add_argument("--size", type=int, default=64, help="lado de cada cursor en la hoja")
     args = ap.parse_args()
-    preview(args.preview, args.size)
+    preview(load_tokens(), args.preview, args.size)
     print(args.preview)
