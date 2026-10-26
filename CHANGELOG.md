@@ -4,6 +4,43 @@
 
 ### Cambios
 
+- **Estilos de icono Tintado y Transparente** (macOS 27, Apariencia › «Icon &
+  widget style»), por ahora para las apps que dibuja GoldenGlass: cuatro
+  temas nuevos, `GoldenGlass-Tinted`, `GoldenGlass-Clear` y sus variantes
+  `-Dark`. Tintado pinta el símbolo con el color de acento del sistema (sobre
+  grafito en oscuro; oscurecido sobre el acento aclarado en claro) y lo cambia
+  en vivo con el acento; Transparente usa un vidrio translúcido con filo
+  marcado y el símbolo blanco. Solo llevan las apps y heredan lo demás del
+  tema de fábrica; no salen en Ajustes del sistema › Iconos, porque los
+  elige el módulo «Estilo de iconos». Valores en `[icon_style.tinted]` y
+  `[icon_style.clear]`; el relleno del Transparente está calibrado para que
+  el símbolo tenga contraste 3:1 sobre fondos claros y oscuros (gris
+  translúcido en claro). Los temas `GoldenGlass` y `GoldenGlass-Dark` no
+  cambian.
+- **Apps de terceros en Tintado y Transparente:** `goldenglass-wrap-icons`
+  saca el símbolo del icono de cada app (lo que destaca de su fondo) y lo
+  pone en el tile del estilo; si no se lee, usa su silueta o la inicial de su
+  nombre, y si no tiene, deja el icono encerrado de siempre. Se ajusta con
+  `[icon_style.extract]`, con excepciones por app en
+  `[icon_style.overrides]` (Chrome y JetBrains Toolbox van con la inicial), y
+  se revisa con `goldenglass-wrap-icons --sheet hoja.png`. Volver a ejecutarlo
+  al instalar apps actualiza los seis temas.
+- **Módulo «Estilo de iconos»** (Ajustes del sistema › Colores y temas): elige
+  el estilo Por defecto, Transparente o Tintado, con muestras de cada uno en
+  tu color de acento, y la apariencia Claro, Oscuro o Auto (sigue al esquema
+  de colores). Se aplica al momento con la herramienta nueva
+  `goldenglass-icon-style`, que genera antes los iconos de estilo de las apps
+  de terceros si faltan. Al iniciar sesión, `goldenglass-icon-style --watch`
+  mantiene el estilo elegido cuando aplicas un Global Theme de GoldenGlass o
+  cambias entre esquema claro y oscuro; no toca otro tema de iconos elegido
+  en Ajustes › Iconos y no hace nada hasta que eliges algo en el módulo.
+- **El dock y Apps cambian de iconos en vivo:** al cambiar el estilo o el tema
+  de iconos, sus iconos pasan al nuevo con un fundido, sin reiniciar Plasma
+  (antes se quedaban con el anterior hasta volver a crearse).
+- **El color de acento llega a la primera:** con `plasma-apply-colorscheme
+  --accent-color`, las apps (y los iconos Tintados) se quedaban con el acento
+  anterior hasta el siguiente cambio; el demonio de `goldenglass-icon-style`
+  vuelve a avisar del cambio de paleta cuando el acento ya está guardado.
 - **Semáforos grises en ventanas inactivas**, como macOS: sin color ni glifo
   hasta que el ratón pasa por el grupo, que los colorea y muestra los glifos
   aunque la ventana siga sin foco (`traffic_lights.inactive_colored = false`).

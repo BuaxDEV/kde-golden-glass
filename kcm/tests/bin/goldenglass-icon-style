@@ -1,0 +1,39 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 GoldenGlass contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Stand-in for goldenglass-icon-style in kcm_iconstyle_test (ctest): stores
+# the style and the appearance in $XDG_CONFIG_HOME/goldenglassrc like the real
+# tool and answers --get, without touching the icon theme. It takes a moment so
+# that requests queue up.
+set -eu
+. "$(dirname "$0")/../set_entry.sh"
+rc="${XDG_CONFIG_HOME:?}/goldenglassrc"
+
+get_entry() { # FILE GROUP KEY
+  [ -e "$1" ] || return 0
+  awk -v group="[$2]" -v key="$3" '
+    /^\[.*\]$/ { in_group = ($0 == group); next }
+    in_group && index($0, key "=") == 1 { print substr($0, length(key) + 2); exit }
+  ' "$1"
+}
+
+case "${1:-}" in
+  --style)
+    case "${2:-}" in default|clear|tinted) ;; *) echo "goldenglass-icon-style (test): bad style: ${2:-}" >&2; exit 2 ;; esac
+    sleep 0.2
+    set_entry "$rc" Icons Style "$2"
+    ;;
+  --appearance)
+    case "${2:-}" in light|dark|auto) ;; *) echo "goldenglass-icon-style (test): bad appearance: ${2:-}" >&2; exit 2 ;; esac
+    sleep 0.2
+    set_entry "$rc" Icons Appearance "$2"
+    ;;
+  --get)
+    style=$(get_entry "$rc" Icons Style)
+    appearance=$(get_entry "$rc" Icons Appearance)
+    printf '{"style": "%s", "appearance": "%s", "defaultStyle": "default", "defaultAppearance": "auto", "inFamily": true, "previews": {"default": [], "clear": [], "tinted": []}}\n' \
+      "${style:-default}" "${appearance:-auto}"
+    ;;
+  *) echo "goldenglass-icon-style (test): unknown command: $*" >&2; exit 2 ;;
+esac

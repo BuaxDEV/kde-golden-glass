@@ -11,6 +11,9 @@ Algunas apps (Terminal, Calculadora…) tienen un dibujo propio en ambos modos.
 Lienzo de 64; el squircle ocupa 6–58, como la rejilla de macOS (824/1024).
 Las marcas de terceros no se dibujan: esas apps las encierra install.sh en un
 squircle a partir de su icono instalado.
+
+The Tinted and Clear styles (icons_style.py) redraw the same glyphs as a
+luminance mask over their own tile: styled_tile() and glyph_mask().
 """
 
 from __future__ import annotations
@@ -18,14 +21,15 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable
 
 import icons_mime
-from icons_style import Style
+from icons_style import ACCENT_CLASS, STYLE_JSON, XLINK_NS, Style, StyleTokens
 
 Pair = tuple[str, str]
 
@@ -95,6 +99,7 @@ class TileTokens:
 HERE = Path(__file__).resolve().parent
 REPO_TOKENS = HERE.parent / "tokens" / "goldenglass.toml"   # solo existe en el repositorio
 TILE_JSON = "icon-tile.json"                                  # lo genera icons.build()
+SCHEME_FALLBACK_KEYS = ("accent", "label")                    # [light] keys of color_scheme_fallback()
 
 
 def _data_dirs() -> list[Path]:
@@ -102,28 +107,48 @@ def _data_dirs() -> list[Path]:
     return [home, *map(Path, os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":"))]
 
 
-def tile_tokens_source() -> Path | None:
-    """Archivo de donde salen los tokens del tile: el TOML del repositorio (desarrollo), si no el
-    icon-tile.json instalado (XDG_DATA_DIRS/goldenglass/ y junto a tools/), o None."""
+def _tokens_source(json_name: str) -> Path | None:
+    """The TOML of the repository (development), else the installed `json_name`
+    (XDG_DATA_DIRS/goldenglass/ and next to tools/), or None."""
     if REPO_TOKENS.is_file():
         return REPO_TOKENS
-    for path in (*(d / "goldenglass" / TILE_JSON for d in _data_dirs()), HERE.parent / TILE_JSON):
+    for path in (*(d / "goldenglass" / json_name for d in _data_dirs()), HERE.parent / json_name):
         if path.is_file():
             return path
     return None
 
 
-@lru_cache(maxsize=1)
-def _default_tile_tokens() -> TileTokens:
-    path = tile_tokens_source()
+def _load_tokens(json_name: str) -> dict:
+    path = _tokens_source(json_name)
     if path is None:
-        raise SystemExit(f"no encuentro los tokens del icono ({TILE_JSON} en $XDG_DATA_DIRS/goldenglass/ "
-                         f"ni tokens/goldenglass.toml): reinstala goldenglass-icons")
+        raise SystemExit(f"cannot find the icon tokens ({json_name} in $XDG_DATA_DIRS/goldenglass/ "
+                         f"or tokens/goldenglass.toml): reinstall goldenglass-icons")
     if path.suffix == ".json":
         with path.open(encoding="utf-8") as f:
-            return TileTokens.from_tokens(json.load(f))
+            return json.load(f)
     with path.open("rb") as f:
-        return TileTokens.from_tokens(tomllib.load(f))
+        return tomllib.load(f)
+
+
+def tile_tokens_source() -> Path | None:
+    """Where [icon_tile] comes from: the repository TOML (development), else the installed
+    icon-tile.json (XDG_DATA_DIRS/goldenglass/ and next to tools/), or None."""
+    return _tokens_source(TILE_JSON)
+
+
+def style_tokens_source() -> Path | None:
+    """Where [icon_style] comes from: like tile_tokens_source(), with icon-style.json."""
+    return _tokens_source(STYLE_JSON)
+
+
+@lru_cache(maxsize=1)
+def _default_tile_tokens() -> TileTokens:
+    return TileTokens.from_tokens(_load_tokens(TILE_JSON))
+
+
+@lru_cache(maxsize=1)
+def _default_style_tokens() -> StyleTokens:
+    return StyleTokens.from_tokens(_load_tokens(STYLE_JSON))
 
 
 def tile_tokens(tokens: dict | None = None) -> TileTokens:
@@ -131,10 +156,38 @@ def tile_tokens(tokens: dict | None = None) -> TileTokens:
     return TileTokens.from_tokens(tokens) if tokens is not None else _default_tile_tokens()
 
 
+def style_tokens(tokens: dict | None = None) -> StyleTokens:
+    """[icon_style] of `tokens`, or of the default source (see style_tokens_source)."""
+    return StyleTokens.from_tokens(tokens) if tokens is not None else _default_style_tokens()
+
+
 def write_tile_json(tokens: dict, path: Path) -> Path:
-    """Escribe [icon_tile] como JSON para las herramientas instaladas (sin TOML ni ggcommon)."""
+    """Writes [icon_tile] as JSON for the installed tools (no TOML, no ggcommon)."""
+    return _write_json({"icon_tile": tokens["icon_tile"]}, path)
+
+
+def style_token_data() -> dict:
+    """The tokens that carry [icon_style] and the colour scheme fallback, from style_tokens_source()."""
+    return _load_tokens(STYLE_JSON)
+
+
+def color_scheme_fallback(tokens: dict | None = None) -> dict[str, str]:
+    """Colours of the ColorScheme-* classes outside KDE (KIconLoader replaces them):
+    the light accent and text of `tokens`, or of the default source."""
+    light = (tokens if tokens is not None else style_token_data())["light"]
+    return {"accent": light["accent"], "text": light["label"][:7]}
+
+
+def write_style_json(tokens: dict, path: Path) -> Path:
+    """Writes [icon_style] as JSON for the installed tools, with the light colours
+    that color_scheme_fallback() needs; later subsections go along unchanged."""
+    light = {key: tokens["light"][key] for key in SCHEME_FALLBACK_KEYS}
+    return _write_json({"icon_style": tokens["icon_style"], "light": light}, path)
+
+
+def _write_json(data: dict, path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"icon_tile": tokens["icon_tile"]}, indent=2) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return path
 
 
@@ -156,30 +209,135 @@ def _grad(gid: str, top: str, bottom: str, y1: float = 6, y2: float = 58) -> str
             f'<stop offset="0" stop-color="{top}"/><stop offset="1" stop-color="{bottom}"/></linearGradient>')
 
 
-def tile(bg: Pair, fg: Pair, glyph: str, dark: bool, style: Style = Style.DEFAULT,
-         tt: TileTokens | None = None) -> str:
-    """Squircle con fondo `bg`, el símbolo pintado con url(#fg) encima."""
-    tt = tt or tile_tokens()
+def _sheen(tt: TileTokens, top_alpha: str) -> str:
+    return ('<linearGradient id="sheen" x1="0" y1="6" x2="0" y2="34" gradientUnits="userSpaceOnUse">'
+            f'<stop offset="0" stop-color="{tt.highlight}" stop-opacity="{top_alpha}"/>'
+            f'<stop offset="1" stop-color="{tt.highlight}" stop-opacity="0"/></linearGradient>')
+
+
+def _rim(tt: TileTokens, top: str, mid: str, bottom: str, diagonal: bool = False) -> str:
+    """Rim gradient: vertical, or from the top left corner (a specular edge) when `diagonal`."""
+    x1, x2 = ("6", "58") if diagonal else ("0", "0")
     hi = tt.highlight
+    return (f'<linearGradient id="rim" x1="{x1}" y1="6" x2="{x2}" y2="58" gradientUnits="userSpaceOnUse">'
+            f'<stop offset="0" stop-color="{hi}" stop-opacity="{top}"/>'
+            f'<stop offset=".5" stop-color="{hi}" stop-opacity="{mid}"/>'
+            f'<stop offset="1" stop-color="{hi}" stop-opacity="{bottom}"/></linearGradient>')
+
+
+def _outline(tt: TileTokens, shape: str = f'<path d="{SQUIRCLE}"') -> str:
+    """Glass rim and the thin outer edge, on top of everything; `shape` opens the squircle element."""
+    return (f'{shape} fill="none" stroke="url(#rim)" stroke-width="{_length(tt.rim_width)}"/>'
+            f'{shape} fill="none" stroke="{tt.shadow_color}" stroke-opacity="{_alpha(tt.edge_alpha)}" '
+            f'stroke-width="{_length(tt.edge_width)}"/>')
+
+
+def tile(bg: Pair, fg: Pair, glyph: str, dark: bool, style: Style = Style.DEFAULT,
+         tt: TileTokens | None = None, st: StyleTokens | None = None) -> str:
+    """Squircle with the `bg` gradient and the glyph, painted with url(#fg), on top.
+
+    The other styles ignore `bg` and `fg` and draw `glyph` as a mask (see glyph_mask)."""
+    tt = tt or tile_tokens()
+    if style is not Style.DEFAULT:
+        st = st or style_tokens()
+        return styled_tile(glyph_mask(glyph, st.glyph_floor(style)), dark, style, tt, st)
     sheen = _alpha(tt.sheen_dark if dark else tt.sheen_light)
     rim_top = _alpha(tt.rim_top_dark if dark else tt.rim_top_light)
     rim_bottom = _alpha(tt.rim_bottom_dark if dark else tt.rim_bottom_light)
     return (
         "<defs>" + tt.filters() + _grad("bg", *bg) + _grad("fg", *fg, y1=14, y2=50)
-        + '<linearGradient id="sheen" x1="0" y1="6" x2="0" y2="34" gradientUnits="userSpaceOnUse">'
-        f'<stop offset="0" stop-color="{hi}" stop-opacity="{sheen}"/>'
-        f'<stop offset="1" stop-color="{hi}" stop-opacity="0"/></linearGradient>'
-        '<linearGradient id="rim" x1="0" y1="6" x2="0" y2="58" gradientUnits="userSpaceOnUse">'
-        f'<stop offset="0" stop-color="{hi}" stop-opacity="{rim_top}"/>'
-        f'<stop offset=".5" stop-color="{hi}" stop-opacity="{_alpha(tt.rim_mid)}"/>'
-        f'<stop offset="1" stop-color="{hi}" stop-opacity="{rim_bottom}"/></linearGradient>'
-        "</defs>"
+        + _sheen(tt, sheen) + _rim(tt, rim_top, _alpha(tt.rim_mid), rim_bottom)
+        + "</defs>"
         f'<path d="{SQUIRCLE}" fill="url(#bg)" filter="url(#tileshadow)"/>'
         f'<path d="{SQUIRCLE}" fill="url(#sheen)"/>'
         f'<g filter="url(#glyphshadow)">{glyph}</g>'
-        f'<path d="{SQUIRCLE}" fill="none" stroke="url(#rim)" stroke-width="{_length(tt.rim_width)}"/>'
-        f'<path d="{SQUIRCLE}" fill="none" stroke="{tt.shadow_color}" stroke-opacity="{_alpha(tt.edge_alpha)}" '
-        f'stroke-width="{_length(tt.edge_width)}"/>'
+        + _outline(tt)
+    )
+
+
+# --- Tinted and Clear (icons_style.py) -----------------------------------------
+
+FIXED_PAINT = re.compile(r'\b(fill|stroke)="(#[0-9A-Fa-f]{6})"')
+GLYPH_MASK_ID = "glyph"
+SQUIRCLE_ID = "squircle"
+# The squircle path is defined once and reused: a styled tile draws it five times.
+SQUIRCLE_DEF = f'<path id="{SQUIRCLE_ID}" d="{SQUIRCLE}"/>'
+SQUIRCLE_USE = f'<use xlink:href="#{SQUIRCLE_ID}"'
+
+
+def _lightness(color: str) -> float:
+    """CIE L* of an sRGB colour, in 0..1: how light the colour looks."""
+    def linear(channel: int) -> float:
+        c = channel / 255
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = (int(color[i:i + 2], 16) for i in (1, 3, 5))
+    y = 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+    return (116 * y ** (1 / 3) - 16) / 100 if y > 216 / 24389 else y * 24389 / 27 / 100
+
+
+def _grey(level: float) -> str:
+    value = round(255 * level)
+    return f"#{value:02X}{value:02X}{value:02X}"
+
+
+def glyph_mask(glyph: str, floor: float) -> str:
+    """Luminance mask of a glyph drawn for the default tile: its own paint
+    (url(#fg)) is white, the background details (url(#bg)) cut it, and each
+    fixed colour keeps its lightness, never below `floor`."""
+    keep_lightness = FIXED_PAINT.sub(
+        lambda m: f'{m.group(1)}="{_grey(floor + (1 - floor) * _lightness(m.group(2)))}"', glyph)
+    return keep_lightness.replace("url(#fg)", "#FFFFFF").replace("url(#bg)", "#000000")
+
+
+def _masked(paint: str) -> str:
+    return f'<rect width="64" height="64" {paint} mask="url(#{GLYPH_MASK_ID})"/>'
+
+
+def styled_tile(mask: str, dark: bool, style: Style, tt: TileTokens | None = None,
+                st: StyleTokens | None = None) -> str:
+    """Tinted or Clear squircle whose glyph is the luminance mask `mask` (SVG on the 64 canvas)."""
+    tt = tt or tile_tokens()
+    st = st or style_tokens()
+    mask_def = (f'<mask id="{GLYPH_MASK_ID}" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">'
+                f'{mask}</mask>')
+    return {Style.TINTED: _tinted, Style.CLEAR: _clear}[style](mask_def, dark, tt, st)
+
+
+def _tinted(mask_def: str, dark: bool, tt: TileTokens, st: StyleTokens) -> str:
+    t = st.tinted
+    accent = f'class="{ACCENT_CLASS}" fill="currentColor"'
+    wash = _alpha(t.dark_wash_alpha if dark else t.light_wash_alpha)
+    # currentColor works in fills but not in stop-color: the lightened accent is
+    # an accent wash over a light base, the darkened accent black over the glyph.
+    shade = "" if dark else _masked(f'fill="{tt.shadow_color}" fill-opacity="{_alpha(t.light_glyph_shade)}"')
+    sheen = _alpha(tt.sheen_dark if dark else tt.sheen_light)
+    rim_top = _alpha(tt.rim_top_dark if dark else tt.rim_top_light)
+    rim_bottom = _alpha(tt.rim_bottom_dark if dark else tt.rim_bottom_light)
+    return (
+        "<defs>" + SQUIRCLE_DEF + tt.filters() + _grad("bg", *(t.dark_background if dark else t.light_background))
+        + _sheen(tt, sheen) + _rim(tt, rim_top, _alpha(tt.rim_mid), rim_bottom) + mask_def + "</defs>"
+        f'{SQUIRCLE_USE} fill="url(#bg)" filter="url(#tileshadow)"/>'
+        f'{SQUIRCLE_USE} {accent} fill-opacity="{wash}"/>'
+        f'{SQUIRCLE_USE} fill="url(#sheen)"/>'
+        f'<g filter="url(#glyphshadow)">{_masked(accent)}{shade}</g>'
+        + _outline(tt, SQUIRCLE_USE)
+    )
+
+
+def _clear(mask_def: str, dark: bool, tt: TileTokens, st: StyleTokens) -> str:
+    c = st.clear
+    glass = replace(tt, glyph_shadow_blur=c.glyph_shadow_blur, glyph_shadow_alpha=c.glyph_shadow_alpha,
+                    rim_width=c.rim_width)
+    fill, fill_alpha = (c.dark_fill, c.dark_fill_alpha) if dark else (c.light_fill, c.light_fill_alpha)
+    glyph_paint = f'fill="{c.glyph}" fill-opacity="{_alpha(c.glyph_alpha)}"'
+    return (
+        "<defs>" + SQUIRCLE_DEF + glass.filters() + _sheen(glass, _alpha(c.specular_alpha))
+        + _rim(glass, _alpha(c.rim_top), _alpha(c.rim_mid), _alpha(c.rim_bottom), diagonal=True)
+        + mask_def + "</defs>"
+        f'{SQUIRCLE_USE} fill="{fill}" fill-opacity="{_alpha(fill_alpha)}" filter="url(#tileshadow)"/>'
+        f'{SQUIRCLE_USE} fill="url(#sheen)"/>'
+        f'<g filter="url(#glyphshadow)">{_masked(glyph_paint)}</g>'
+        + _outline(glass, SQUIRCLE_USE)
     )
 
 
@@ -190,8 +348,13 @@ class App:
     glyph: Callable[[bool], str]          # símbolo; pinta con url(#fg) (o colores propios)
     custom: Callable[[bool, TileTokens], tuple[Pair, Pair]] | None = None  # (bg, fg) propios
 
-    def svg(self, dark: bool, style: Style = Style.DEFAULT, tt: TileTokens | None = None) -> str:
+    def svg(self, dark: bool, style: Style = Style.DEFAULT, tt: TileTokens | None = None,
+            st: StyleTokens | None = None) -> str:
         tt = tt or tile_tokens()
+        if style is not Style.DEFAULT:
+            st = st or style_tokens()
+            # the dark drawing of a glyph is the light-on-dark one, the shape a mask needs
+            return styled_tile(glyph_mask(self.glyph(True), st.glyph_floor(style)), dark, style, tt, st)
         if self.custom:
             bg, fg = self.custom(dark, tt)
         else:
@@ -419,34 +582,49 @@ APPS: tuple[App, ...] = (
 )
 
 
-def files(tokens: dict | None = None, style: Style = Style.DEFAULT) -> list[tuple[str, str, str, tuple[str, ...]]]:
-    """(tema, ruta relativa, cuerpo SVG en lienzo 64, alias); `tokens` por defecto, los de goldenglass.toml."""
+def files(tokens: dict | None = None, style: Style = Style.DEFAULT,
+          dark: bool = False) -> list[tuple[str, str, tuple[str, ...]]]:
+    """(relative path, SVG body on the 64 canvas, aliases) of every app; `tokens` defaults to goldenglass.toml."""
     tt = tile_tokens(tokens)
-    out = []
-    for app in APPS:
-        main, aliases = app.names[0], app.names[1:]
-        out.append(("GoldenGlass", f"apps/scalable/{main}.svg", app.svg(False, style, tt), aliases))
-        out.append(("GoldenGlass-Dark", f"apps/scalable/{main}.svg", app.svg(True, style, tt), aliases))
-    return out
+    return [(f"apps/scalable/{app.names[0]}.svg", app.svg(dark, style, tt), app.names[1:]) for app in APPS]
 
 
-def preview(path, cols: int = 8) -> None:
-    """Hoja con cada app a 128 y 32 px, claro (fila de arriba) y oscuro."""
+PREVIEW_BACKDROPS = {False: "#E8E8ED", True: "#1E1E22"}           # window colours behind the icons
+PREVIEW_WALLPAPER = ("#F5A15C", "#D9788A", "#5B5FA6", "#1B2A4A")   # a stand-in for the Clear backdrop
+PREVIEW_ACCENT = "#007AFF"
+
+
+def preview(path, styles: tuple[Style, ...] = (Style.DEFAULT,), cols: int = 8, accent: str = PREVIEW_ACCENT) -> None:
+    """Contact sheet: each app at 128 and 32 px, a light and a dark band per style.
+
+    The accent replaces ColorScheme-Accent as KIconLoader would. Clear bands sit
+    on a wallpaper-like gradient on their right half, to show the translucency."""
     icons_mime._app()
-    from PyQt6.QtCore import QByteArray, QRectF
-    from PyQt6.QtGui import QColor, QImage, QPainter
+    from PyQt6.QtCore import QByteArray, QPointF, QRectF
+    from PyQt6.QtGui import QColor, QImage, QLinearGradient, QPainter
     from PyQt6.QtSvg import QSvgRenderer
 
     cell = 150
     rows = -(-len(APPS) // cols)
-    img = QImage(cols * cell, rows * cell * 2, QImage.Format.Format_ARGB32_Premultiplied)
+    band_h = rows * cell
+    bands = [(style, dark) for style in styles for dark in (False, True)]
+    img = QImage(cols * cell, band_h * len(bands), QImage.Format.Format_ARGB32_Premultiplied)
     p = QPainter(img)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
-    for band, (dark, bg) in enumerate(((False, "#E8E8ED"), (True, "#1E1E22"))):
-        p.fillRect(0, band * rows * cell, cols * cell, rows * cell, QColor(bg))
+    scheme = f'<style type="text/css">.{ACCENT_CLASS}{{color:{accent};}}</style>'
+    for band, (style, dark) in enumerate(bands):
+        top = band * band_h
+        p.fillRect(0, top, cols * cell, band_h, QColor(PREVIEW_BACKDROPS[dark]))
+        if style is Style.CLEAR:
+            half = cols * cell // 2
+            wallpaper = QLinearGradient(QPointF(half, top), QPointF(cols * cell, top + band_h))
+            for i, color in enumerate(PREVIEW_WALLPAPER):
+                wallpaper.setColorAt(i / (len(PREVIEW_WALLPAPER) - 1), QColor(color))
+            p.fillRect(half, top, cols * cell - half, band_h, wallpaper)
         for i, app in enumerate(APPS):
-            x, y = (i % cols) * cell, band * rows * cell + (i // cols) * cell
-            svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">{app.svg(dark)}</svg>'
+            x, y = (i % cols) * cell, top + (i // cols) * cell
+            svg = (f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="{XLINK_NS}" viewBox="0 0 64 64">'
+                   f'<defs>{scheme}</defs>{app.svg(dark, style)}</svg>')
             r = QSvgRenderer(QByteArray(svg.encode()))
             r.render(p, QRectF(x + 2, y + 2, 112, 112))
             r.render(p, QRectF(x + 116, y + 82, 32, 32))
@@ -460,4 +638,8 @@ if __name__ == "__main__":
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--preview", type=Path, required=True)
-    preview(ap.parse_args().preview)
+    ap.add_argument("--style", action="append", choices=[s.value for s in Style],
+                    help="estilo de la hoja (se puede repetir; por defecto, el de fábrica)")
+    ap.add_argument("--accent", default=PREVIEW_ACCENT, help="color de acento (#RRGGBB)")
+    args = ap.parse_args()
+    preview(args.preview, tuple(Style(s) for s in args.style or [Style.DEFAULT.value]), accent=args.accent)

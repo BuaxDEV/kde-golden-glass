@@ -31,9 +31,11 @@ from ggcommon import fill_template
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "plasma" / "plasmoids"
 
-# Motion and Accessibility singletons, with the file that reads goldenglassrc
-# [Accessibility]: every plasmoid with token durations or glass needs them
-MOTION = ["Motion.qml", "Accessibility.qml", "AccessibilityReader.qml", "qmldir"]
+# Motion, Accessibility and IconTheme singletons, with the files that read
+# goldenglassrc [Accessibility] and the icon theme switches, and ThemedIcon:
+# every plasmoid with token durations, glass or app icons needs them
+MOTION = ["Motion.qml", "Accessibility.qml", "AccessibilityReader.qml", "IconTheme.qml", "IconThemeReader.qml",
+          "ThemedIcon.qml", "qmldir"]
 
 # plasmoid que usa → {plasmoid de origen: [archivos de contents/ui/]}
 SHARED = {

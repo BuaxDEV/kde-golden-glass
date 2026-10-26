@@ -871,12 +871,12 @@ PlasmaCore.Dialog {
             width: parent.width - Kirigami.Units.smallSpacing * 2
             spacing: 0
 
-            Kirigami.Icon {
+            ThemedIcon {
                 id: gridIcon
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredWidth: owner.tok.icon_size
                 Layout.preferredHeight: owner.tok.icon_size
-                source: item.entry.icon || ""
+                themedSource: item.entry.icon || ""
                 // al pulsar se oscurece, como en Launchpad
                 layer.enabled: item.pressed && item.containsMouse && !dragHandler.active
                 layer.effect: MultiEffect {
@@ -902,11 +902,11 @@ PlasmaCore.Dialog {
             anchors.rightMargin: Kirigami.Units.largeSpacing
             spacing: Kirigami.Units.largeSpacing
 
-            Kirigami.Icon {
+            ThemedIcon {
                 id: listIcon
                 Layout.preferredWidth: owner.tok.list_icon_size
                 Layout.preferredHeight: owner.tok.list_icon_size
-                source: item.entry.bridge ? "search" : (item.entry.icon || "")
+                themedSource: item.entry.bridge ? "search" : (item.entry.icon || "")
                 layer.enabled: item.pressed && item.containsMouse && !dragHandler.active
                 layer.effect: MultiEffect {
                     brightness: T.tokens.apps.press_brightness

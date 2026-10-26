@@ -14,11 +14,16 @@ versión de otro tema) y lo compone sobre el squircle claro y el oscuro:
 El resultado va a ~/.local/share/icons/<tema>/wrapped/, carpeta que los temas
 GoldenGlass declaran siempre (también vale con el tema instalado en /usr).
 
+The Tinted and Clear themes get the same apps as a glyph on their own tile:
+icons_glyph.py extracts it from the original icon, or falls back to its
+silhouette or a monogram; an app it skips keeps the parent theme's wrapped icon.
+
 Uso:
   goldenglass-wrap-icons            (o python3 tools/wrap_icons.py)
   goldenglass-wrap-icons --list     solo enseña qué haría
   goldenglass-wrap-icons --clean    borra los iconos encerrados
   goldenglass-wrap-icons --if-changed   solo si cambiaron las apps (autostart)
+  goldenglass-wrap-icons --sheet hoja.png   hoja de revisión de Tintado y Transparente, sin escribir temas
 
 Las apps con Icon= como ruta absoluta no se pueden sustituir desde un tema y
 se dejan como están. Al instalar apps nuevas, volver a ejecutarlo.
@@ -39,8 +44,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import icons  # noqa: E402
 import icons_apps  # noqa: E402
+import icons_glyph  # noqa: E402
+from icons_style import ACCENT_CLASS, XLINK_NS, Style  # noqa: E402
 
-THEMES = {"GoldenGlass": False, "GoldenGlass-Dark": True}  # tema → oscuro
+THEMES = {spec.id: spec for spec in icons.THEME_SPECS}
 RENDER = 256          # resolución del PNG incrustado
 INSET = 0.68          # tamaño del icono dentro del squircle (lado del squircle = 52)
 FULL_BLEED = 0.80     # cobertura opaca a partir de la cual el icono ya es un «tile»
@@ -193,6 +200,52 @@ def wrap(img, dark: bool) -> str:
             f'width="64" height="64" viewBox="0 0 64 64">{body}</svg>\n')
 
 
+App = tuple[str, str, Path]   # icon name, Name= of the app, original icon
+
+
+class Styled:
+    """Tinted and Clear icons of the third-party apps: one glyph per app, one mask per glyph floor."""
+
+    def __init__(self, rendered: dict, labels: dict[str, str]):
+        tokens = icons_apps.style_token_data()
+        self.extract_tokens = icons_glyph.ExtractTokens.from_tokens(tokens)
+        self.style_tokens = icons_apps.style_tokens()
+        self.scheme = icons_apps.color_scheme_fallback()
+        table = icons_glyph.overrides(tokens)
+        self.glyphs = {name: icons_glyph.extract(img, labels[name], self.extract_tokens,
+                                                 icons_glyph.override_for(name, table))
+                       for name, img in rendered.items()}
+        self._masks: dict[tuple[str, float], str] = {}
+
+    def mask(self, name: str, style: Style) -> str:
+        floor = self.style_tokens.glyph_floor(style)
+        if (name, floor) not in self._masks:
+            self._masks[name, floor] = self.glyphs[name].mask(floor, self.extract_tokens)
+        return self._masks[name, floor]
+
+    def body(self, name: str, style: Style, dark: bool) -> str:
+        """Tile body on the 64 canvas ("" when the app keeps the parent theme's wrapped icon)."""
+        mask = self.mask(name, style)
+        return icons_apps.styled_tile(mask, dark, style, st=self.style_tokens) if mask else ""
+
+    def svg(self, name: str, style: Style, dark: bool) -> str:
+        body = self.body(name, style, dark)
+        return icons._svg(64, body, self.scheme) if body else ""
+
+
+def theme_files(spec: icons.ThemeSpec, rendered: dict, styled: Styled) -> dict[str, str]:
+    """name → SVG of the wrapped icons of one theme."""
+    if spec.style is Style.DEFAULT:
+        return {name: wrap(img, spec.dark) for name, img in rendered.items()}
+    return {name: svg for name in rendered if (svg := styled.svg(name, spec.style, spec.dark))}
+
+
+def _guard_inherits(spec: icons.ThemeSpec) -> tuple[str, ...]:
+    """Themes whose names could be trimmed to a wrapped app: a styled theme's only
+    parent is GoldenGlass*, which _theme_index skips, so it takes its parent's."""
+    return THEMES[spec.base_theme].inherits if spec.base is icons.Base.INHERITED else spec.inherits
+
+
 def _own_names(icons_dir: Path) -> set[str]:
     """Nombres que el tema ya resuelve: los que dibuja (de las definiciones del
     generador) y lo que haya instalado (p. ej. los enlaces de protección)."""
@@ -215,10 +268,83 @@ def _generator_files() -> list[Path]:
         origin = getattr(module, "__file__", None)
         if origin and Path(origin).resolve().parent == here:
             files.add(Path(origin).resolve())
-    tokens = icons_apps.tile_tokens_source()
-    if tokens:
-        files.add(tokens)
+    for tokens in (icons_apps.tile_tokens_source(), icons_apps.style_tokens_source()):
+        if tokens:
+            files.add(tokens)
     return sorted(files)
+
+
+def third_party_apps(icons_dir: Path) -> tuple[set[str], list[App]]:
+    """Names the themes already resolve, and the visible apps to wrap with their original icon."""
+    own = _own_names(icons_dir)
+    todo = []
+    for name, label in sorted(_apps().items()):
+        if name in own or icons._resolves_to(name, own):
+            continue
+        src = _original(name)
+        if src:
+            todo.append((name, label, src))
+    return own, todo
+
+
+SHEET_CELL = 104       # px of a sheet cell; the icon is drawn at SHEET_ICON
+SHEET_ICON = 88
+SHEET_LABEL = 30       # px under each app for its name and outcome
+SHEET_COLUMNS = 2      # apps per row; each app shows the original and the four styled themes
+SHEET_TEXT = "#1C1C1E"  # labels over the light backdrop of the sheet
+
+
+def sheet(path: Path, apps: list[App], rendered: dict, styled: Styled, accent: str) -> None:
+    """Review sheet: per app, its original icon and its Tinted and Clear icons in
+    light and dark, each over its appearance backdrop (Clear over a wallpaper)."""
+    from PyQt6.QtCore import QByteArray, QPointF, QRectF, Qt
+    from PyQt6.QtGui import QColor, QImage, QLinearGradient, QPainter
+    from PyQt6.QtSvg import QSvgRenderer
+
+    specs = [spec for spec in icons.THEME_SPECS if spec.style is not Style.DEFAULT]
+    app_width = (1 + len(specs)) * SHEET_CELL
+    rows = -(-len(apps) // SHEET_COLUMNS)
+    row_height = SHEET_CELL + SHEET_LABEL
+    img = QImage(SHEET_COLUMNS * app_width, rows * row_height, QImage.Format.Format_ARGB32_Premultiplied)
+    img.fill(QColor(icons_apps.PREVIEW_BACKDROPS[False]))
+    p = QPainter(img)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+    scheme = f'<style type="text/css">.{ACCENT_CLASS}{{color:{accent};}}</style>'
+    inset = (SHEET_CELL - SHEET_ICON) / 2
+    for index, (name, label, _) in enumerate(apps):
+        x0, y0 = (index % SHEET_COLUMNS) * app_width, (index // SHEET_COLUMNS) * row_height
+        if name in rendered:
+            p.drawImage(QRectF(x0 + inset, y0 + inset, SHEET_ICON, SHEET_ICON), rendered[name])
+        for column, spec in enumerate(specs, start=1):
+            cell = QRectF(x0 + column * SHEET_CELL, y0, SHEET_CELL, SHEET_CELL)
+            p.fillRect(cell, QColor(icons_apps.PREVIEW_BACKDROPS[spec.dark]))
+            if spec.style is Style.CLEAR:
+                wallpaper = QLinearGradient(cell.topLeft(), QPointF(cell.right(), cell.bottom()))
+                for i, color in enumerate(icons_apps.PREVIEW_WALLPAPER):
+                    wallpaper.setColorAt(i / (len(icons_apps.PREVIEW_WALLPAPER) - 1), QColor(color))
+                p.fillRect(QRectF(cell.center().x(), cell.top(), SHEET_CELL / 2, SHEET_CELL), wallpaper)
+            body = styled.body(name, spec.style, spec.dark) if name in rendered else ""
+            if body:
+                svg = (f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="{XLINK_NS}" viewBox="0 0 64 64">'
+                       f'<defs>{scheme}</defs>{body}</svg>')
+                QSvgRenderer(QByteArray(svg.encode())).render(p, cell.adjusted(inset, inset, -inset, -inset))
+        glyph = styled.glyphs.get(name)
+        outcome = (f"{glyph.kind.value}  ink {glyph.ink:.2f}  detail {glyph.detail:.1f}  "
+                   f"outline {glyph.outline_detail:.1f}") if glyph else "unreadable"
+        p.setPen(QColor(SHEET_TEXT))
+        p.drawText(QRectF(x0 + 4, y0 + SHEET_CELL, app_width - 8, SHEET_LABEL),
+                   Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, f"{label} ({name})\n{outcome}")
+    p.end()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(str(path))
+
+
+def outcome_counts(styled: Styled) -> dict[icons_glyph.Kind, int]:
+    counts = dict.fromkeys(icons_glyph.Kind, 0)
+    for glyph in styled.glyphs.values():
+        counts[glyph.kind] += 1
+    return counts
 
 
 def main() -> int:
@@ -229,6 +355,8 @@ def main() -> int:
     ap.add_argument("--clean", action="store_true", help="borra los iconos encerrados")
     ap.add_argument("--if-changed", action="store_true",
                     help="no hace nada si las apps y sus iconos no cambiaron desde la última vez")
+    ap.add_argument("--sheet", type=Path, help="escribe una hoja de revisión de los iconos Tintado y Transparente en vez de los temas")
+    ap.add_argument("--accent", default=icons_apps.PREVIEW_ACCENT, help="color de acento de la hoja (#RRGGBB)")
     args = ap.parse_args()
 
     if args.clean:
@@ -239,22 +367,15 @@ def main() -> int:
     from PyQt6.QtGui import QGuiApplication
     _app = QGuiApplication.instance() or QGuiApplication(["goldenglass-wrap-icons", "-platform", "offscreen"])  # noqa: F841
 
-    own = _own_names(args.icons_dir)
-    todo = []
-    for name, label in sorted(_apps().items()):
-        if name in own or icons._resolves_to(name, own):
-            continue
-        src = _original(name)
-        if src:
-            todo.append((name, label, src))
+    own, todo = third_party_apps(args.icons_dir)
 
     # Huella de lo que se encerraría (nombres, archivos y fechas) y del propio
     # generador: con --if-changed, si coincide con la última, no se repite.
     digest = hashlib.sha256()
     for path in _generator_files():
         digest.update(f"{path.name}\0".encode() + path.read_bytes())
-    for name, _, src in todo:
-        digest.update(f"{name}\0{src}\0{src.stat().st_mtime_ns}\0".encode())
+    for name, label, src in todo:
+        digest.update(f"{name}\0{label}\0{src}\0{src.stat().st_mtime_ns}\0".encode())
     stamp = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "goldenglass" / "wrap-icons.stamp"
     complete = all((args.icons_dir / t / "wrapped").is_dir() for t in THEMES)
     if args.if_changed and complete and stamp.exists() and stamp.read_text() == digest.hexdigest():
@@ -265,18 +386,25 @@ def main() -> int:
         return 0
 
     rendered = {name: img for name, _, src in todo if (img := _render(src)) is not None}
-    for theme, dark in THEMES.items():
-        out = args.icons_dir / theme / "wrapped"
+    styled = Styled(rendered, {name: label for name, label, _ in todo})
+    counts = ", ".join(f"{kind.value} {count}" for kind, count in outcome_counts(styled).items())
+    if args.sheet:
+        sheet(args.sheet, todo, rendered, styled, args.accent)
+        print(f"{args.sheet}: {len(rendered)} apps ({counts})")
+        return 0
+    for spec in THEMES.values():
+        out = args.icons_dir / spec.id / "wrapped"
         shutil.rmtree(out, ignore_errors=True)
         out.mkdir(parents=True)
-        for name, img in rendered.items():
-            (out / f"{name}.svg").write_text(wrap(img, dark), encoding="utf-8")
+        files = theme_files(spec, rendered, styled)
+        for name, svg in files.items():
+            (out / f"{name}.svg").write_text(svg, encoding="utf-8")
         # Mismo recorte de nombres que con las apps dibujadas (ver icons.py)
-        inherits = icons.THEMES[theme][1]
-        icons._guards(args.icons_dir / theme, inherits, set(rendered), own | set(rendered), folder="wrapped")
+        icons._guards(args.icons_dir / spec.id, _guard_inherits(spec), set(files), own | set(files), folder="wrapped")
     stamp.parent.mkdir(parents=True, exist_ok=True)
     stamp.write_text(digest.hexdigest())
-    print(f"GoldenGlass: {len(rendered)} iconos encerrados en {args.icons_dir}/GoldenGlass{{,-Dark}}/wrapped")
+    print(f"GoldenGlass: {len(rendered)} iconos encerrados en {args.icons_dir}/GoldenGlass*/wrapped "
+          f"(Tintado y Transparente: {counts})")
     return 0
 
 

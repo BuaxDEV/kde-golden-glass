@@ -11,7 +11,8 @@
 #                               trabajo tal cual (rama, cambios a medias).
 #   tools/install.sh --uninstall
 #
-# Lanzadores (goldenglass-system, goldenglass-dock, goldenglass-windows): van a $GOLDENGLASS_BIN_DIR
+# Lanzadores (goldenglass-system, goldenglass-dock, goldenglass-windows, goldenglass-icon-style):
+# van a $GOLDENGLASS_BIN_DIR
 # (por defecto ~/.local/bin); --uninstall los quita de ahí. tools/sandbox.sh lo
 # fija dentro de su directorio para no escribir en el HOME real.
 #
@@ -38,6 +39,10 @@ declare -A TARGETS=(
   [build/cursors/GoldenGlass-cursors]="$DATA/icons/GoldenGlass-cursors"
   [build/icons/GoldenGlass]="$DATA/icons/GoldenGlass"
   [build/icons/GoldenGlass-Dark]="$DATA/icons/GoldenGlass-Dark"
+  [build/icons/GoldenGlass-Clear]="$DATA/icons/GoldenGlass-Clear"
+  [build/icons/GoldenGlass-Clear-Dark]="$DATA/icons/GoldenGlass-Clear-Dark"
+  [build/icons/GoldenGlass-Tinted]="$DATA/icons/GoldenGlass-Tinted"
+  [build/icons/GoldenGlass-Tinted-Dark]="$DATA/icons/GoldenGlass-Tinted-Dark"
   [build/gtk/GoldenGlass]="$DATA/themes/GoldenGlass"
   [build/gtk/GoldenGlass-Dark]="$DATA/themes/GoldenGlass-Dark"
   [build/gtk/libadwaita.css]="$DATA/goldenglass/gtk/libadwaita.css"
@@ -74,14 +79,17 @@ DOCK_BIN="$BIN_DIR/goldenglass-dock"
 WINDOWS_BIN="$BIN_DIR/goldenglass-windows"
 WINDOWS_AUTOSTART="$CONF/autostart/goldenglass-windows.desktop"
 SHELL_UPDATES_AUTOSTART="$CONF/autostart/goldenglass-shell-updates.desktop"
+ICON_STYLE_BIN="$BIN_DIR/goldenglass-icon-style"
+ICON_STYLE_AUTOSTART="$CONF/autostart/goldenglass-icon-style.desktop"
 
 if [[ $mode == uninstall ]]; then
   pkill -u "$USER" -f "$ROOT/tools/gtk_sync.py" 2>/dev/null || true
+  pkill -u "$USER" -f "$ROOT/tools/icon_style_switcher.py" 2>/dev/null || true
   python3 "$ROOT/tools/gtk_sync.py" --restore 2>/dev/null || true
-  rm -fv -- "$AUTOSTART" "$WINDOWS_AUTOSTART" "$SHELL_UPDATES_AUTOSTART"
+  rm -fv -- "$AUTOSTART" "$WINDOWS_AUTOSTART" "$SHELL_UPDATES_AUTOSTART" "$ICON_STYLE_AUTOSTART"
   # deja la configuración del usuario como estaba antes de goldenglass-system
   python3 "$ROOT/tools/system.py" disable sounds chime || true
-  rm -fv -- "$SYSTEM_BIN" "$DOCK_BIN" "$WINDOWS_BIN"
+  rm -fv -- "$SYSTEM_BIN" "$DOCK_BIN" "$WINDOWS_BIN" "$ICON_STYLE_BIN"
   for dst in "${TARGETS[@]}"; do
     [[ -e $dst || -L $dst ]] && rm -rfv -- "$dst"
   done
@@ -148,6 +156,24 @@ Type=Application
 Name=GoldenGlass window effects
 Comment=Sets the GoldenGlass window effects of KWin that the user left unset
 Exec=python3 "$ROOT/tools/windows.py" --check
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=1
+NoDisplay=true
+EOF
+# goldenglass-icon-style (Default, Clear and Tinted icons): used by the «Estilo
+# de iconos» settings module; at login it keeps the chosen style when a global
+# theme or the colour scheme change the icon theme.
+cat >"$ICON_STYLE_BIN" <<EOF
+#!/bin/sh
+exec python3 "$ROOT/tools/icon_style_switcher.py" "\$@"
+EOF
+chmod 755 "$ICON_STYLE_BIN"
+cat >"$ICON_STYLE_AUTOSTART" <<EOF
+[Desktop Entry]
+Type=Application
+Name=GoldenGlass icon style
+Comment=Keeps the GoldenGlass icon style chosen in System Settings
+Exec=python3 "$ROOT/tools/icon_style_switcher.py" --watch
 OnlyShowIn=KDE;
 X-KDE-autostart-phase=1
 NoDisplay=true

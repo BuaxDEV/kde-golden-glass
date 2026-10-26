@@ -13,7 +13,7 @@ Salidas (en build/, no versionado):
   build/plasma/shells/org.goldenglass.desktop/  (shell: pantalla de bloqueo y panel)
   build/wallpapers/GoldenGlass/           (fondo día/noche; se cachea)
   build/cursors/GoldenGlass-cursors/      (tema de cursores; se cachea)
-  build/icons/GoldenGlass{,-Dark}/        (tema de iconos)
+  build/icons/GoldenGlass{,-Dark,-Clear,-Clear-Dark,-Tinted,-Tinted-Dark}/  (temas de iconos)
   build/gtk/GoldenGlass/ y libadwaita.css (GTK3/GTK4 sobre adw-gtk3)
   build/sounds/GoldenGlass/               (tema de sonidos; se cachea)
   build/plymouth/goldenglass{,-light}/    (temas de Plymouth; se cachea)
@@ -32,6 +32,7 @@ import json
 import math
 import sys
 import traceback
+from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -41,6 +42,7 @@ import cursors  # noqa: E402
 import cxx_tokens  # noqa: E402
 import gtk  # noqa: E402
 import icons  # noqa: E402
+import icons_glyph  # noqa: E402
 import login  # noqa: E402
 import lookandfeel  # noqa: E402
 import plasma_theme  # noqa: E402
@@ -162,7 +164,7 @@ def build_colors(tokens: dict, variant: str) -> str:
 REQUIRED_SECTIONS = (
     "meta", "radius", "focus_ring", "glass", "plasma", "shadow", "decoration", "menu", "finder",
     "font", "apps", "icon_tile", "scroll", "traffic_lights", "dock", "control_center", "motion", "boot", "login",
-    "sounds", "accessibility", "kwin", "light", "dark", "osd",
+    "sounds", "accessibility", "kwin", "light", "dark", "osd", "icon_style",
 )
 
 # [accessibility]: valores de fábrica de goldenglassrc [Accessibility] y la
@@ -275,42 +277,132 @@ ICON_TILE_ALPHAS = ("shadow_alpha", "glyph_shadow_alpha", "sheen_light", "sheen_
 ICON_TILE_LENGTHS = ("shadow_blur", "shadow_dy", "glyph_shadow_blur", "glyph_shadow_dy", "rim_width", "edge_width")
 
 
-def validate_icon_tile(tile: dict) -> None:
-    """[icon_tile]: colores válidos, opacidades en 0..1 y medidas del lienzo de 64 en 0..8."""
-    expected = {*ICON_TILE_PAIRS, *ICON_TILE_COLORS, *ICON_TILE_ALPHAS, *ICON_TILE_LENGTHS}
-    if set(tile) != expected:
-        raise SystemExit(f"[icon_tile]: faltan {sorted(expected - set(tile))} o sobran {sorted(set(tile) - expected)}")
+@dataclass(frozen=True)
+class TileSection:
+    """Keys of a section that draws on the 64 px icon canvas, by kind."""
+
+    pairs: tuple[str, ...] = ()     # [top, bottom] gradients of #RRGGBB
+    colors: tuple[str, ...] = ()    # #RRGGBB, the opacity goes in its own key
+    alphas: tuple[str, ...] = ()    # 0..1
+    lengths: tuple[str, ...] = ()   # 0..8 on the 64 canvas
+
+
+ICON_TILE = TileSection(ICON_TILE_PAIRS, ICON_TILE_COLORS, ICON_TILE_ALPHAS, ICON_TILE_LENGTHS)
+# [icon_style.*]: the Tinted and Clear icon styles (docs/MACOS27-PLAN.md §4.11)
+ICON_STYLES = {
+    "tinted": TileSection(pairs=("dark_background", "light_background"),
+                          alphas=("dark_wash_alpha", "light_wash_alpha", "light_glyph_shade", "glyph_floor")),
+    "clear": TileSection(colors=("light_fill", "dark_fill", "glyph"),
+                         alphas=("light_fill_alpha", "dark_fill_alpha", "glyph_alpha", "glyph_floor",
+                                 "glyph_shadow_alpha", "specular_alpha", "rim_top", "rim_mid", "rim_bottom"),
+                         lengths=("glyph_shadow_blur", "rim_width")),
+}
+
+
+def validate_tile_section(name: str, section: dict, keys: TileSection) -> None:
+    """Exactly the keys of `keys`: valid colours, opacities in 0..1 and lengths of the 64 canvas in 0..8."""
+    expected = {*keys.pairs, *keys.colors, *keys.alphas, *keys.lengths}
+    if set(section) != expected:
+        raise SystemExit(f"[{name}]: missing {sorted(expected - set(section))} or unknown "
+                         f"{sorted(set(section) - expected)}")
 
     def number(key: str) -> float:
-        value = tile[key]
+        value = section[key]
         if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise SystemExit(f"[icon_tile].{key}: debe ser un número")
+            raise SystemExit(f"[{name}].{key}: must be a number")
         return float(value)
 
     def color(key: str, value: object) -> None:
         if not isinstance(value, str):
-            raise SystemExit(f"[icon_tile].{key}: debe ser un color #RRGGBB")
+            raise SystemExit(f"[{name}].{key}: must be a #RRGGBB colour")
         try:
             parsed = Color.parse(value)
         except ValueError as e:
-            raise SystemExit(f"[icon_tile].{key}: {e}") from None
+            raise SystemExit(f"[{name}].{key}: {e}") from None
         if parsed.a != 1.0 or len(value.lstrip("#")) != 6:
-            raise SystemExit(f"[icon_tile].{key}: debe ser #RRGGBB, sin alfa (la opacidad va en su propia clave)")
+            raise SystemExit(f"[{name}].{key}: must be #RRGGBB, with no alpha (the opacity has its own key)")
 
-    for key in ICON_TILE_PAIRS:
-        pair = tile[key]
+    for key in keys.pairs:
+        pair = section[key]
         if not isinstance(pair, list) or len(pair) != 2:
-            raise SystemExit(f"[icon_tile].{key}: debe ser [arriba, abajo]")
+            raise SystemExit(f"[{name}].{key}: must be [top, bottom]")
         for value in pair:
             color(key, value)
-    for key in ICON_TILE_COLORS:
-        color(key, tile[key])
-    for key in ICON_TILE_ALPHAS:
+    for key in keys.colors:
+        color(key, section[key])
+    for key in keys.alphas:
         if not 0 <= number(key) <= 1:
-            raise SystemExit(f"[icon_tile].{key}: la opacidad debe estar entre 0 y 1")
-    for key in ICON_TILE_LENGTHS:
+            raise SystemExit(f"[{name}].{key}: the opacity must be between 0 and 1")
+    for key in keys.lengths:
         if not 0 <= number(key) <= 8:
-            raise SystemExit(f"[icon_tile].{key}: la medida debe estar entre 0 y 8 (lienzo de 64)")
+            raise SystemExit(f"[{name}].{key}: the length must be between 0 and 8 (64 px canvas)")
+
+
+def validate_icon_tile(tile: dict) -> None:
+    validate_tile_section("icon_tile", tile, ICON_TILE)
+
+
+# [icon_style.extract]: the third-party glyph extraction (tools/icons_glyph.py), key → (minimum, maximum)
+ICON_STYLE_EXTRACT = {
+    "render_size": (32, 512),
+    "edge_samples": (1, 32),
+    "background_rows": (1, 64),
+    "contrast_low": (0.0, 1.0),
+    "contrast_high": (0.0, 1.0),
+    "gamma": (0.1, 4.0),
+    "ink_min": (0.0, 1.0),
+    "ink_max": (0.0, 1.0),
+    "detail_min": (0.0, 100.0),
+    "detail_max": (0.0, 100.0),
+    "silhouette_detail_min": (0.0, 100.0),
+    "glyph_size": (8.0, 52.0),       # inside the squircle (52 units of the 64 canvas)
+    "monogram_size": (4.0, 52.0),
+}
+ICON_STYLE_EXTRACT_WHOLE = ("render_size", "edge_samples", "background_rows")
+ICON_STYLE_EXTRACT_ORDERED = (("contrast_low", "contrast_high"), ("ink_min", "ink_max"), ("detail_min", "detail_max"))
+ICON_STYLE_EXTRACT_FONT = "monogram_font"
+
+
+def validate_icon_style_extract(extract: dict) -> None:
+    name = "icon_style.extract"
+    expected = {*ICON_STYLE_EXTRACT, ICON_STYLE_EXTRACT_FONT}
+    if set(extract) != expected:
+        raise SystemExit(f"[{name}]: missing {sorted(expected - set(extract))} or unknown "
+                         f"{sorted(set(extract) - expected)}")
+    for key, (low, high) in ICON_STYLE_EXTRACT.items():
+        value = extract[key]
+        whole = key in ICON_STYLE_EXTRACT_WHOLE
+        if not _is_number(value) or (whole and not isinstance(value, int)) or not low <= value <= high:
+            kind = "a whole number" if whole else "a number"
+            raise SystemExit(f"[{name}].{key} must be {kind} in [{low:g}, {high:g}], not {value!r}")
+    for low, high in ICON_STYLE_EXTRACT_ORDERED:
+        if not extract[low] < extract[high]:
+            raise SystemExit(f"[{name}]: {low} must be below {high}")
+    font = extract[ICON_STYLE_EXTRACT_FONT]
+    if not isinstance(font, str) or not font.strip():
+        raise SystemExit(f"[{name}].{ICON_STYLE_EXTRACT_FONT} must be a font family, not {font!r}")
+
+
+def validate_icon_style_overrides(table: dict) -> None:
+    """[icon_style.overrides]: icon name or pattern → one of the outcomes of icons_glyph.Kind."""
+    kinds = [kind.value for kind in icons_glyph.Kind]
+    for icon, value in table.items():
+        if value not in kinds:
+            raise SystemExit(f"[icon_style.overrides].{icon} must be one of {', '.join(kinds)}, not {value!r}")
+
+
+def validate_icon_style(style: dict) -> None:
+    """[icon_style]: one table per style, the extraction of third-party glyphs and its overrides."""
+    for name, keys in ICON_STYLES.items():
+        section = style.get(name)
+        if not isinstance(section, dict):
+            raise SystemExit(f"[icon_style.{name}] is missing or is not a table")
+        validate_tile_section(f"icon_style.{name}", section, keys)
+    for name in ("extract", "overrides"):
+        if not isinstance(style.get(name), dict):
+            raise SystemExit(f"[icon_style.{name}] is missing or is not a table")
+    validate_icon_style_extract(style["extract"])
+    validate_icon_style_overrides(style["overrides"])
 
 
 def validate(tokens: dict) -> None:
@@ -327,6 +419,7 @@ def validate(tokens: dict) -> None:
     validate_osd(tokens["osd"])
 
     validate_icon_tile(tokens["icon_tile"])
+    validate_icon_style(tokens["icon_style"])
 
     light, dark = set(tokens["light"]), set(tokens["dark"])
     if light != dark:

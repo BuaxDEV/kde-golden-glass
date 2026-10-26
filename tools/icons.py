@@ -14,10 +14,15 @@ usan las clases ColorScheme-Accent/-Text, que KIconLoader sustituye por los
 colores actuales (también al seleccionar). Los colores dentro de <style> son
 solo el valor de reserva (tokens del tema claro).
 
-Salida:
+Salida (cada tema lo describe un ThemeSpec):
   build/icons/GoldenGlass/        tema claro (Inherits=WhiteSur,breeze,hicolor)
   build/icons/GoldenGlass-Dark/   mismas carpetas (enlaces), hereda las
                                   variantes oscuras (WhiteSur-dark,breeze-dark)
+  build/icons/GoldenGlass-{Clear,Tinted}{,-Dark}/
+                                  solo apps en otro estilo (icons_style.py);
+                                  heredan el tema de fábrica de su apariencia
+  build/icons/icon-tile.json, icon-style.json
+                                  tokens para las herramientas instaladas
 
 Uso directo para iterar el diseño:
   python3 tools/icons.py --preview build/icons-preview.png
@@ -28,12 +33,55 @@ from __future__ import annotations
 import os
 import shutil
 from dataclasses import dataclass
+from enum import Enum
+from functools import cache
 from pathlib import Path
 
-THEMES = {
-    "GoldenGlass": ("GoldenGlass", "WhiteSur,breeze,hicolor"),
-    "GoldenGlass-Dark": ("GoldenGlass Dark", "WhiteSur-dark,breeze-dark,breeze,hicolor"),
-}
+from icons_style import STYLE_JSON, XLINK_NS, Style, theme_id, theme_name
+
+
+class Base(Enum):
+    """Where a theme gets the icons that are not apps (places, devices, mimetypes)."""
+
+    DRAWN = "drawn"            # draws them
+    LINKED = "linked"          # links the folders of `ThemeSpec.base`: same files, its own inheritance
+    INHERITED = "inherited"    # apps only; the rest comes from `ThemeSpec.base` through Inherits=
+
+
+@dataclass(frozen=True)
+class ThemeSpec:
+    """One icon theme under icons/: what it draws and where the rest comes from."""
+
+    id: str                         # folder name, the name Plasma stores
+    name: str                       # Name= of index.theme
+    inherits: tuple[str, ...]
+    dark: bool                      # app tiles for a dark appearance
+    style: Style = Style.DEFAULT
+    base: Base = Base.DRAWN
+    base_theme: str | None = None   # the theme LINKED or INHERITED from
+    hidden: bool = False            # Hidden=true: left out of the icon theme list of System Settings
+
+
+def _default_spec(dark: bool, inherits: tuple[str, ...]) -> ThemeSpec:
+    light = theme_id(Style.DEFAULT, dark=False)
+    return ThemeSpec(theme_id(Style.DEFAULT, dark), theme_name(Style.DEFAULT, dark), inherits, dark,
+                     base=Base.LINKED if dark else Base.DRAWN, base_theme=light if dark else None)
+
+
+def _styled_spec(style: Style, dark: bool) -> ThemeSpec:
+    """Apps-only theme over the default theme of the same appearance. Hidden: the
+    «Estilo de iconos» module picks it, not the icon theme list."""
+    parent = theme_id(Style.DEFAULT, dark)
+    return ThemeSpec(theme_id(style, dark), theme_name(style, dark), (parent,), dark, style,
+                     Base.INHERITED, parent, hidden=True)
+
+
+THEME_SPECS: tuple[ThemeSpec, ...] = (
+    _default_spec(dark=False, inherits=("WhiteSur", "breeze", "hicolor")),
+    _default_spec(dark=True, inherits=("WhiteSur-dark", "breeze-dark", "breeze", "hicolor")),
+    *(_styled_spec(style, dark) for style in (Style.CLEAR, Style.TINTED) for dark in (False, True)),
+)
+THEMES: dict[str, ThemeSpec] = {spec.id: spec for spec in THEME_SPECS}
 SMALL = (16, 22, 24)
 STROKE = 1.35  # grosor de los símbolos en la cuadrícula de 16
 
@@ -144,7 +192,8 @@ def _svg(size: int, body: str, fallback: dict[str, str], canvas: int | None = No
     style = (f'.ColorScheme-Text{{color:{fallback["text"]};}}'
              f'.ColorScheme-Accent{{color:{fallback["accent"]};}}')
     c = canvas or size
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {c} {c}">'
+    xlink = f' xmlns:xlink="{XLINK_NS}"' if "xlink:href" in body else ""
+    return (f'<svg xmlns="http://www.w3.org/2000/svg"{xlink} width="{size}" height="{size}" viewBox="0 0 {c} {c}">'
             f'<defs><style type="text/css" id="current-color-scheme">{style}</style></defs>'
             f"{body}</svg>\n")
 
@@ -298,9 +347,10 @@ def _directories(subdirs: set[str]) -> list[tuple[str, dict[str, str]]]:
     return dirs
 
 
-def _index(name: str, inherits: str, dirs) -> str:
-    lines = ["[Icon Theme]", f"Name={name}", "Comment=macOS-inspired icons for GoldenGlass",
-             f"Inherits={inherits}", "FollowsColorScheme=true", "Example=folder",
+def _index(spec: ThemeSpec, dirs) -> str:
+    lines = ["[Icon Theme]", f"Name={spec.name}", "Comment=macOS-inspired icons for GoldenGlass",
+             f"Inherits={','.join(spec.inherits)}", "FollowsColorScheme=true", "Example=folder",
+             *(["Hidden=true"] if spec.hidden else []),
              f"Directories={','.join(d for d, _ in dirs)}", ""]
     for d, keys in dirs:
         lines.append(f"[{d}]")
@@ -374,8 +424,14 @@ def _resolves_to(name: str, ours: set[str]) -> str | None:
 
 def _theme_index(theme: str) -> dict[str, Path]:
     """nombre → mejor archivo (SVG escalable o el mayor) de un tema instalado."""
+    return _indexed_theme(theme, ICON_BASES)
+
+
+@cache
+def _indexed_theme(theme: str, bases: tuple[Path, ...]) -> dict[str, Path]:
+    """_theme_index() of the themes under `bases`; wrap_icons asks for the same themes once per styled theme."""
     best: dict[str, tuple[int, Path]] = {}
-    for base in ICON_BASES:
+    for base in bases:
         root = base / theme
         if not root.is_dir() or root.name.startswith("GoldenGlass"):
             continue
@@ -393,11 +449,12 @@ def _theme_index(theme: str) -> dict[str, Path]:
     return {k: v for k, (_, v) in best.items()}
 
 
-def _guards(theme_root: Path, inherits: str, protect: set[str], ours: set[str], folder: str = "inherited") -> int:
+def _guards(theme_root: Path, inherits: tuple[str, ...], protect: set[str], ours: set[str],
+            folder: str = "inherited") -> int:
     """Enlaces en <tema>/<folder>/ para los nombres heredados que se recortarían
     hasta uno de `protect`. Devuelve cuántos."""
     targets: dict[str, Path] = {}
-    for theme in inherits.split(","):
+    for theme in inherits:
         for name, path in _theme_index(theme).items():
             if name not in ours and name not in targets and _resolves_to(name, ours) in protect:
                 targets[name] = path
@@ -408,21 +465,24 @@ def _guards(theme_root: Path, inherits: str, protect: set[str], ours: set[str], 
     return len(targets)
 
 
-def build(tokens: dict, out: Path) -> list[Path]:
-    import icons_apps
+Entry = tuple[str, str, tuple[str, ...]]   # (relative path, SVG text, aliases)
+GUARDS = "inherited"   # name-trimming guards, see _guards()
+WRAPPED = "wrapped"    # third-party apps wrapped in a squircle by wrap_icons.py on the user's machine
+
+
+def _names(entries: list[Entry]) -> set[str]:
+    return {Path(rel).stem for rel, _, _ in entries} | {a for _, _, aliases in entries for a in aliases}
+
+
+def _is_app(entry: Entry) -> bool:
+    return entry[0].startswith("apps/")
+
+
+def _base_entries(tokens: dict, fallback: dict[str, str]) -> list[Entry]:
+    """Places, devices and mimetypes: the same drawing for every theme (it follows the colour scheme)."""
     import icons_mime
 
-    fallback = {"accent": tokens["light"]["accent"], "text": tokens["light"]["label"][:7]}
-    base = out / "icons"
-    for theme in THEMES:
-        if (base / theme).exists():
-            shutil.rmtree(base / theme)
-    root = base / "GoldenGlass"
-
-    # (ruta relativa, svg, alias) del tema claro; lo que no esté en el oscuro
-    # se comparte por enlace (sigue al esquema de colores)
-    entries: list[tuple[str, str, tuple[str, ...]]] = []
-    dark_entries: list[tuple[str, str, tuple[str, ...]]] = []
+    entries: list[Entry] = []
     for icon in ICONS:
         main, aliases = icon.names[0], icon.names[1:]
         entries.append((f"{icon.context}/scalable/{main}.svg", _svg(64, large(icon), fallback), aliases))
@@ -434,45 +494,75 @@ def build(tokens: dict, out: Path) -> list[Path]:
     for rel, (canvas, body), aliases in icons_mime.files(_family(tokens)):
         size = int(rel.split("/")[1]) if rel.split("/")[1].isdigit() else canvas
         entries.append((rel, _svg(size, body, fallback, canvas), aliases))
-    # Apps: dibujo distinto en claro y oscuro
-    for theme, rel, body, aliases in icons_apps.files(tokens):
-        (entries if theme == "GoldenGlass" else dark_entries).append((rel, _svg(64, body, fallback), aliases))
+    return entries
 
-    for theme_root, items in ((root, entries), (base / "GoldenGlass-Dark", dark_entries)):
-        for rel, text, aliases in items:
-            path = theme_root / rel
-            _write(path, text)
-            for alias in aliases:
-                suffix = "-symbolic.svg" if rel.endswith("-symbolic.svg") else ".svg"
-                _link(path.name, path.parent / f"{alias}{suffix}")
+
+def _app_entries(tokens: dict, spec: ThemeSpec, fallback: dict[str, str]) -> list[Entry]:
+    import icons_apps
+
+    return [(rel, _svg(64, body, fallback), aliases)
+            for rel, body, aliases in icons_apps.files(tokens, spec.style, spec.dark)]
+
+
+def _write_entries(theme_root: Path, entries: list[Entry]) -> None:
+    for rel, text, aliases in entries:
+        path = theme_root / rel
+        _write(path, text)
+        for alias in aliases:
+            suffix = "-symbolic.svg" if rel.endswith("-symbolic.svg") else ".svg"
+            _link(path.name, path.parent / f"{alias}{suffix}")
+
+
+def build(tokens: dict, out: Path) -> list[Path]:
+    import icons_apps
+
+    fallback = icons_apps.color_scheme_fallback(tokens)
+    base = out / "icons"
+    for spec in THEME_SPECS:
+        if (base / spec.id).exists():
+            shutil.rmtree(base / spec.id)
+
+    shared = _base_entries(tokens, fallback)
+    # What each theme draws itself; the rest it links or inherits (Base)
+    own = {spec.id: (shared if spec.base is Base.DRAWN else []) + _app_entries(tokens, spec, fallback)
+           for spec in THEME_SPECS}
+    drawn = {spec.id: own[spec.id] + (own[spec.base_theme] if spec.base is Base.LINKED else [])
+             for spec in THEME_SPECS}
+    for spec in THEME_SPECS:
+        _write_entries(base / spec.id, own[spec.id])
 
     # Protección: solo para los nombres de apps (las carpetas y documentos que
     # absorben variantes, p. ej. «folder-android» → «folder», son deseables).
-    app_names = {Path(rel).stem for rel, _, _ in entries if rel.startswith("apps/")}
-    app_names |= {a for rel, _, aliases in entries if rel.startswith("apps/") for a in aliases}
-    shared = {Path(rel).stem for rel, _, _ in entries if not rel.startswith("apps/")}
-    shared |= {a for rel, _, aliases in entries if not rel.startswith("apps/") for a in aliases}
-    for theme, (_, inherits) in THEMES.items():
-        own = dark_entries if theme == "GoldenGlass-Dark" else entries
-        ours = shared | {Path(rel).stem for rel, _, _ in own} | {a for _, _, aliases in own for a in aliases}
-        _guards(base / theme, inherits, app_names, ours)
+    for spec in THEME_SPECS:
+        theme_root = base / spec.id
+        if spec.base is Base.INHERITED:
+            # same app names as its base: the base's guards protect them too
+            theme_root.mkdir(parents=True, exist_ok=True)
+            _link(f"../{spec.base_theme}/{GUARDS}", theme_root / GUARDS)
+            continue
+        apps = [e for e in own[spec.id] if _is_app(e)]
+        ours = _names(own[spec.id]) | _names([e for e in drawn[spec.id] if not _is_app(e)])
+        _guards(theme_root, spec.inherits, _names(apps), ours)
 
-    subdirs = {rel.rsplit("/", 1)[0] for rel, _, _ in entries}
-    for theme, (name, inherits) in THEMES.items():
+    for spec in THEME_SPECS:
+        theme_root = base / spec.id
+        subdirs = {rel.rsplit("/", 1)[0] for rel, _, _ in drawn[spec.id]}
         # «wrapped»: apps de terceros encerradas en squircle por wrap_icons.py
         # en el equipo del usuario (puede estar vacía o solo en ~/.local).
-        extra = ({"inherited"} if (base / theme / "inherited").exists() else set()) | {"wrapped"}
-        _write(base / theme / "index.theme", _index(name, inherits, _directories(subdirs) + [
+        extra = ({GUARDS} if (theme_root / GUARDS).exists() else set()) | {WRAPPED}
+        _write(theme_root / "index.theme", _index(spec, _directories(subdirs) + [
             (d, {"Size": "64", "MinSize": "8", "MaxSize": "512", "Type": "Scalable", "Context": "Applications"})
             for d in sorted(extra)]))
-    # El tema oscuro comparte los demás iconos (siguen al esquema de colores):
-    # solo cambian las apps y la herencia.
-    own = {rel.split("/")[0] for rel, _, _ in dark_entries}
-    for ctx in sorted({rel.split("/")[0] for rel, _, _ in entries} - own):
-        _link(f"../GoldenGlass/{ctx}", base / "GoldenGlass-Dark" / ctx)
+        if spec.base is Base.LINKED:
+            # Shares the base theme's other icons (they follow the colour scheme):
+            # only the apps and the inheritance change.
+            for ctx in sorted({rel.split("/")[0] for rel, _, _ in drawn[spec.id]}
+                              - {rel.split("/")[0] for rel, _, _ in own[spec.id]}):
+                _link(f"../{spec.base_theme}/{ctx}", theme_root / ctx)
     # Datos para goldenglass-wrap-icons en el equipo del usuario (sin TOML ni ggcommon)
     tile_json = icons_apps.write_tile_json(tokens, base / icons_apps.TILE_JSON)
-    return [*(base / theme for theme in THEMES), tile_json]
+    style_json = icons_apps.write_style_json(tokens, base / STYLE_JSON)
+    return [*(base / spec.id for spec in THEME_SPECS), tile_json, style_json]
 
 
 def preview(tokens: dict, path: Path, dark: bool = False) -> None:

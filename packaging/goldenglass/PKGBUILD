@@ -124,7 +124,8 @@ package_goldenglass-kstyle() {
   depends=(frameworkintegration kcmutils kcolorscheme kconfig kconfigwidgets kcoreaddons kdecoration
            kguiaddons ki18n kiconthemes kirigami kwindowsystem qt6-base qt6-declarative python
            kwin libxcb)  # efecto goldenglass_glass: solo carga con el KWin con el que se compiló
-  optdepends=('pipewire: listen to the sounds in the Sound Effects settings module')
+  optdepends=('pipewire: listen to the sounds in the Sound Effects settings module'
+              'goldenglass-icons: styles of the Icon Style settings module (goldenglass-icon-style)')
 
   DESTDIR="$pkgdir" cmake --install build
   # aviso de pacman si el efecto no es de la versión de KWin instalada
@@ -185,21 +186,32 @@ package_goldenglass-plasma() {
 }
 
 package_goldenglass-icons() {
-  pkgdesc="GoldenGlass icon themes (light and dark) with app icons and third-party icon wrapping"
+  pkgdesc="GoldenGlass icon themes (light and dark; default, clear and tinted app icons) with third-party icon wrapping"
   arch=(any)
   license=(CC-BY-SA-4.0 GPL-3.0-or-later)
-  depends=(breeze-icons hicolor-icon-theme python python-pyqt6 qt6-svg)
-  optdepends=('whitesur-icon-theme: macOS-like icons for everything GoldenGlass does not draw')
+  # kreadconfig6 and kwriteconfig6 (goldenglass-icon-style)
+  depends=(breeze-icons hicolor-icon-theme python python-pyqt6 qt6-svg kconfig)
+  optdepends=('whitesur-icon-theme: macOS-like icons for everything GoldenGlass does not draw'
+              'plasma-workspace: plasma-changeicons, with which goldenglass-icon-style applies the icon style')
 
   install -dm755 "$pkgdir/usr/share/icons"
-  cp -a gen/icons/GoldenGlass gen/icons/GoldenGlass-Dark "$pkgdir/usr/share/icons/"
+  # GoldenGlass{,-Dark} and the apps-only styles GoldenGlass-{Clear,Tinted}{,-Dark}
+  cp -a gen/icons/GoldenGlass gen/icons/GoldenGlass-* "$pkgdir/usr/share/icons/"
   # goldenglass-wrap-icons: encierra en squircle las apps de terceros, por
   # usuario (~/.local); al iniciar sesión, solo si cambiaron las apps.
-  install -Dm644 goldenglass/tools/{icons,icons_apps,icons_mime,icons_style,wrap_icons}.py -t "$pkgdir$_share/tools/"
+  install -Dm644 goldenglass/tools/{icons,icons_apps,icons_glyph,icons_mime,icons_style,wrap_icons,icon_style_switcher}.py \
+    -t "$pkgdir$_share/tools/"
   # [icon_tile] de los tokens, que lee goldenglass-wrap-icons (los tokens no se instalan aquí)
   install -Dm644 gen/icons/icon-tile.json -t "$pkgdir$_share/"
+  # [icon_style]: the Tinted and Clear styles, for the installed icon tools
+  install -Dm644 gen/icons/icon-style.json -t "$pkgdir$_share/"
   _launcher goldenglass-wrap-icons wrap_icons.py
   _autostart goldenglass-wrap-icons "GoldenGlass icon wrapping" --if-changed
+  # goldenglass-icon-style: Default, Clear or Tinted icons (the Icon Style
+  # settings module); at login it keeps the style when a global theme or the
+  # colour scheme change the icon theme
+  _launcher goldenglass-icon-style icon_style_switcher.py
+  _autostart goldenglass-icon-style "GoldenGlass icon style" --watch
   _docs
 }
 

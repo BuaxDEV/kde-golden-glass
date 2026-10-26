@@ -106,14 +106,14 @@ Item {
     }
 
     // --- icono, punto y contenido -------------------------------------------------
-    Kirigami.Icon {
+    ThemedIcon {
         id: icon
         visible: tile.showIcon
         x: 0
         y: -tile.bounceLift
         width: tile.size
         height: tile.size
-        source: tile.iconSource
+        themedSource: tile.iconSource
         fallback: tile.fallback
         active: tile.hovered
         // al pulsar, más oscuro (como macOS)

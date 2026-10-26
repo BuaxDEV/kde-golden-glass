@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Description": "Default, Clear or Tinted app icons, light, dark or following the color scheme",
+        "Description[es]": "Iconos de apps por defecto, transparentes o tintados, claros, oscuros o según el esquema de colores",
+        "FormFactors": ["desktop"],
+        "Icon": "goldenglass",
+        "Name": "Icon Style",
+        "Name[es]": "Estilo de iconos"
+    },
+    "X-KDE-Keywords": "icons,icon style,tinted,clear,transparent,dark icons,accent,goldenglass",
+    "X-KDE-Keywords[es]": "iconos,estilo de iconos,tintado,transparente,iconos oscuros,acento,goldenglass",
+    "X-KDE-System-Settings-Parent-Category": "themes",
+    "X-KDE-Weight": 52
+}

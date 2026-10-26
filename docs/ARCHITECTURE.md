@@ -418,6 +418,7 @@ dentro de «Vidrio».
 | Efectos de sonido (`kcm_goldenglass_sounds`) | Multimedia | sonidos de GoldenGlass y sonido al iniciar sesión, con botón para escucharlos (`pw-play`); llama a `goldenglass-system` (4.9) | ✅ F7 |
 | Arranque e inicio de sesión (`kcm_goldenglass_boot`) | Colores y temas, junto a «Pantalla de bienvenida» | Pantalla de arranque: del sistema, GoldenGlass o GoldenGlass gris, con miniaturas dibujadas con las piezas del tema y los avisos de `goldenglass-system`. Pantalla de inicio de sesión: interruptor según el gestor activo (con SDDM, el tema; con Plasma Login Manager, fondo y ajustes, con la explicación). Se aplica con «Aplicar»: pide la contraseña (una vez para los dos cambios) y, si cambia Plymouth, regenera el initramfs | ✅ F8 / F9 |
 | Dock (`kcm_goldenglass_dock`) | Espacio de trabajo (como «Escritorio y Dock») | Tamaño, **ampliación** (activada de fábrica) y su tamaño, apps recientes. En vivo con `goldenglass-dock` | ✅ F10 |
+| Estilo de iconos (`kcm_goldenglass_iconstyle`) | Colores y temas, peso 52 (el mismo que «Arranque e inicio de sesión») | Estilo **Por defecto, Transparente o Tintado** con muestras del tema instalado y Apariencia **Claro, Oscuro o Auto**. En vivo con `goldenglass-icon-style` (4.7) | ✅ F15 |
 
 ### 4.5 Escritorio Plasma — `plasma/`
 - **Plasma Style** `GoldenGlass`: lo genera `tools/plasma_theme.py` dibujando
@@ -1261,7 +1262,11 @@ ventana. Plasma 6.8.1, KWin 6.8.1 virtual, Qt 6.12.
     Todo usa las clases `ColorScheme-Accent`/`-Text` con
     `FollowsColorScheme=true`, así que sigue al acento y al modo claro/oscuro.
     Dos temas: `GoldenGlass` (hereda WhiteSur → breeze) y `GoldenGlass-Dark`
-    (mismas carpetas por enlace; hereda WhiteSur-dark → breeze-dark).
+    (mismas carpetas por enlace; hereda WhiteSur-dark → breeze-dark), más los
+    cuatro de solo apps de los estilos (ver más abajo). Cada tema lo describe
+    un `ThemeSpec` de `tools/icons.py` (estilo, apariencia, herencia y de dónde
+    salen los iconos que no son apps: dibujados, enlazados o heredados), así
+    que `build()` no pregunta por nombres de tema.
     WhiteSur (AUR) es dependencia opcional.
     Incluye las carpetas de color de Dolphin («Asignar color a carpeta») y
     `folder-new`.
@@ -1287,10 +1292,182 @@ ventana. Plasma 6.8.1, KWin 6.8.1 virtual, Qt 6.12.
     `icon-tile.json` que genera `icons.build()` y instala `goldenglass-icons` en
     `/usr/share/goldenglass/` (se busca en `XDG_DATA_DIRS/goldenglass/` y junto a
     `tools/`), y si no, falla con un mensaje claro. `tile()` y `App.svg()` reciben un `Style`
-    (`tools/icons_style.py`, hoy solo `DEFAULT`) para los estilos Tintado y
-    Transparente. `tools/tests/test_icon_tile.py` guarda el SHA-256 de cada SVG
+    (`tools/icons_style.py`): ver «Estilos Tintado y Transparente». `tools/tests/test_icon_tile.py` guarda el SHA-256 de cada SVG
     (`icon_tile_golden.py`, se regenera con `--update` cuando el cambio visual es
     a propósito) y comprueba que cada token cambia el dibujo.
+  - **Estilos Tintado y Transparente (F15, PR-22, PR-24 y PR-25)** — Apariencia ›
+    «Icon & widget style» de macOS 27, para las apps propias y las de terceros:
+    - **Temas:** `GoldenGlass-Tinted`, `GoldenGlass-Tinted-Dark`,
+      `GoldenGlass-Clear` y `GoldenGlass-Clear-Dark`. Solo llevan
+      `apps/scalable`; `inherited` es un enlace al de su padre (los mismos
+      nombres de apps necesitan las mismas protecciones) y declaran `wrapped`.
+      Heredan el tema de fábrica de su apariencia (`Inherits=GoldenGlass` o
+      `GoldenGlass-Dark`) y llevan `Hidden=true`: no salen en Ajustes del
+      sistema › Iconos, los elige el módulo «Estilo de iconos» (PR-27).
+      `icons_style.theme_id(style, dark)` da el nombre de cada uno.
+    - **Dibujo:** el símbolo de la app es una **máscara de luminancia**
+      (`glyph_mask()`): su color propio (`url(#fg)`) pasa a blanco, los detalles
+      con el color del fondo (`url(#bg)`) lo recortan y cada color fijo (Terminal,
+      Calculadora, Monitor…) conserva su luminosidad, nunca por debajo de
+      `glyph_floor`. Se parte del dibujo oscuro del símbolo (el claro sobre
+      oscuro). `styled_tile(mask, dark, style)` pone la máscara sobre el tile
+      del estilo:
+      - **Tintado oscuro:** fondo grafito con un velo leve del acento y el
+        símbolo en `ColorScheme-Accent`.
+      - **Tintado claro:** acento aclarado (velo del acento sobre un fondo
+        blanco) y símbolo en el acento oscurecido (negro encima con
+        `light_glyph_shade`). `currentColor` no vale en `stop-color` ni en
+        `feFlood`, así que el acento solo va en rellenos.
+      - **Transparente:** relleno gris (claro) o negro (oscuro) translúcido,
+        brillo especular y filo diagonal marcados, y símbolo blanco al 92 % con
+        una sombra más fuerte. El relleno lo calibró SP-10c (ver abajo): uno
+        blanco dejaba el símbolo blanco sin contraste sobre fondos claros.
+    - **Acento:** el del sistema, por la clase `ColorScheme-Accent` que
+      KIconLoader sustituye (`FollowsColorScheme`). El color del `<style>` es
+      solo la reserva: un acento fijo (plan B) sería reescribir ese color.
+    - **Apps de terceros (PR-25):** `goldenglass-wrap-icons` también escribe
+      el `wrapped` de los cuatro temas de estilo, con el símbolo que extrae
+      `tools/icons_glyph.py` (Python puro, sin numpy; QImage solo para pintar
+      y leer píxeles) del icono original de cada app:
+      1. Lo pinta a 128 px (`render_size`).
+      2. **Fondo por fila:** la mediana de los primeros y de los últimos
+         `edge_samples` píxeles sólidos de la fila, cada extremo suavizado con
+         la mediana de `background_rows` filas; entre los dos extremos se
+         interpola, así que un degradado horizontal sigue siendo fondo (con un
+         solo color por fila, JetBrains y Chrome salían como manchas).
+      3. **Contraste por canal:** la mayor diferencia de R, G o B con el fondo
+         de su fila, por un `smoothstep(contrast_low, contrast_high)` y
+         `gamma`.
+      4. **Máscara:** `alpha·(floor + (1 − floor)·smoothstep)`, con el
+         `glyph_floor` del estilo. Si el contorno del icono es una forma
+         simple (cuadrado, círculo, tile redondeado: su detalle no llega a
+         `silhouette_detail_min`), el cuerpo no dice nada de la app y se quita
+         (`floor` 0): queda solo el símbolo. La máscara se recorta a lo visible
+         y se encaja en un cuadrado de `glyph_size` unidades del lienzo de 64,
+         como PNG gris dentro de la `<mask>`.
+      5. **Legibilidad:** `ink` (parte del cuerpo que destaca, entre `ink_min`
+         e `ink_max`) y `detail` (longitud del contorno / √área, sin escala:
+         ~3,5 un círculo, 4 un cuadrado, decenas el ruido de una foto; entre
+         `detail_min` y `detail_max`). Si destaca más de `ink_max`, se lee otra
+         vez dentro de lo que destacó: una placa sobre el fondo (el cuadrado
+         negro de JetBrains sobre su degradado) es un cuerpo propio, y dentro
+         quedan las letras.
+      6. **Recursos:** si no se lee, la silueta (si el contorno es propio), si
+         no un monograma (inicial de `Name=`, en `monogram_font`, de
+         `monogram_size` de alto), y si el nombre no tiene letra ni cifra, nada:
+         la app conserva el icono encerrado del tema padre.
+      7. `[icon_style.overrides]`: nombre de icono o patrón (`fnmatch`) →
+         `glyph`, `silhouette`, `monogram` o `skip`.
+
+      El SVG lleva el `<style id="current-color-scheme">` con el acento y el
+      texto claros de los tokens como reserva (fuera de KDE), así que
+      `icon-style.json` lleva también `[light] accent` y `label`. Las
+      protecciones de nombres de un tema de estilo usan la herencia de su
+      padre (su único `Inherits=` es un `GoldenGlass*`, que no se indexa). Los
+      temas de fábrica salen idénticos byte a byte (comprobado con la versión
+      anterior sobre las 43 apps de terceros de la máquina de desarrollo).
+      Volver a ejecutar `goldenglass-wrap-icons`, o el autostart con
+      `--if-changed` (que ahora incluye `Name=`, `icons_glyph.py` y los tokens
+      de estilo en la huella), regenera los seis temas.
+      `goldenglass-wrap-icons --sheet hoja.png [--accent …]` pinta la hoja de
+      revisión (original, Tintado y Transparente en claro y oscuro, y el
+      recurso, `ink` y `detail` de cada app) sin escribir temas.
+    - **Tokens:** `[icon_style.tinted]` y `[icon_style.clear]`, validados por
+      `gen_tokens.py` (con la misma comprobación que `[icon_tile]`), y
+      `[icon_style.extract]` (rangos y orden de los umbrales) e
+      `[icon_style.overrides]` (valores de `icons_glyph.Kind`). Las
+      herramientas instaladas los leen de `/usr/share/goldenglass/icon-style.json`
+      (`icons_apps.style_tokens()` y `style_token_data()`, con la misma
+      búsqueda que `icon-tile.json`), que lleva la sección `[icon_style]`
+      entera.
+    - **Tamaño:** el squircle se define una vez por archivo y se reutiliza con
+      `<use xlink:href>` (el SVG raíz declara `xmlns:xlink` solo entonces). Los
+      cuatro temas suman 0,55 MB instalados (el plan estimaba ~0,4 MB) y unos
+      6 KB al paquete comprimido. Las apps de terceros añaden al paquete solo
+      `icons_glyph.py` y los tokens (+24 KB instalados, +6 KB comprimidos): sus
+      iconos de estilo los genera `goldenglass-wrap-icons` en el equipo de cada
+      usuario, en `~/.local/share/icons/GoldenGlass-{Clear,Tinted}{,-Dark}/wrapped/`
+      (~6 KB por icono y tema; 1,05 MB para las 43 apps de la máquina de
+      desarrollo, frente a 3,9 MB de los dos `wrapped` de fábrica). Tarda
+      ~3,8 s en lugar de ~1,8 s.
+    - **Pruebas:** `tools/tests/test_icon_themes.py` (estructura de los seis
+      temas, temas de fábrica idénticos byte a byte con y sin los estilos,
+      resolución con `QIcon.fromTheme` y color del acento con el motor de iconos
+      de KDE en un entorno XDG aislado) y `tools/tests/test_icon_styles.py`
+      (máscara, colores de píxel del Tintado y del Transparente, cada token
+      cambia el dibujo, validación), `tools/tests/test_icon_glyph.py` (cada rama
+      del extractor con `QImage` sintéticos: símbolo sobre tile liso, degradado
+      horizontal, placa, silueta, monograma, foto, sin letra, excepciones, y la
+      máscara pintada en el acento) y `tools/tests/test_wrap_icons.py` (una
+      máquina inventada en `tmp_path`: los seis `wrapped`, las apps omitidas,
+      los temas de fábrica sin depender de los estilos, `--if-changed`,
+      `--clean`, `--sheet`, la búsqueda con `QIcon.fromTheme` y el símbolo
+      extraído en el acento de la paleta con el motor de iconos de KDE). Hoja de
+      contacto: `python3 tools/icons_apps.py --preview hoja.png --style tinted
+      --style clear [--accent '#AF52DE']`.
+    - **Selector (PR-26)** — `goldenglass-icon-style` (`tools/icon_style_switcher.py`,
+      en `goldenglass-icons`; biblioteca estándar y PyQt6 solo para el D-Bus de
+      `--watch`):
+      - La elección vive en `goldenglassrc [Icons] Style=` (`default`, `clear`,
+        `tinted`) y `Appearance=` (`light`, `dark`, `auto`); de fábrica,
+        Por defecto y Auto. `icons_style.resolve(style, appearance, dark)` la
+        convierte en uno de los seis temas; el esquema es oscuro si el fondo
+        de ventana (`Colors:Window`) tiene luma < 128, como en `gtk_sync.py`.
+      - `--style` / `--appearance` guardan y aplican; `--apply` aplica lo
+        guardado con `plasma-changeicons` (fuera del `PATH`, en
+        `/usr/lib`). Si el tema elegido es de estilo y este usuario no tiene
+        su `wrapped`, antes ejecuta `wrap_icons.py --if-changed`. `--get` da
+        al módulo el JSON con la elección, los valores de fábrica, el tema en
+        uso, si es de la familia y cuatro iconos de muestra de cada estilo.
+      - `--watch` (autostart): espera 500 ms a que se calmen las escrituras
+        de `kdeglobals`, el `iconChanged` de KIconLoader y `notifyChange`, y
+        vuelve a poner el tema elegido **solo** si el usuario ya eligió algo
+        en el módulo y el tema en uso es de la familia GoldenGlass (otro tema
+        elegido en Ajustes › Iconos se respeta). Así la elección sobrevive al
+        Global Theme (que escribe el tema base de su variante) y Auto sigue al
+        cambio de esquema claro/oscuro. Si otra herramienta reescribe el tema
+        en cuanto se corrige (3 correcciones en 10 s), deja de corregir un
+        minuto: nunca hay bucle.
+      - **Acento:** `plasma-apply-colorscheme --accent-color` avisa antes de
+        escribir `kdeglobals` y todas las apps se quedan un acento por detrás
+        (SP-10a). Cuando cambian el acento (`DecorationFocus`), la selección o
+        el fondo de ventana, el demonio emite una vez más
+        `notifyChange(PaletteChanged)`; su propio aviso ya encuentra la misma
+        paleta y no repite.
+      - Toda escritura toma un flock en
+        `$XDG_RUNTIME_DIR/goldenglass-icon-style.lock` (el módulo y el demonio
+        pueden aplicar a la vez); `--get` no espera.
+    - **Redibujado del Dock y de Apps:** un `Kirigami.Icon` ya pintado no
+      vuelve a pedir el icono al cambiar de tema (solo con un cambio de paleta
+      o de `source`, o al volver a mostrarse; ver SP-10d). En vez de reiniciar
+      plasmashell, el Dock y Apps usan `ThemedIcon.qml` (copiado con
+      `Motion.qml` por `SHARED`): su `themedSource` vuelve a ponerse como
+      `source` cada vez que crece `IconTheme.revision`. Ese singleton carga con
+      un `Loader` `IconThemeWatcher` del módulo `org.goldenglass.glass`, que
+      cuenta los cambios de tema cuando el KIconLoader de plasmashell ya cargó
+      el nuevo (su señal `iconChanged`, una por grupo de iconos, agrupadas en
+      50 ms). Sin el módulo C++ los iconos se quedan como estaban hasta que se
+      vuelven a crear. El icono nuevo entra con el fundido de `Kirigami.Icon`.
+    - **Módulo «Estilo de iconos» (PR-27)** — `kcm/iconstyle`, en Colores y
+      temas con peso 52: tarjetas Por defecto, Transparente y Tintado con
+      cuatro apps del tema instalado y Apariencia Claro, Oscuro o Auto. Las
+      muestras son `Kirigami.Icon` con la ruta absoluta del SVG: el motor de
+      iconos de KDE también les cambia el `<style>`, así que el Tintado sale
+      con el acento del sistema (comprobado: una `Image` de la misma ruta da
+      el azul de reserva). Llama a `goldenglass-icon-style` con una cola como
+      la de «Vidrio» (un proceso a la vez; de cada tipo, la última petición) y
+      relee `--get` al vaciarse. Sin selector de tinte: el acento es el del
+      sistema.
+    - **Pruebas del selector:** `tools/tests/test_icon_styles.py` (la tabla de
+      `resolve` con las 18 combinaciones), `tools/tests/test_icon_style_switcher.py`
+      (sustitutos de `kreadconfig6`, `kwriteconfig6`, `plasma-changeicons` y
+      `wrap_icons.py` sobre un almacén JSON y XDG temporales: setters,
+      `--apply`, `--get`, el lanzador, las correcciones de `--watch`, la
+      pausa ante una pelea, un bucle simulado y el aviso de paleta),
+      `qmlplugin/tests/iconthemewatcher_test.cpp` (una revisión por cambio,
+      aunque lleguen seis señales) y `kcm/tests/kcm_iconstyle_test.cpp` (tres
+      estilos y tres apariencias seguidos y «Predeterminados», con un
+      `goldenglass-icon-style` de prueba en `kcm/tests/bin`).
   - **Protección de nombres:** al generar se crean en `<tema>/inherited/`
     enlaces al icono real (en WhiteSur, Breeze o hicolor) de cada nombre que
     el recorte llevaría a una de nuestras apps (`preferences-system-bluetooth`
@@ -1303,7 +1480,9 @@ ventana. Plasma 6.8.1, KWin 6.8.1 virtual, Qt 6.12.
     pixmaps, no la versión de otro tema), como hace macOS 26/27. Si el
     original ya es un cuadrado lleno se recorta al squircle; si no, va al
     68 %. Sale a `~/.local/share/icons/GoldenGlass{,-Dark}/wrapped/`, carpeta
-    que los temas declaran siempre (vale también con el tema en `/usr`).
+    que los temas declaran siempre (vale también con el tema en `/usr`); los
+    temas de estilo reciben en su `wrapped` el símbolo de cada app (ver
+    «Estilos Tintado y Transparente»).
     Volver a ejecutarlo al instalar apps; las apps con `Icon=` como ruta
     absoluta no se pueden sustituir desde un tema.
   - La papelera de Plasma pide `user-trash-symbolic` dentro de un panel; por
@@ -1325,6 +1504,150 @@ ventana. Plasma 6.8.1, KWin 6.8.1 virtual, Qt 6.12.
   Requiere `python-numpy` y `python-pillow` al generar.
 - **Acento:** azul macOS por defecto (`#007AFF` claro / `#0A84FF` oscuro),
   sobreescribible por el acento del sistema.
+
+**Spike SP-10a — go, con un matiz de `plasma-apply-colorscheme`.** Sandbox
+(`tools/sandbox.sh`, KWin 6.8.1 virtual 1600×1000, plasmashell 6.8.1, Qt
+6.12), tema `GoldenGlass-Tinted`, acento cambiado con
+`plasma-apply-colorscheme --accent-color` dentro del sandbox y medido con
+capturas y con una app de prueba que registra el acento de la paleta y el
+color del símbolo de un icono Tintado:
+
+- **Mecanismo:** la máscara de luminancia con un relleno `currentColor` +
+  `ColorScheme-Accent` sigue al acento. El icono cambia en el mismo evento
+  que la paleta (`ApplicationPaletteChange`), y el símbolo claro sale con el
+  acento oscurecido exacto.
+- **Tiempos desde que llega el cambio de paleta:**
+
+| Superficie | Actualizado |
+|---|---|
+| Dolphin (vista de iconos y lugares) | en parte a 0,3 s, todo a 1,9 s |
+| Apps (`Kirigami.Icon`) | a 0,6 s |
+| Dock (`Kirigami.Icon`) | a 0,6 s |
+
+- **Matiz:** con `plasma-apply-colorscheme --accent-color`, **todas** las
+  apps (y toda la paleta, no solo los iconos) van un cambio por detrás: la
+  notificación llega cuando `kdeglobals` aún tiene el acento anterior. Volver
+  a aplicar el mismo acento, o emitir `org.kde.KGlobalSettings.notifyChange`
+  (0, 0) después, lo pone al día. Es de la herramienta, no de los iconos.
+  Sin probar: el cambio desde Ajustes del sistema › Colores y el acento del
+  fondo de escritorio en una sesión real.
+- No hace falta el plan B (regenerar con un color fijo).
+
+**Spike SP-10d — go.** Herencia y `Hidden=true`, con los temas generados en un
+`XDG_DATA_HOME` aislado:
+
+- **Herencia:** con el motor de iconos de KDE (`QT_QPA_PLATFORMTHEME=kde`) y
+  con el de Qt (`QIcon.fromTheme`), los temas de estilo dan sus apps (también
+  por alias, como `system-file-manager`) y heredan del padre carpetas,
+  papelera, unidades y tipos de archivo. Los nombres que el recorte llevaría a
+  una app propia (`preferences-system-bluetooth`) salen de las protecciones
+  del padre por el enlace `inherited`, no del tile. Las apps de terceros caen
+  en el `wrapped` del padre (encerradas con el estilo de fábrica) si el
+  extractor de PR-25 las omite.
+- **`Hidden=true`:** KIconLoader usa igual el tema configurado, y el módulo
+  Iconos de Ajustes del sistema (que llama a `KIconTheme::isHidden`) lista
+  `GoldenGlass` y `GoldenGlass Dark` pero no los cuatro de estilo. Con uno de
+  estos activo, ese módulo no marca ninguno.
+- **Observación para PR-26:** en plasmashell, los `Kirigami.Icon` ya cargados
+  (dock y panel de Apps abierto) **no** se redibujan al cambiar de tema con
+  `plasma-changeicons`, ni con la señal `iconChanged` de KIconLoader ni con
+  `notifyChange` (iconos o paleta sin cambio de paleta); sí con un cambio real
+  de paleta o al crear el elemento de nuevo. Lo que abre después (Apps al
+  abrirse, Dolphin) ya sale con el tema nuevo. Resuelto en PR-26 con
+  `IconThemeWatcher` y `ThemedIcon` (ver «Redibujado del Dock y de Apps» y
+  SP-10e).
+
+**Spike SP-10b — no-go en la cifra, aceptado con las excepciones.** Corpus:
+las 43 apps de terceros visibles de la máquina de desarrollo (`.desktop` de
+`/usr/share/applications`, `~/.local/share/applications` y Flatpak, con su
+icono hicolor o pixmaps), entre ellas 7 juegos de Steam con arte fotográfico y
+4 IDE de JetBrains. Revisado con la hoja de `--sheet` (acento azul y morado),
+sin pantalla real.
+
+| Resultado | Objetivo | Sin excepciones | Con las 2 excepciones |
+|---|---|---|---|
+| Símbolo propio | ≥ 85 % | 34 (79 %) | 32 (74 %) |
+| Silueta | — | 6 (14 %) | 6 (14 %) |
+| Monograma | ≤ 10 % | 3 (7 %) | 5 (12 %) |
+| Omitido | ≤ 5 % | 0 | 0 |
+
+- **Calibración:** con un fondo de un color por fila y los umbrales de
+  partida salían 17 símbolos (40 %) y 17 monogramas. Lo que más subió la
+  cifra fue interpolar entre los dos extremos de la fila, leer otra vez dentro
+  de una placa y llevar `detail_max` a 23 (los logotipos con texto, como
+  Zoom o ChatGPT, pasan de 16). Aflojar más los umbrales llega al 85 % en la
+  métrica, pero solo metiendo manchas (Cyberpunk, las placas de JetBrains
+  enteras): no se hizo.
+- **A ojo:** de los 32 símbolos, 3 se leen mal (mpv sale tenue y las dos
+  utilidades V4L2 son una pantalla en degradado): ~67 % del corpus con un
+  símbolo bueno. Chrome (una cuña del aro) y JetBrains Toolbox (una esquina del
+  cubo) pasan las comprobaciones sin ser el logotipo: van a monograma por
+  `[icon_style.overrides]`. Las siluetas (Vim, PCSX2, God of War, CachyOS
+  Package Installer, Shelly, VS Code) se reconocen; los monogramas son los
+  juegos con foto (Cyberpunk, Halo Infinite, Spider-Man) y los dos de las
+  excepciones.
+- **Decisión:** se acepta por debajo del objetivo. Lo que falta son iconos
+  fotográficos o multicolor sin símbolo dominante, que un modelo de contraste
+  no resuelve; las excepciones cubren los casos conocidos. Un plan B posible
+  (sin hacer) sería, antes del monograma, una máscara de la luminancia del
+  icono, como el tintado automático de macOS.
+
+**Spike SP-10c — go tras calibrar `[icon_style.clear]`.** Contraste WCAG
+entre el símbolo blanco y su tile, con el icono de 64 px compuesto sobre 12
+posiciones de escritorio de 8 fondos (GoldenGlass día y noche, Next, y
+`paper`, `Spectrum`, `Cachy_Topography`, `DarkStreaks` y `Liquid` de CachyOS):
+la mediana de los píxeles con máscara ≥ 0,9 frente a la de los del tile a más de
+3 px del símbolo (fuera de su sombra). 13 824 casos: las 36 apps propias y las
+de terceros que dibujan los temas de estilo, en Transparente claro y oscuro.
+
+| Casos con ≥ 3:1 | Antes (relleno blanco al 30 %, negro al 30 %) | Ahora (gris `#3C3C43` al 45 %, negro al 35 %) |
+|---|---|---|
+| Todos | 67,5 % | 95,6 % |
+| Transparente claro | 45,5 % | 94,3 % |
+| Transparente oscuro | 89,5 % | 96,9 % |
+| Fondos claros | 48,7 % | 91,1 % |
+| Fondos oscuros | 86,3 % | 100 % |
+
+- El fondo casi blanco (`paper`) sigue por debajo (57 % en claro y 76 % en
+  oscuro); en los de GoldenGlass, el 100 %.
+- El Transparente claro pasa a ser un vidrio gris en vez de blanco: con el
+  símbolo blanco (decisión del plan), un relleno blanco no puede dar 3:1 sobre
+  un fondo claro. Las cifras de macOS no son públicas.
+
+**Spike SP-10e — go.** Sandbox (KWin virtual 1600×1000, plasmashell 6.8.1),
+estilo Tintado elegido con `goldenglass-icon-style` y `--watch` en marcha;
+`dbus-monitor` contó los avisos y un muestreo cada 0,2 s de `[Icons] Theme`,
+los cambios de tema:
+
+| Cambio con el demonio en marcha | Correcciones del demonio | Temas por los que pasa | Tema final |
+|---|---|---|---|
+| Global Theme oscuro (`plasma-apply-lookandfeel`) | 1 | `GoldenGlass-Dark` → `GoldenGlass-Tinted-Dark` | `GoldenGlass-Tinted-Dark` |
+| Global Theme claro | 1 | `GoldenGlass` → `GoldenGlass-Tinted` | `GoldenGlass-Tinted` |
+| Esquema oscuro (`plasma-apply-colorscheme`, Auto) | 1 | → `GoldenGlass-Tinted-Dark` | `GoldenGlass-Tinted-Dark` |
+| Esquema claro (Auto) | 1 | → `GoldenGlass-Tinted` | `GoldenGlass-Tinted` |
+| `breeze` con `plasma-changeicons` | 0 | — | `breeze` (se respeta) |
+| `GoldenGlass` con `plasma-changeicons` | 1 | → `GoldenGlass-Tinted` | `GoldenGlass-Tinted` |
+
+- **Sin bucle:** su propio cambio despierta al demonio (seis `iconChanged` y
+  un `ConfigChanged` de `kdeglobals`), que encuentra el tema bien y no hace
+  nada. Un Global Theme manda 10 `ConfigChanged`, 3 `notifyChange` y 6
+  `iconChanged`, y la espera de 500 ms los junta en una sola corrección.
+- **Límite:** la primera versión dejaba 3 correcciones en 30 s y se calló en
+  la cuarta de esta misma prueba (cuatro cambios a mano en ~21 s). Ahora son
+  3 en 10 s, y una pelea real (otra herramienta que reescribe al momento)
+  da 3 correcciones y un minuto de pausa.
+- **Redibujado:** con `ThemedIcon`, el Dock y el panel de Apps abierto
+  muestran el estilo nuevo a 0,3 s de que vuelva `goldenglass-icon-style`
+  (Tintado → Transparente, y tras cada Global Theme). Control en la misma
+  sesión, quitando `IconThemeReader.qml` y reiniciando el plasmashell del
+  sandbox: el Dock y Apps abierto se quedan en Tintado; Apps sale en
+  Transparente solo al volver a abrirse y el Dock no cambia.
+- **Acento:** sin el demonio, `plasma-apply-colorscheme --accent-color` deja
+  a una app de prueba un acento por detrás (verde → sigue azul; morado →
+  verde). Con el demonio llega el acento nuevo ~0,5 s después del aviso de la
+  herramienta, con exactamente un `notifyChange` más por cambio y ninguno
+  más en 10 s de calma. Sin probar: el cambio desde Ajustes del sistema ›
+  Colores y el acento del fondo de escritorio en una sesión real.
 
 ### 4.8 GTK ✅ — `tools/gtk.py`, `tools/gtk_sync.py`
 - **Temas `GoldenGlass` y `GoldenGlass-Dark`** (GTK3 y GTK4 sin libadwaita):
@@ -1819,7 +2142,7 @@ ventana. Plasma 6.8.1, KWin 6.8.1 virtual, Qt 6.12.
 | F12 | Material y accesibilidad: filo del vidrio, sombra inactiva, semáforos grises, Reducir transparencia, Mostrar bordes | 🚧 |
 | F13 | Ventanas y movimiento: efectos de KWin, atajos de tiling, velocidad de animación global, Reducir movimiento | 🚧 |
 | F14 | Barra de menús y Dock: barra a 24 px, HUD de volumen y brillo, apps en segundo plano | ✅ |
-| F15 | Estilos de icono Tintado y Transparente; módulo Estilo de iconos | 📋 |
+| F15 | Estilos de icono Tintado y Transparente; módulo Estilo de iconos | ✅ |
 | F16 | Spotlight propio (sustituye a KRunner) con vistas, portapapeles y teclas rápidas | 📋 |
 | F17 | Centro de notificaciones y avisos de vidrio | 📋 |
 
@@ -1858,3 +2181,5 @@ Refracción en las ventanas de las apps.
 | La API de efectos de KWin no es estable: el efecto se rompe con cada KWin | Recompilar `goldenglass-kstyle` (un hook de pacman lo avisa al actualizar KWin); `goldenglass-glass --check` al iniciar sesión reactiva Blur si el efecto no carga; fork documentado en `UPSTREAM.md` |
 | Valores de fábrica de KWin que pisan los del usuario | `goldenglass-windows` solo escribe claves vacías, una vez por `DefaultsVersion` y solo con un Global Theme GoldenGlass; «Reducir movimiento» guarda y devuelve lo anterior sin pisar lo que el usuario cambió; pruebas de actualización con un `kwinrc` previo |
 | Coste de GPU de la refracción | Solo superficies de Plasma; dos muestras más por píxel solo en la banda del borde; interruptor en el módulo Vidrio |
+| Plasma no redibuja los `Kirigami.Icon` ya pintados al cambiar de tema de iconos | El Dock y Apps vuelven a poner su `source` con `IconThemeWatcher` (SP-10e); el resto de Plasma solo lleva iconos simbólicos o de estado, que los estilos no cambian. Si Kirigami cambia, se nota en el sandbox (el control de SP-10e) |
+| `goldenglass-icon-style --watch` y otra herramienta se pelean por el tema de iconos | Solo corrige temas GoldenGlass y solo tras una elección en el módulo; 3 correcciones en 10 s paran el demonio un minuto (SP-10e) |

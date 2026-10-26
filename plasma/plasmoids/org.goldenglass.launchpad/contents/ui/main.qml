@@ -46,9 +46,9 @@ PlasmoidItem {
         onClicked: root.toggle()
 
         // Icono del tema GoldenGlass (claro u oscuro según el tema de iconos)
-        Kirigami.Icon {
+        ThemedIcon {
             anchors.fill: parent
-            source: "goldenglass-apps"
+            themedSource: "goldenglass-apps"
             fallback: "view-app-grid"
             active: icon.containsMouse
         }
